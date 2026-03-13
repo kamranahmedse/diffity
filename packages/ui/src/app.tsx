@@ -139,6 +139,7 @@ export function App() {
             <DiffView
               diff={diff}
               viewMode={viewMode}
+              theme={theme}
               onActiveFileChange={setActiveFile}
             />
           )}

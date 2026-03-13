@@ -10,7 +10,8 @@
   },
   "dependencies": {
     "react": "latest",
-    "react-dom": "latest"
+    "react-dom": "latest",
+    "shiki": "^4.0.2"
   },
   "devDependencies": {
     "@types/react": "latest",

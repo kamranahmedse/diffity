@@ -1,7 +1,9 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useMemo } from 'react';
 import type { DiffFile } from '@diffity/parser';
 import { HunkBlock } from '../hunk-block/hunk-block.js';
 import { HunkBlockSplit } from '../hunk-block/hunk-block-split.js';
+import type { SyntaxToken } from '../diff-line/diff-line.js';
+import type { HighlightedTokens } from '../../hooks/use-highlighter.js';
 import styles from './file-block.module.css';
 
 type ViewMode = 'unified' | 'split';
@@ -10,6 +12,7 @@ interface FileBlockProps {
   file: DiffFile;
   viewMode: ViewMode;
   onVisible?: (path: string) => void;
+  highlightLine?: (code: string) => HighlightedTokens[] | null;
 }
 
 function getStatusLabel(status: string): string {
@@ -41,7 +44,7 @@ function getStatusClass(status: string): string {
 }
 
 export function FileBlock(props: FileBlockProps) {
-  const { file, viewMode, onVisible } = props;
+  const { file, viewMode, onVisible, highlightLine } = props;
   const [collapsed, setCollapsed] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
@@ -65,6 +68,30 @@ export function FileBlock(props: FileBlockProps) {
     observer.observe(ref.current);
     return () => observer.disconnect();
   }, [filePath, onVisible]);
+
+  const syntaxMap = useMemo(() => {
+    if (!highlightLine) {
+      return undefined;
+    }
+
+    const map = new Map<string, SyntaxToken[]>();
+
+    for (const hunk of file.hunks) {
+      for (const line of hunk.lines) {
+        if (line.wordDiff && line.wordDiff.length > 0) {
+          continue;
+        }
+        const highlighted = highlightLine(line.content);
+        if (highlighted && highlighted.length > 0) {
+          const num = line.type === 'delete' ? line.oldLineNumber : line.newLineNumber;
+          const key = `${line.type}-${num}`;
+          map.set(key, highlighted[0].tokens);
+        }
+      }
+    }
+
+    return map;
+  }, [file, highlightLine]);
 
   const total = file.additions + file.deletions;
   const addPct = total > 0 ? (file.additions / total) * 100 : 0;
@@ -135,7 +162,7 @@ export function FileBlock(props: FileBlockProps) {
                 viewMode === 'split' ? (
                   <HunkBlockSplit key={i} hunk={hunk} />
                 ) : (
-                  <HunkBlock key={i} hunk={hunk} />
+                  <HunkBlock key={i} hunk={hunk} syntaxMap={syntaxMap} />
                 )
               )}
             </table>
