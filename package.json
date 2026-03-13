@@ -9,9 +9,10 @@
     "packages/ui"
   ],
   "scripts": {
-    "build": "npm run build -w packages/parser && npm run build -w packages/ui && npm run build -w packages/cli",
-    "test": "npm run test -w packages/parser",
-    "dev": "npm run dev -w packages/ui"
+    "build": "npm run build -w @diffity/parser && npm run build -w @diffity/ui && npm run build -w diffity",
+    "test": "npm run test -w @diffity/parser",
+    "dev": "npm run dev -w @diffity/ui",
+    "start": "npm run dev -w diffity"
   },
   "keywords": ["git", "diff", "viewer", "cli"],
   "author": "",
