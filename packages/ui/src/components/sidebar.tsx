@@ -1,9 +1,6 @@
-import { useState, useMemo } from 'react';
+import { useState } from 'react';
 import type { DiffFile } from '@diffity/parser';
-import { cn } from '../lib/cn.js';
-import { getFilePath } from '../lib/diff-utils.js';
-import { DiffStats } from './diff-stats.js';
-import { StatusBadge } from './ui/status-badge.js';
+import { FileTree } from './file-tree.js';
 
 interface SidebarProps {
   files: DiffFile[];
@@ -12,33 +9,10 @@ interface SidebarProps {
   onFileClick: (path: string) => void;
 }
 
-function getFileName(path: string): string {
-  return path.split('/').pop() || path;
-}
-
-function getDirPath(path: string): string {
-  const parts = path.split('/');
-  if (parts.length <= 1) {
-    return '';
-  }
-  return parts.slice(0, -1).join('/');
-}
-
 export function Sidebar(props: SidebarProps) {
   const { files, activeFile, reviewedFiles, onFileClick } = props;
   const [search, setSearch] = useState('');
   const [collapsed, setCollapsed] = useState(false);
-
-  const filteredFiles = useMemo(() => {
-    if (!search) {
-      return files;
-    }
-    const lower = search.toLowerCase();
-    return files.filter(f => {
-      const path = getFilePath(f);
-      return path.toLowerCase().includes(lower);
-    });
-  }, [files, search]);
 
   if (collapsed) {
     return (
@@ -88,43 +62,13 @@ export function Sidebar(props: SidebarProps) {
           </button>
         )}
       </div>
-      <div className="flex-1 overflow-y-auto py-1">
-        {filteredFiles.map(file => {
-          const path = getFilePath(file);
-          const isActive = activeFile === path;
-          const isReviewed = reviewedFiles.has(path);
-          return (
-            <button
-              key={path}
-              className={cn(
-                'flex items-center gap-2 w-full px-3 py-1 text-left text-sm transition-colors duration-100 border-l-2 cursor-pointer',
-                isActive
-                  ? 'bg-active border-l-accent'
-                  : 'border-l-transparent hover:bg-hover',
-                isReviewed && 'opacity-60'
-              )}
-              onClick={() => onFileClick(path)}
-            >
-              <StatusBadge status={file.status} compact />
-              <span className="flex-1 min-w-0 flex flex-col">
-                <span className={cn('truncate', isReviewed && 'line-through')}>
-                  {getFileName(path)}
-                </span>
-                {getDirPath(path) && (
-                  <span className={cn('text-xs text-text-muted truncate', isReviewed && 'line-through')}>
-                    {getDirPath(path)}
-                  </span>
-                )}
-              </span>
-              {isReviewed ? (
-                <span className="text-added text-xs shrink-0" title="Viewed">&#10003;</span>
-              ) : (
-                <DiffStats additions={file.additions} deletions={file.deletions} />
-              )}
-            </button>
-          );
-        })}
-      </div>
+      <FileTree
+        files={files}
+        search={search}
+        activeFile={activeFile}
+        reviewedFiles={reviewedFiles}
+        onFileClick={onFileClick}
+      />
     </aside>
   );
 }

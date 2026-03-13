@@ -44,6 +44,40 @@ export function getGitDiff(args: string[] = []): string {
   });
 }
 
+export function getUntrackedFiles(): string[] {
+  const output = execSync('git ls-files --others --exclude-standard', {
+    encoding: 'utf-8',
+    stdio: ['pipe', 'pipe', 'pipe'],
+  }).trim();
+
+  if (!output) {
+    return [];
+  }
+
+  return output.split('\n');
+}
+
+export function getUntrackedDiff(files: string[]): string {
+  const diffs: string[] = [];
+
+  for (const file of files) {
+    try {
+      execSync(`git diff --no-index -- /dev/null "${file}"`, {
+        encoding: 'utf-8',
+        stdio: ['pipe', 'pipe', 'pipe'],
+        maxBuffer: 50 * 1024 * 1024,
+      });
+    } catch (err: unknown) {
+      const error = err as { stdout?: string; status?: number };
+      if (error.status === 1 && error.stdout) {
+        diffs.push(error.stdout);
+      }
+    }
+  }
+
+  return diffs.join('\n');
+}
+
 export function getFileContent(path: string, ref?: string): string {
   if (ref) {
     return execSync(`git show ${ref}:${path}`, {

@@ -5,7 +5,7 @@ import { fileURLToPath } from 'node:url';
 import { dirname } from 'node:path';
 import { parseDiff } from '@diffity/parser';
 import type { ParsedDiff } from '@diffity/parser';
-import { getGitDiff, getRepoInfo, getFileContent } from './git.js';
+import { getGitDiff, getUntrackedFiles, getUntrackedDiff, getRepoInfo, getFileContent } from './git.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
@@ -55,14 +55,25 @@ interface ServerResult {
 export function startServer(options: ServerOptions): Promise<ServerResult> {
   const { port, diffArgs, description } = options;
 
+  const includeUntracked = diffArgs.length === 0;
   let cachedDiff: ParsedDiff | null = null;
+
+  function getFullDiff(args: string[]): string {
+    let raw = getGitDiff(args);
+    if (includeUntracked) {
+      const untrackedFiles = getUntrackedFiles();
+      if (untrackedFiles.length > 0) {
+        raw += '\n' + getUntrackedDiff(untrackedFiles);
+      }
+    }
+    return raw;
+  }
 
   function getDiff(): ParsedDiff {
     if (cachedDiff) {
       return cachedDiff;
     }
-    const raw = getGitDiff(diffArgs);
-    cachedDiff = parseDiff(raw);
+    cachedDiff = parseDiff(getFullDiff(diffArgs));
     return cachedDiff;
   }
 
@@ -85,8 +96,7 @@ export function startServer(options: ServerOptions): Promise<ServerResult> {
     if (pathname === '/api/diff') {
       const whitespace = url.searchParams.get('whitespace');
       if (whitespace === 'hide') {
-        const raw = getGitDiff([...diffArgs, '-w']);
-        sendJson(res, parseDiff(raw));
+        sendJson(res, parseDiff(getFullDiff([...diffArgs, '-w'])));
         return;
       }
       sendJson(res, getDiff());
