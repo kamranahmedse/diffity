@@ -6,6 +6,7 @@ import type {
   FileStatus,
   ParsedDiff,
 } from './types.js';
+import { computeWordDiff } from './word-diff.js';
 
 const DIFF_HEADER_RE = /^diff --git a\/(.*) b\/(.*)$/;
 const HUNK_HEADER_RE = /^@@ -(\d+)(?:,(\d+))? \+(\d+)(?:,(\d+))? @@(.*)$/;
@@ -31,6 +32,43 @@ function stripPrefix(path: string): string {
     return path.slice(2);
   }
   return path;
+}
+
+function attachWordDiffs(hunk: DiffHunk): void {
+  const lines = hunk.lines;
+  let i = 0;
+
+  while (i < lines.length) {
+    if (lines[i].type === 'delete') {
+      const deleteStart = i;
+      while (i < lines.length && lines[i].type === 'delete') {
+        i++;
+      }
+      const deleteEnd = i;
+
+      const addStart = i;
+      while (i < lines.length && lines[i].type === 'add') {
+        i++;
+      }
+      const addEnd = i;
+
+      const deleteCount = deleteEnd - deleteStart;
+      const addCount = addEnd - addStart;
+
+      if (deleteCount > 0 && addCount > 0) {
+        const pairCount = Math.min(deleteCount, addCount);
+        for (let p = 0; p < pairCount; p++) {
+          const delLine = lines[deleteStart + p];
+          const addLine = lines[addStart + p];
+          const segments = computeWordDiff(delLine.content, addLine.content);
+          delLine.wordDiff = segments;
+          addLine.wordDiff = segments;
+        }
+      }
+    } else {
+      i++;
+    }
+  }
 }
 
 export function parseDiff(raw: string): ParsedDiff {
@@ -235,6 +273,12 @@ export function parseDiff(raw: string): ParsedDiff {
 
   if (currentFile) {
     files.push(currentFile);
+  }
+
+  for (const file of files) {
+    for (const hunk of file.hunks) {
+      attachWordDiffs(hunk);
+    }
   }
 
   let totalAdditions = 0;
