@@ -143,10 +143,22 @@ export function App() {
               onActiveFileChange={setActiveFile}
             />
           )}
-          {diff && diff.files.length === 0 && (
+          {diff && diff.files.length === 0 && !loading && (
             <div className={styles.empty}>
-              <h2>No changes</h2>
-              <p>No differences found.</p>
+              <div className={styles.emptyIcon}>
+                <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M9 12l2 2 4-4" />
+                  <circle cx="12" cy="12" r="10" />
+                </svg>
+              </div>
+              <h2>No changes found</h2>
+              <p>There are no differences to display.</p>
+              <div className={styles.suggestions}>
+                <p>Try one of these:</p>
+                <code>diffity --staged</code>
+                <code>diffity HEAD~1</code>
+                <code>diffity main..feature</code>
+              </div>
             </div>
           )}
         </main>
