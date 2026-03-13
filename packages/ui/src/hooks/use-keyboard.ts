@@ -1,4 +1,4 @@
-import { useEffect, useCallback, useRef } from 'react';
+import { useEffect, useRef } from 'react';
 
 interface KeyboardActions {
   onNextFile: () => void;
@@ -7,6 +7,7 @@ interface KeyboardActions {
   onPrevHunk: () => void;
   onToggleCollapse: () => void;
   onCollapseAll: () => void;
+  onToggleReviewed: () => void;
   onUnifiedView: () => void;
   onSplitView: () => void;
   onShowHelp: () => void;
@@ -53,6 +54,10 @@ export function useKeyboard(actions: KeyboardActions) {
           } else {
             actionsRef.current.onToggleCollapse();
           }
+          break;
+        case 'r':
+          e.preventDefault();
+          actionsRef.current.onToggleReviewed();
           break;
         case 'u':
           e.preventDefault();

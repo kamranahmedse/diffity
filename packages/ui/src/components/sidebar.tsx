@@ -8,6 +8,7 @@ import { StatusBadge } from './ui/status-badge.js';
 interface SidebarProps {
   files: DiffFile[];
   activeFile: string | null;
+  reviewedFiles: Set<string>;
   onFileClick: (path: string) => void;
 }
 
@@ -24,7 +25,7 @@ function getDirPath(path: string): string {
 }
 
 export function Sidebar(props: SidebarProps) {
-  const { files, activeFile, onFileClick } = props;
+  const { files, activeFile, reviewedFiles, onFileClick } = props;
   const [search, setSearch] = useState('');
   const [collapsed, setCollapsed] = useState(false);
 
@@ -59,7 +60,7 @@ export function Sidebar(props: SidebarProps) {
         <span className="font-semibold text-sm flex items-center gap-2">
           Files changed
           <span className="inline-flex items-center justify-center min-w-5 h-5 px-1.5 bg-bg-tertiary rounded-full text-xs font-semibold text-text-secondary">
-            {files.length}
+            {reviewedFiles.size > 0 ? `${reviewedFiles.size}/${files.length}` : files.length}
           </span>
         </span>
         <button
@@ -91,6 +92,7 @@ export function Sidebar(props: SidebarProps) {
         {filteredFiles.map(file => {
           const path = getFilePath(file);
           const isActive = activeFile === path;
+          const isReviewed = reviewedFiles.has(path);
           return (
             <button
               key={path}
@@ -98,20 +100,27 @@ export function Sidebar(props: SidebarProps) {
                 'flex items-center gap-2 w-full px-3 py-1 text-left text-sm transition-colors duration-100 border-l-2 cursor-pointer',
                 isActive
                   ? 'bg-active border-l-accent'
-                  : 'border-l-transparent hover:bg-hover'
+                  : 'border-l-transparent hover:bg-hover',
+                isReviewed && 'opacity-60'
               )}
               onClick={() => onFileClick(path)}
             >
               <StatusBadge status={file.status} compact />
               <span className="flex-1 min-w-0 flex flex-col">
-                <span className="truncate">{getFileName(path)}</span>
+                <span className={cn('truncate', isReviewed && 'line-through')}>
+                  {getFileName(path)}
+                </span>
                 {getDirPath(path) && (
-                  <span className="text-xs text-text-muted truncate">
+                  <span className={cn('text-xs text-text-muted truncate', isReviewed && 'line-through')}>
                     {getDirPath(path)}
                   </span>
                 )}
               </span>
-              <DiffStats additions={file.additions} deletions={file.deletions} />
+              {isReviewed ? (
+                <span className="text-added text-xs shrink-0" title="Viewed">&#10003;</span>
+              ) : (
+                <DiffStats additions={file.additions} deletions={file.deletions} />
+              )}
             </button>
           );
         })}

@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef } from 'react';
+import { useState, useCallback, useRef, useEffect } from 'react';
 import { useDiff } from './hooks/use-diff.js';
 import { useInfo } from './hooks/use-info.js';
 import { useTheme } from './hooks/use-theme.js';
@@ -8,7 +8,7 @@ import { Toolbar } from './components/toolbar.js';
 import { DiffView } from './components/diff-view.js';
 import { Sidebar } from './components/sidebar.js';
 import { ShortcutModal } from './components/shortcut-modal.js';
-import type { ViewMode } from './lib/diff-utils.js';
+import { type ViewMode, getFilePath } from './lib/diff-utils.js';
 
 function getFileBlocks(): HTMLElement[] {
   return Array.from(document.querySelectorAll('[id^="file-"]'));
@@ -21,7 +21,7 @@ function getHunkHeaders(): HTMLElement[] {
 }
 
 function scrollToElement(el: HTMLElement) {
-  el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  el.scrollIntoView({ behavior: 'instant', block: 'start' });
 }
 
 export function App() {
@@ -32,8 +32,66 @@ export function App() {
   const { data: diff, loading, error } = useDiff(hideWhitespace);
   const { data: info } = useInfo();
   const [activeFile, setActiveFile] = useState<string | null>(null);
+  const [reviewedFiles, setReviewedFiles] = useState<Set<string>>(new Set());
+  const [collapsedFiles, setCollapsedFiles] = useState<Set<string>>(new Set());
   const mainRef = useRef<HTMLElement>(null);
   const currentFileIdx = useRef(0);
+  const initializedDiffRef = useRef<typeof diff>(null);
+
+  useEffect(() => {
+    if (!diff || diff === initializedDiffRef.current) {
+      return;
+    }
+    initializedDiffRef.current = diff;
+
+    const deletedPaths = new Set(
+      diff.files
+        .filter(f => f.status === 'deleted')
+        .map(f => getFilePath(f))
+    );
+    if (deletedPaths.size > 0) {
+      setCollapsedFiles(deletedPaths);
+    }
+  }, [diff]);
+
+  const handleToggleCollapse = useCallback((path: string) => {
+    setCollapsedFiles(prev => {
+      const next = new Set(prev);
+      if (next.has(path)) {
+        next.delete(path);
+      } else {
+        next.add(path);
+      }
+      return next;
+    });
+  }, []);
+
+  const handleReviewedChange = useCallback((path: string, reviewed: boolean) => {
+    setReviewedFiles(prev => {
+      const next = new Set(prev);
+      if (reviewed) {
+        next.add(path);
+      } else {
+        next.delete(path);
+      }
+      return next;
+    });
+    if (reviewed) {
+      setCollapsedFiles(prev => {
+        const next = new Set(prev);
+        next.add(path);
+        return next;
+      });
+    }
+  }, []);
+
+  const getFilePathAtIndex = useCallback((idx: number): string | null => {
+    if (!diff) {
+      return null;
+    }
+    const clampedIdx = Math.max(0, Math.min(diff.files.length - 1, idx));
+    return getFilePath(diff.files[clampedIdx]);
+  }, [diff]);
 
   const navigateFile = useCallback((direction: number) => {
     const blocks = getFileBlocks();
@@ -74,21 +132,28 @@ export function App() {
     onNextHunk: () => navigateHunk(1),
     onPrevHunk: () => navigateHunk(-1),
     onToggleCollapse: () => {
-      const blocks = getFileBlocks();
-      if (blocks.length === 0) {
-        return;
+      const path = getFilePathAtIndex(currentFileIdx.current);
+      if (path) {
+        handleToggleCollapse(path);
       }
-      const idx = Math.max(0, Math.min(blocks.length - 1, currentFileIdx.current));
-      blocks[idx].dispatchEvent(new CustomEvent('toggle-collapse'));
     },
     onCollapseAll: () => {
-      const blocks = getFileBlocks();
-      const anyExpanded = blocks.some(
-        el => el.querySelector('table, .overflow-x-auto') !== null
-      );
-      document.dispatchEvent(
-        new CustomEvent('collapse-all-files', { detail: { collapsed: anyExpanded } })
-      );
+      if (!diff) {
+        return;
+      }
+      const allPaths = diff.files.map(f => getFilePath(f));
+      const anyExpanded = allPaths.some(p => !collapsedFiles.has(p));
+      if (anyExpanded) {
+        setCollapsedFiles(new Set(allPaths));
+      } else {
+        setCollapsedFiles(new Set());
+      }
+    },
+    onToggleReviewed: () => {
+      const path = getFilePathAtIndex(currentFileIdx.current);
+      if (path) {
+        handleReviewedChange(path, !reviewedFiles.has(path));
+      }
     },
     onUnifiedView: () => setViewMode('unified'),
     onSplitView: () => setViewMode('split'),
@@ -143,6 +208,7 @@ export function App() {
         <Sidebar
           files={diff?.files || []}
           activeFile={activeFile}
+          reviewedFiles={reviewedFiles}
           onFileClick={handleSidebarFileClick}
         />
         <main ref={mainRef} className="flex-1 overflow-y-auto pb-12">
@@ -156,6 +222,10 @@ export function App() {
               diff={diff}
               viewMode={viewMode}
               theme={theme}
+              collapsedFiles={collapsedFiles}
+              onToggleCollapse={handleToggleCollapse}
+              reviewedFiles={reviewedFiles}
+              onReviewedChange={handleReviewedChange}
               onActiveFileChange={setActiveFile}
             />
           )}

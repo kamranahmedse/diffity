@@ -1,23 +1,28 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import type { ParsedDiff } from '@diffity/parser';
 
 interface UseDiffResult {
   data: ParsedDiff | null;
   loading: boolean;
   error: string | null;
-  refetch: (hideWhitespace?: boolean) => void;
 }
 
 export function useDiff(hideWhitespace = false): UseDiffResult {
   const [data, setData] = useState<ParsedDiff | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const isFirstFetch = useRef(true);
 
-  const fetchDiff = (ws?: boolean) => {
-    const hide = ws ?? hideWhitespace;
-    setLoading(true);
+  useEffect(() => {
+    const url = hideWhitespace ? '/api/diff?whitespace=hide' : '/api/diff';
+
+    if (isFirstFetch.current) {
+      setLoading(true);
+      isFirstFetch.current = false;
+    }
+
     setError(null);
-    const url = hide ? '/api/diff?whitespace=hide' : '/api/diff';
+
     fetch(url)
       .then(res => {
         if (!res.ok) {
@@ -33,11 +38,7 @@ export function useDiff(hideWhitespace = false): UseDiffResult {
         setError(err.message);
         setLoading(false);
       });
-  };
-
-  useEffect(() => {
-    fetchDiff();
   }, [hideWhitespace]);
 
-  return { data, loading, error, refetch: fetchDiff };
+  return { data, loading, error };
 }

@@ -1,4 +1,4 @@
-import { useCallback, useMemo } from 'react';
+import { useMemo } from 'react';
 import type { ParsedDiff } from '@diffity/parser';
 import { FileBlock } from './file-block.js';
 import { useHighlighter } from '../hooks/use-highlighter.js';
@@ -8,21 +8,16 @@ interface DiffViewProps {
   diff: ParsedDiff;
   viewMode: ViewMode;
   theme: 'light' | 'dark';
+  collapsedFiles: Set<string>;
+  onToggleCollapse: (path: string) => void;
+  reviewedFiles: Set<string>;
+  onReviewedChange: (path: string, reviewed: boolean) => void;
   onActiveFileChange?: (path: string) => void;
 }
 
 export function DiffView(props: DiffViewProps) {
-  const { diff, viewMode, theme, onActiveFileChange } = props;
+  const { diff, viewMode, theme, collapsedFiles, onToggleCollapse, reviewedFiles, onReviewedChange, onActiveFileChange } = props;
   const { highlight } = useHighlighter();
-
-  const handleVisible = useCallback(
-    (path: string) => {
-      if (onActiveFileChange) {
-        onActiveFileChange(path);
-      }
-    },
-    [onActiveFileChange]
-  );
 
   const highlighters = useMemo(() => {
     const map = new Map<string, (code: string) => ReturnType<typeof highlight>>();
@@ -42,7 +37,11 @@ export function DiffView(props: DiffViewProps) {
             key={filePath + '-' + i}
             file={file}
             viewMode={viewMode}
-            onVisible={handleVisible}
+            collapsed={collapsedFiles.has(filePath)}
+            onToggleCollapse={onToggleCollapse}
+            reviewed={reviewedFiles.has(filePath)}
+            onReviewedChange={onReviewedChange}
+            onVisible={onActiveFileChange}
             highlightLine={highlighters.get(filePath)}
           />
         );

@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useLayoutEffect, useCallback } from 'react';
 
 type Theme = 'light' | 'dark';
 
@@ -23,7 +23,7 @@ export function useTheme() {
     () => getStoredTheme() || getSystemTheme()
   );
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     document.documentElement.setAttribute('data-theme', theme);
   }, [theme]);
 

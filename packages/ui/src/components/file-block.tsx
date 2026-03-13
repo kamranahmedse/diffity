@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, useMemo, useCallback } from 'react';
+import { useState, useRef, useEffect, useMemo } from 'react';
 import type { DiffFile } from '@diffity/parser';
 import { HunkBlock } from './hunk-block.js';
 import { HunkBlockSplit } from './hunk-block-split.js';
@@ -11,16 +11,34 @@ import type { HighlightedTokens } from '../hooks/use-highlighter.js';
 import { cn } from '../lib/cn.js';
 import { type ViewMode, getFilePath } from '../lib/diff-utils.js';
 
+const LARGE_DIFF_LINE_THRESHOLD = 200;
+
+function getTotalLineCount(file: DiffFile): number {
+  let count = 0;
+  for (const hunk of file.hunks) {
+    count += hunk.lines.length;
+  }
+  return count;
+}
+
 interface FileBlockProps {
   file: DiffFile;
   viewMode: ViewMode;
+  collapsed: boolean;
+  onToggleCollapse: (path: string) => void;
+  reviewed: boolean;
+  onReviewedChange: (path: string, reviewed: boolean) => void;
   onVisible?: (path: string) => void;
   highlightLine?: (code: string) => HighlightedTokens[] | null;
 }
 
 export function FileBlock(props: FileBlockProps) {
-  const { file, viewMode, onVisible, highlightLine } = props;
-  const [collapsed, setCollapsed] = useState(false);
+  const { file, viewMode, collapsed, onToggleCollapse, reviewed, onReviewedChange, onVisible, highlightLine } = props;
+
+  const totalLines = getTotalLineCount(file);
+  const isLargeDiff = totalLines >= LARGE_DIFF_LINE_THRESHOLD;
+
+  const [largeDiffExpanded, setLargeDiffExpanded] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
   const filePath = getFilePath(file);
@@ -43,28 +61,6 @@ export function FileBlock(props: FileBlockProps) {
     observer.observe(ref.current);
     return () => observer.disconnect();
   }, [filePath, onVisible]);
-
-  const handleToggleCollapse = useCallback(() => {
-    setCollapsed(prev => !prev);
-  }, []);
-
-  const handleCollapseAll = useCallback((e: Event) => {
-    const detail = (e as CustomEvent).detail;
-    setCollapsed(detail.collapsed);
-  }, []);
-
-  useEffect(() => {
-    const el = ref.current;
-    if (!el) {
-      return;
-    }
-    el.addEventListener('toggle-collapse', handleToggleCollapse);
-    document.addEventListener('collapse-all-files', handleCollapseAll);
-    return () => {
-      el.removeEventListener('toggle-collapse', handleToggleCollapse);
-      document.removeEventListener('collapse-all-files', handleCollapseAll);
-    };
-  }, [handleToggleCollapse, handleCollapseAll]);
 
   const syntaxMap = useMemo(() => {
     if (!highlightLine) {
@@ -98,7 +94,7 @@ export function FileBlock(props: FileBlockProps) {
       <div className="flex items-center gap-2 px-3 py-2 bg-bg-secondary border-b border-border text-sm sticky top-0 z-10 shadow-sticky">
         <IconButton
           className="text-[10px] w-5 h-5 shrink-0"
-          onClick={() => setCollapsed(!collapsed)}
+          onClick={() => onToggleCollapse(filePath)}
           title={collapsed ? 'Expand' : 'Collapse'}
         >
           {collapsed ? '\u25b6' : '\u25bc'}
@@ -130,6 +126,17 @@ export function FileBlock(props: FileBlockProps) {
         </span>
         {file.status !== 'modified' && <StatusBadge status={file.status} />}
         {file.isBinary && <Badge className="bg-bg-tertiary text-text-muted">Binary</Badge>}
+        <div className="ml-auto flex items-center shrink-0">
+          <label className="flex items-center gap-1.5 text-xs text-text-muted cursor-pointer select-none hover:text-text transition-colors">
+            <input
+              type="checkbox"
+              checked={reviewed}
+              onChange={() => onReviewedChange(filePath, !reviewed)}
+              className="accent-added cursor-pointer"
+            />
+            Viewed
+          </label>
+        </div>
       </div>
       {!collapsed && (
         <div className="overflow-x-auto">
@@ -140,6 +147,16 @@ export function FileBlock(props: FileBlockProps) {
               {file.oldMode && file.newMode
                 ? `File mode changed from ${file.oldMode} to ${file.newMode}`
                 : 'No content changes'}
+            </div>
+          ) : isLargeDiff && !largeDiffExpanded ? (
+            <div className="flex items-center justify-center gap-3 py-6 px-4 text-sm text-text-muted">
+              <span>Large diff not rendered — {totalLines} lines</span>
+              <button
+                className="text-accent hover:underline cursor-pointer font-medium"
+                onClick={() => setLargeDiffExpanded(true)}
+              >
+                Load diff
+              </button>
             </div>
           ) : (
             <table className="w-full border-collapse table-fixed">

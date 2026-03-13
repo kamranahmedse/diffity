@@ -21,6 +21,7 @@ const shortcuts = [
       { key: 's', description: 'Split view' },
       { key: 'x', description: 'Collapse/expand file' },
       { key: 'Shift+x', description: 'Collapse/expand all files' },
+      { key: 'r', description: 'Toggle file as viewed' },
     ],
   },
   {
