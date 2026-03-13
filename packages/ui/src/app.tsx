@@ -124,7 +124,7 @@ export function App() {
   }
 
   return (
-    <div className="flex flex-col min-h-screen bg-bg text-text font-sans">
+    <div className="flex flex-col h-screen bg-bg text-text font-sans">
       <SummaryBar
         diff={diff}
         repoName={info?.name || null}
