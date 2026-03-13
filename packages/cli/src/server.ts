@@ -61,7 +61,7 @@ export function startServer(options: ServerOptions): Promise<number> {
     return cachedDiff;
   }
 
-  const uiDir = join(__dirname, '..', 'ui');
+  const uiDir = join(__dirname, 'ui');
 
   const server = createServer((req: IncomingMessage, res: ServerResponse) => {
     const url = new URL(req.url || '/', `http://localhost:${port}`);
