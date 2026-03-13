@@ -1,0 +1,19 @@
+{
+  "name": "diffity",
+  "version": "0.1.0",
+  "private": true,
+  "description": "GitHub-style git diff viewer in the browser",
+  "workspaces": [
+    "packages/cli",
+    "packages/parser",
+    "packages/ui"
+  ],
+  "scripts": {
+    "build": "npm run build -w packages/parser && npm run build -w packages/ui && npm run build -w packages/cli",
+    "test": "npm run test -w packages/parser",
+    "dev": "npm run dev -w packages/ui"
+  },
+  "keywords": ["git", "diff", "viewer", "cli"],
+  "author": "",
+  "license": "MIT"
+}
