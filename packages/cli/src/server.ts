@@ -47,7 +47,12 @@ function serveStatic(res: ServerResponse, filePath: string) {
   res.end(content);
 }
 
-export function startServer(options: ServerOptions): Promise<number> {
+interface ServerResult {
+  port: number;
+  close: () => void;
+}
+
+export function startServer(options: ServerOptions): Promise<ServerResult> {
   const { port, diffArgs, description } = options;
 
   let cachedDiff: ParsedDiff | null = null;
@@ -122,13 +127,15 @@ export function startServer(options: ServerOptions): Promise<number> {
     serveStatic(res, filePath);
   });
 
+  const closeFn = () => server.close();
+
   return new Promise((resolve, reject) => {
     server.on('error', (err: NodeJS.ErrnoException) => {
       if (err.code === 'EADDRINUSE') {
         server.listen(0, () => {
           const addr = server.address();
           if (addr && typeof addr !== 'string') {
-            resolve(addr.port);
+            resolve({ port: addr.port, close: closeFn });
           }
         });
       } else {
@@ -139,7 +146,7 @@ export function startServer(options: ServerOptions): Promise<number> {
     server.listen(port, () => {
       const addr = server.address();
       if (addr && typeof addr !== 'string') {
-        resolve(addr.port);
+        resolve({ port: addr.port, close: closeFn });
       }
     });
   });

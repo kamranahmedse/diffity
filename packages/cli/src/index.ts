@@ -48,7 +48,7 @@ program
     const port = parseInt(opts.port, 10);
 
     try {
-      const actualPort = await startServer({ port, diffArgs, description });
+      const { port: actualPort, close } = await startServer({ port, diffArgs, description });
       const url = `http://localhost:${actualPort}`;
 
       if (!opts.quiet) {
@@ -60,6 +60,19 @@ program
         console.log(`  ${pc.dim('Press Ctrl+C to stop')}`);
         console.log('');
       }
+
+      process.on('SIGINT', () => {
+        if (!opts.quiet) {
+          console.log(pc.dim('\n  Shutting down...'));
+        }
+        close();
+        process.exit(0);
+      });
+
+      process.on('SIGTERM', () => {
+        close();
+        process.exit(0);
+      });
 
       if (opts.open !== false) {
         await open(url);
