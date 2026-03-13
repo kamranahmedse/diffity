@@ -1,10 +1,8 @@
 import { useCallback, useMemo } from 'react';
 import type { ParsedDiff } from '@diffity/parser';
-import { FileBlock } from '../file-block/file-block.js';
-import { useHighlighter } from '../../hooks/use-highlighter.js';
-import styles from './diff-view.module.css';
-
-type ViewMode = 'unified' | 'split';
+import { FileBlock } from './file-block.js';
+import { useHighlighter } from '../hooks/use-highlighter.js';
+import { type ViewMode, getFilePath } from '../lib/diff-utils.js';
 
 interface DiffViewProps {
   diff: ParsedDiff;
@@ -29,16 +27,16 @@ export function DiffView(props: DiffViewProps) {
   const highlighters = useMemo(() => {
     const map = new Map<string, (code: string) => ReturnType<typeof highlight>>();
     for (const file of diff.files) {
-      const filePath = file.status === 'deleted' ? file.oldPath : file.newPath;
+      const filePath = getFilePath(file);
       map.set(filePath, (code: string) => highlight(code, filePath, theme));
     }
     return map;
   }, [diff, highlight, theme]);
 
   return (
-    <div className={styles.container}>
+    <div className="py-2">
       {diff.files.map((file, i) => {
-        const filePath = file.status === 'deleted' ? file.oldPath : file.newPath;
+        const filePath = getFilePath(file);
         return (
           <FileBlock
             key={filePath + '-' + i}

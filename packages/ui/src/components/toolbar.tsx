@@ -1,6 +1,5 @@
-import styles from './toolbar.module.css';
-
-type ViewMode = 'unified' | 'split';
+import { cn } from '../lib/cn.js';
+import type { ViewMode } from '../lib/diff-utils.js';
 
 interface ToolbarProps {
   viewMode: ViewMode;
@@ -21,37 +20,42 @@ export function Toolbar(props: ToolbarProps) {
     onToggleTheme,
   } = props;
 
+  const baseBtn = 'px-3 py-1 border border-border text-sm text-text-secondary transition-colors duration-150 cursor-pointer';
+  const activeBtn = 'bg-accent text-white border-accent';
+  const inactiveBtn = 'bg-bg hover:bg-hover hover:text-text';
+
   return (
-    <div className={styles.toolbar}>
-      <div className={styles.group}>
+    <div className="flex items-center gap-4 px-4 py-2 bg-bg-secondary border-b border-border font-sans text-sm">
+      <div className="flex items-center gap-px">
         <button
-          className={`${styles.btn} ${viewMode === 'unified' ? styles.active : ''}`}
+          className={cn(baseBtn, 'rounded-l-md', viewMode === 'unified' ? activeBtn : inactiveBtn)}
           onClick={() => onViewModeChange('unified')}
           title="Unified view (u)"
         >
           Unified
         </button>
         <button
-          className={`${styles.btn} ${viewMode === 'split' ? styles.active : ''}`}
+          className={cn(baseBtn, 'rounded-r-md border-l-0', viewMode === 'split' ? activeBtn : inactiveBtn)}
           onClick={() => onViewModeChange('split')}
           title="Split view (s)"
         >
           Split
         </button>
       </div>
-      <div className={styles.group}>
-        <label className={styles.checkbox}>
+      <div className="flex items-center gap-px">
+        <label className="flex items-center gap-2 text-text-secondary cursor-pointer">
           <input
             type="checkbox"
             checked={hideWhitespace}
             onChange={e => onHideWhitespaceChange(e.target.checked)}
+            className="cursor-pointer"
           />
           <span>Hide whitespace</span>
         </label>
       </div>
-      <div className={styles.group}>
+      <div className="flex items-center gap-px">
         <button
-          className={styles.btn}
+          className={cn(baseBtn, 'rounded-md', inactiveBtn)}
           onClick={onToggleTheme}
           title="Toggle theme"
         >

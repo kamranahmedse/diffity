@@ -1,5 +1,9 @@
 import type { DiffHunk, DiffLine as DiffLineType } from '@diffity/parser';
-import styles from './hunk-block-split.module.css';
+import { cn } from '../lib/cn.js';
+import { getLineBg } from '../lib/diff-utils.js';
+import { WordDiff } from './word-diff.js';
+import { HunkHeader } from './hunk-header.js';
+import { LineNumberCell } from './line-number-cell.js';
 
 interface HunkBlockSplitProps {
   hunk: DiffHunk;
@@ -58,35 +62,11 @@ function buildSplitRows(lines: DiffLineType[]): SplitRow[] {
   return rows;
 }
 
-function renderWordDiff(line: DiffLineType) {
-  if (!line.wordDiff || line.wordDiff.length === 0) {
-    return <span>{line.content || '\n'}</span>;
+function getCellBg(line: DiffLineType | null): string {
+  if (!line) {
+    return 'bg-bg-secondary';
   }
-
-  return (
-    <>
-      {line.wordDiff.map((seg, i) => {
-        if (seg.type === 'equal') {
-          return <span key={i}>{seg.text}</span>;
-        }
-        if (seg.type === 'delete' && line.type === 'delete') {
-          return (
-            <span key={i} className={styles.wordDel}>
-              {seg.text}
-            </span>
-          );
-        }
-        if (seg.type === 'insert' && line.type === 'add') {
-          return (
-            <span key={i} className={styles.wordAdd}>
-              {seg.text}
-            </span>
-          );
-        }
-        return null;
-      })}
-    </>
-  );
+  return getLineBg(line.type);
 }
 
 function SplitCell(props: { line: DiffLineType | null; side: 'left' | 'right' }) {
@@ -95,28 +75,20 @@ function SplitCell(props: { line: DiffLineType | null; side: 'left' | 'right' })
   if (!line) {
     return (
       <>
-        <td className={styles.lineNum}></td>
-        <td className={`${styles.code} ${styles.empty}`}></td>
+        <LineNumberCell lineNumber={null} className="bg-bg-secondary" />
+        <td className="px-3 whitespace-pre overflow-hidden border-r border-border-muted align-top bg-bg-secondary"></td>
       </>
     );
   }
 
-  const cellClass =
-    line.type === 'add'
-      ? styles.add
-      : line.type === 'delete'
-        ? styles.del
-        : styles.context;
-
+  const bgClass = getCellBg(line);
   const lineNum = side === 'left' ? line.oldLineNumber : line.newLineNumber;
 
   return (
     <>
-      <td className={`${styles.lineNum} ${cellClass}`}>
-        {lineNum ?? ''}
-      </td>
-      <td className={`${styles.code} ${cellClass}`}>
-        <span className={styles.codeInner}>{renderWordDiff(line)}</span>
+      <LineNumberCell lineNumber={lineNum} className={bgClass} />
+      <td className={cn('px-3 whitespace-pre overflow-hidden border-r border-border-muted align-top', bgClass)}>
+        <span className="inline"><WordDiff line={line} /></span>
       </td>
     </>
   );
@@ -126,19 +98,11 @@ export function HunkBlockSplit(props: HunkBlockSplitProps) {
   const { hunk } = props;
   const rows = buildSplitRows(hunk.lines);
 
-  const headerText = hunk.context
-    ? `@@ -${hunk.oldStart},${hunk.oldCount} +${hunk.newStart},${hunk.newCount} @@ ${hunk.context}`
-    : `@@ -${hunk.oldStart},${hunk.oldCount} +${hunk.newStart},${hunk.newCount} @@`;
-
   return (
-    <tbody className={styles.hunk}>
-      <tr className={styles.header}>
-        <td colSpan={4} className={styles.headerCell}>
-          {headerText}
-        </td>
-      </tr>
+    <tbody className="border-t border-border-muted">
+      <HunkHeader hunk={hunk} />
       {rows.map((row, i) => (
-        <tr key={i} className={styles.row}>
+        <tr key={i} className="font-mono text-sm leading-5">
           <SplitCell line={row.left} side="left" />
           <SplitCell line={row.right} side="right" />
         </tr>

@@ -1,5 +1,11 @@
-[data-theme='light'],
-:root {
+@import "tailwindcss";
+
+@theme {
+  --font-mono: 'SF Mono', 'Cascadia Code', 'Fira Code', 'JetBrains Mono',
+    'Consolas', 'Menlo', monospace;
+  --font-sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans',
+    Helvetica, Arial, sans-serif;
+
   --color-bg: #ffffff;
   --color-bg-secondary: #f6f8fa;
   --color-bg-tertiary: #eaeef2;
@@ -18,7 +24,6 @@
   --color-diff-del-word: #ff818266;
   --color-diff-hunk-bg: #ddf4ff;
   --color-diff-hunk-text: #0969da;
-  --color-diff-context-bg: var(--color-bg);
 
   --color-accent: #0969da;
   --color-accent-hover: #0550ae;
@@ -31,9 +36,8 @@
   --color-hover: rgba(208, 215, 222, 0.32);
   --color-active: rgba(208, 215, 222, 0.48);
 
-  --shadow-sm: 0 1px 0 rgba(27, 31, 36, 0.04);
-  --shadow-md: 0 3px 6px rgba(140, 149, 159, 0.15);
   --shadow-sticky: 0 1px 3px rgba(27, 31, 36, 0.12);
+  --shadow-md: 0 3px 6px rgba(140, 149, 159, 0.15);
 }
 
 [data-theme='dark'] {
@@ -55,7 +59,6 @@
   --color-diff-del-word: rgba(248, 81, 73, 0.4);
   --color-diff-hunk-bg: rgba(56, 139, 253, 0.15);
   --color-diff-hunk-text: #58a6ff;
-  --color-diff-context-bg: var(--color-bg);
 
   --color-accent: #58a6ff;
   --color-accent-hover: #79c0ff;
@@ -68,7 +71,29 @@
   --color-hover: rgba(177, 186, 196, 0.12);
   --color-active: rgba(177, 186, 196, 0.2);
 
-  --shadow-sm: 0 0 transparent;
-  --shadow-md: 0 3px 6px rgba(0, 0, 0, 0.3);
   --shadow-sticky: 0 1px 3px rgba(0, 0, 0, 0.3);
+  --shadow-md: 0 3px 6px rgba(0, 0, 0, 0.3);
+}
+
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-border) var(--color-bg-secondary);
+}
+
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--color-bg-secondary);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--color-border);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-text-muted);
 }

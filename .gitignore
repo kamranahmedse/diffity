@@ -1,4 +1,6 @@
 node_modules/
+snapshot-*
+.playwright-mcp
 dist/
 *.tsbuildinfo
 .DS_Store
