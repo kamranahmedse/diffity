@@ -1,0 +1,74 @@
+[data-theme='light'],
+:root {
+  --color-bg: #ffffff;
+  --color-bg-secondary: #f6f8fa;
+  --color-bg-tertiary: #eaeef2;
+  --color-border: #d0d7de;
+  --color-border-muted: #d8dee4;
+
+  --color-text: #1f2328;
+  --color-text-secondary: #656d76;
+  --color-text-muted: #8b949e;
+
+  --color-diff-add-bg: #dafbe1;
+  --color-diff-add-line: #ccffd8;
+  --color-diff-add-word: #abf2bc;
+  --color-diff-del-bg: #ffebe9;
+  --color-diff-del-line: #ffd7d5;
+  --color-diff-del-word: #ff818266;
+  --color-diff-hunk-bg: #ddf4ff;
+  --color-diff-hunk-text: #0969da;
+  --color-diff-context-bg: var(--color-bg);
+
+  --color-accent: #0969da;
+  --color-accent-hover: #0550ae;
+
+  --color-added: #1a7f37;
+  --color-deleted: #cf222e;
+  --color-modified: #9a6700;
+  --color-renamed: #0969da;
+
+  --color-hover: rgba(208, 215, 222, 0.32);
+  --color-active: rgba(208, 215, 222, 0.48);
+
+  --shadow-sm: 0 1px 0 rgba(27, 31, 36, 0.04);
+  --shadow-md: 0 3px 6px rgba(140, 149, 159, 0.15);
+  --shadow-sticky: 0 1px 3px rgba(27, 31, 36, 0.12);
+}
+
+[data-theme='dark'] {
+  --color-bg: #0d1117;
+  --color-bg-secondary: #161b22;
+  --color-bg-tertiary: #21262d;
+  --color-border: #30363d;
+  --color-border-muted: #21262d;
+
+  --color-text: #e6edf3;
+  --color-text-secondary: #8b949e;
+  --color-text-muted: #6e7681;
+
+  --color-diff-add-bg: rgba(46, 160, 67, 0.15);
+  --color-diff-add-line: rgba(46, 160, 67, 0.25);
+  --color-diff-add-word: rgba(46, 160, 67, 0.4);
+  --color-diff-del-bg: rgba(248, 81, 73, 0.15);
+  --color-diff-del-line: rgba(248, 81, 73, 0.25);
+  --color-diff-del-word: rgba(248, 81, 73, 0.4);
+  --color-diff-hunk-bg: rgba(56, 139, 253, 0.15);
+  --color-diff-hunk-text: #58a6ff;
+  --color-diff-context-bg: var(--color-bg);
+
+  --color-accent: #58a6ff;
+  --color-accent-hover: #79c0ff;
+
+  --color-added: #3fb950;
+  --color-deleted: #f85149;
+  --color-modified: #d29922;
+  --color-renamed: #58a6ff;
+
+  --color-hover: rgba(177, 186, 196, 0.12);
+  --color-active: rgba(177, 186, 196, 0.2);
+
+  --shadow-sm: 0 0 transparent;
+  --shadow-md: 0 3px 6px rgba(0, 0, 0, 0.3);
+  --shadow-sticky: 0 1px 3px rgba(0, 0, 0, 0.3);
+}
