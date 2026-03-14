@@ -4,9 +4,11 @@ import { getLineBg } from '../lib/diff-utils.js';
 import { WordDiff } from './word-diff.js';
 import { HunkHeader } from './hunk-header.js';
 import { LineNumberCell } from './line-number-cell.js';
+import type { SyntaxToken } from './diff-line.js';
 
 interface HunkBlockSplitProps {
   hunk: DiffHunk;
+  syntaxMap?: Map<string, SyntaxToken[]>;
 }
 
 interface SplitRow {
@@ -69,8 +71,37 @@ function getCellBg(line: DiffLineType | null): string {
   return getLineBg(line.type);
 }
 
-function SplitCell(props: { line: DiffLineType | null; side: 'left' | 'right' }) {
-  const { line, side } = props;
+function renderCellContent(line: DiffLineType, syntaxTokens?: SyntaxToken[]) {
+  if (line.wordDiff && line.wordDiff.length > 0) {
+    return <WordDiff line={line} />;
+  }
+
+  if (syntaxTokens && syntaxTokens.length > 0) {
+    return (
+      <>
+        {syntaxTokens.map((token, i) => (
+          <span key={i} style={token.color ? { color: token.color } : undefined}>
+            {token.text}
+          </span>
+        ))}
+      </>
+    );
+  }
+
+  return <span>{line.content || '\n'}</span>;
+}
+
+function getSyntaxKey(line: DiffLineType, side: 'left' | 'right'): string {
+  if (line.type === 'context') {
+    const num = side === 'left' ? line.oldLineNumber : line.newLineNumber;
+    return `context-${num}`;
+  }
+  const num = line.type === 'delete' ? line.oldLineNumber : line.newLineNumber;
+  return `${line.type}-${num}`;
+}
+
+function SplitCell(props: { line: DiffLineType | null; side: 'left' | 'right'; syntaxMap?: Map<string, SyntaxToken[]> }) {
+  const { line, side, syntaxMap } = props;
 
   if (!line) {
     return (
@@ -83,19 +114,21 @@ function SplitCell(props: { line: DiffLineType | null; side: 'left' | 'right' })
 
   const bgClass = getCellBg(line);
   const lineNum = side === 'left' ? line.oldLineNumber : line.newLineNumber;
+  const syntaxKey = getSyntaxKey(line, side);
+  const tokens = syntaxMap?.get(syntaxKey);
 
   return (
     <>
       <LineNumberCell lineNumber={lineNum} className={bgClass} />
       <td className={cn('px-3 whitespace-pre overflow-hidden border-r border-border-muted align-top', bgClass)}>
-        <span className="inline"><WordDiff line={line} /></span>
+        <span className="inline">{renderCellContent(line, tokens)}</span>
       </td>
     </>
   );
 }
 
 export function HunkBlockSplit(props: HunkBlockSplitProps) {
-  const { hunk } = props;
+  const { hunk, syntaxMap } = props;
   const rows = buildSplitRows(hunk.lines);
 
   return (
@@ -103,8 +136,8 @@ export function HunkBlockSplit(props: HunkBlockSplitProps) {
       <HunkHeader hunk={hunk} />
       {rows.map((row, i) => (
         <tr key={i} className="font-mono text-sm leading-5">
-          <SplitCell line={row.left} side="left" />
-          <SplitCell line={row.right} side="right" />
+          <SplitCell line={row.left} side="left" syntaxMap={syntaxMap} />
+          <SplitCell line={row.right} side="right" syntaxMap={syntaxMap} />
         </tr>
       ))}
     </tbody>

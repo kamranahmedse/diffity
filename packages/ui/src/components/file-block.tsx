@@ -177,7 +177,7 @@ export function FileBlock(props: FileBlockProps) {
               )}
               {file.hunks.map((hunk, i) =>
                 viewMode === 'split' ? (
-                  <HunkBlockSplit key={i} hunk={hunk} />
+                  <HunkBlockSplit key={i} hunk={hunk} syntaxMap={syntaxMap} />
                 ) : (
                   <HunkBlock key={i} hunk={hunk} syntaxMap={syntaxMap} />
                 )
