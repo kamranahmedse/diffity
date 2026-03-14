@@ -63,7 +63,7 @@ export function Dashboard(props: DashboardProps) {
           ) : (
             <OverviewFileList
               files={overview.files}
-              onViewAll={() => onNavigate('all')}
+              onViewAll={() => onNavigate('work')}
             />
           )}
 

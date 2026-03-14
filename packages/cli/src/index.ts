@@ -62,7 +62,7 @@ program
     } else if (refs.length > 0) {
       urlRef = refs.length === 2 ? `${refs[0]}..${refs[1]}` : refs[0];
     } else {
-      urlRef = 'all';
+      urlRef = 'work';
     }
 
     let commentsFile: string | undefined;

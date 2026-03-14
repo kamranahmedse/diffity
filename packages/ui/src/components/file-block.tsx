@@ -1,4 +1,5 @@
 import { useState, useRef, useMemo, useCallback } from 'react';
+import { flushSync } from 'react-dom';
 import { useQueryClient } from '@tanstack/react-query';
 import { useInView } from 'react-intersection-observer';
 import type { DiffFile, DiffLine as DiffLineType } from '@diffity/parser';
@@ -173,12 +174,7 @@ export function FileBlock(props: FileBlockProps) {
       setFileLineCount(lines.length);
     }
 
-    const scrollContainer = containerRef.current?.closest('main') as HTMLElement | null;
-    const fileEl = containerRef.current;
-    const anchor = fileEl?.querySelector('tbody:last-of-type tr:first-child') as HTMLElement | null;
-    const anchorTop = anchor?.getBoundingClientRect().top ?? 0;
-
-    try {
+    const updateExpansions = () => {
       setExpansions(prev => {
         const next = new Map(prev);
         const existing = next.get(gap.id) || { fromTop: 0, fromBottom: 0, linesFromTop: [], linesFromBottom: [] };
@@ -216,15 +212,20 @@ export function FileBlock(props: FileBlockProps) {
 
         return next;
       });
-    } finally {
       setLoadingGap(null);
-      requestAnimationFrame(() => {
-        if (scrollContainer && anchor) {
-          const newAnchorTop = anchor.getBoundingClientRect().top;
-          scrollContainer.scrollTop += newAnchorTop - anchorTop;
-        }
-      });
+    };
+
+    if (direction === 'up') {
+      const scrollContainer = containerRef.current?.closest('main') as HTMLElement | null;
+      if (scrollContainer) {
+        const scrollHeightBefore = scrollContainer.scrollHeight;
+        flushSync(updateExpansions);
+        scrollContainer.scrollTop += scrollContainer.scrollHeight - scrollHeightBefore;
+        return;
+      }
     }
+
+    updateExpansions();
   }, [fileContentPath, fileLineCount, queryClient, baseRef]);
 
   const getGapRemaining = useCallback((gap: ExpandableGap): { total: number; up: number; down: number } => {

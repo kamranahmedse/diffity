@@ -44,7 +44,7 @@ export function resolveRef(ref: string, extraArgs: string[] = []): string {
       }
       return getUntrackedDiff(files);
     }
-    case 'all': {
+    case 'work': {
       let raw = getDiff(['HEAD', ...extraArgs]);
       const untrackedFiles = getUntrackedFiles();
       if (untrackedFiles.length > 0) {

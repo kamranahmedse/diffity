@@ -70,7 +70,7 @@ function descriptionForRef(ref: string): string {
       return 'Working tree changes';
     case 'untracked':
       return 'Untracked files';
-    case 'all':
+    case 'work':
       return 'All changes';
     default:
       if (ref.includes('..')) {
@@ -81,7 +81,7 @@ function descriptionForRef(ref: string): string {
 }
 
 function resolveBaseRef(ref: string): string {
-  if (['staged', 'working', 'all'].includes(ref)) {
+  if (['staged', 'working', 'work'].includes(ref)) {
     return 'HEAD';
   }
   if (ref === 'unstaged' || ref === 'untracked') {
