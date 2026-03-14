@@ -62,8 +62,12 @@ export async function fetchOverview(): Promise<Overview> {
   return res.json();
 }
 
-export async function fetchCommits(skip = 0, count = 25): Promise<CommitsPage> {
-  const res = await fetch(`/api/commits?skip=${skip}&count=${count}`);
+export async function fetchCommits(skip = 0, count = 10, search?: string): Promise<CommitsPage> {
+  const params = new URLSearchParams({ skip: String(skip), count: String(count) });
+  if (search) {
+    params.set('search', search);
+  }
+  const res = await fetch(`/api/commits?${params}`);
   if (!res.ok) {
     throw new Error(`HTTP ${res.status}`);
   }

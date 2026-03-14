@@ -4,6 +4,6 @@ import { fetchCommits } from '../lib/api.js';
 export function commitsOptions() {
   return queryOptions({
     queryKey: ['commits'],
-    queryFn: () => fetchCommits(0, 25),
+    queryFn: () => fetchCommits(0, 10),
   });
 }
