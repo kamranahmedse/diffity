@@ -1,8 +1,8 @@
 import { useQuery } from '@tanstack/react-query';
 import { diffOptions } from '../queries/diff.js';
 
-export function useDiff(hideWhitespace = false) {
-  const { data, isLoading, error } = useQuery(diffOptions(hideWhitespace));
+export function useDiff(hideWhitespace = false, ref?: string) {
+  const { data, isLoading, error } = useQuery(diffOptions(hideWhitespace, ref));
 
   return {
     data: data ?? null,

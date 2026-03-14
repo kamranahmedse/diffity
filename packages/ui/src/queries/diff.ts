@@ -1,9 +1,9 @@
 import { queryOptions } from '@tanstack/react-query';
 import { fetchDiff } from '../lib/api.js';
 
-export function diffOptions(hideWhitespace: boolean) {
+export function diffOptions(hideWhitespace: boolean, ref?: string) {
   return queryOptions({
-    queryKey: ['diff', hideWhitespace],
-    queryFn: () => fetchDiff(hideWhitespace),
+    queryKey: ['diff', hideWhitespace, ref ?? null],
+    queryFn: () => fetchDiff(hideWhitespace, ref),
   });
 }

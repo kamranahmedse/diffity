@@ -17,6 +17,7 @@ program
   .option('--port <port>', 'Port to use', '3000')
   .option('--no-open', 'Do not open browser automatically')
   .option('--quiet', 'Minimal terminal output')
+  .option('--review <ref>', 'Lock view for code review')
   .action(async (refs: string[], opts) => {
     if (!isGitRepo()) {
       console.error(pc.red('Error: Not a git repository'));
@@ -47,9 +48,27 @@ program
 
     const port = parseInt(opts.port, 10);
 
+    let reviewRef: string | undefined;
+    if (opts.review) {
+      reviewRef = opts.review;
+    }
+
+    let urlRef: string | undefined;
+    if (reviewRef) {
+      urlRef = reviewRef;
+    } else if (opts.staged) {
+      urlRef = 'staged';
+    } else if (refs.length > 0) {
+      urlRef = refs.length === 2 ? `${refs[0]}..${refs[1]}` : refs[0];
+    } else {
+      urlRef = 'all';
+    }
+
     try {
-      const { port: actualPort, close } = await startServer({ port, diffArgs, description });
-      const url = `http://localhost:${actualPort}`;
+      const { port: actualPort, close } = await startServer({ port, diffArgs, description, review: reviewRef });
+      const url = urlRef
+        ? `http://localhost:${actualPort}/?ref=${encodeURIComponent(urlRef)}`
+        : `http://localhost:${actualPort}`;
 
       if (!opts.quiet) {
         console.log('');

@@ -5,7 +5,16 @@ import { fileURLToPath } from 'node:url';
 import { dirname } from 'node:path';
 import { parseDiff } from '@diffity/parser';
 import type { ParsedDiff } from '@diffity/parser';
-import { getGitDiff, getUntrackedFiles, getUntrackedDiff, getRepoInfo, getFileContent } from './git.js';
+import {
+  getGitDiff,
+  getUntrackedFiles,
+  getUntrackedDiff,
+  getRepoInfo,
+  getFileContent,
+  getStagedFiles,
+  getUnstagedFiles,
+  getRecentCommits,
+} from './git.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
@@ -23,6 +32,7 @@ interface ServerOptions {
   port: number;
   diffArgs: string[];
   description?: string;
+  review?: string;
 }
 
 function sendJson(res: ServerResponse, data: unknown) {
@@ -52,8 +62,40 @@ interface ServerResult {
   close: () => void;
 }
 
+function resolveRef(ref: string, extraArgs: string[] = []): string {
+  switch (ref) {
+    case 'staged': {
+      return getGitDiff(['--staged', ...extraArgs]);
+    }
+    case 'unstaged': {
+      return getGitDiff(extraArgs);
+    }
+    case 'working': {
+      return getGitDiff(['HEAD', ...extraArgs]);
+    }
+    case 'untracked': {
+      const files = getUntrackedFiles();
+      if (files.length === 0) {
+        return '';
+      }
+      return getUntrackedDiff(files);
+    }
+    case 'all': {
+      let raw = getGitDiff(['HEAD', ...extraArgs]);
+      const untrackedFiles = getUntrackedFiles();
+      if (untrackedFiles.length > 0) {
+        raw += '\n' + getUntrackedDiff(untrackedFiles);
+      }
+      return raw;
+    }
+    default: {
+      return getGitDiff([ref, ...extraArgs]);
+    }
+  }
+}
+
 export function startServer(options: ServerOptions): Promise<ServerResult> {
-  const { port, diffArgs, description } = options;
+  const { port, diffArgs, description, review } = options;
 
   const includeUntracked = diffArgs.length === 0;
   function getFullDiff(args: string[]): string {
@@ -83,8 +125,54 @@ export function startServer(options: ServerOptions): Promise<ServerResult> {
       return;
     }
 
+    if (pathname === '/api/overview') {
+      try {
+        const staged = getStagedFiles();
+        const unstaged = getUnstagedFiles();
+        const untracked = getUntrackedFiles();
+
+        const fileMap = new Map<string, string>();
+        for (const f of staged) {
+          fileMap.set(f, 'staged');
+        }
+        for (const f of unstaged) {
+          fileMap.set(f, fileMap.has(f) ? 'modified' : 'modified');
+        }
+        for (const f of untracked) {
+          fileMap.set(f, 'added');
+        }
+
+        const files = Array.from(fileMap.entries()).map(([path, status]) => ({ path, status }));
+
+        sendJson(res, { files });
+      } catch (err) {
+        sendError(res, 500, `Failed to get overview: ${err}`);
+      }
+      return;
+    }
+
+    if (pathname === '/api/commits') {
+      const count = parseInt(url.searchParams.get('count') || '25', 10);
+      const skip = parseInt(url.searchParams.get('skip') || '0', 10);
+      try {
+        const commits = getRecentCommits(count, skip);
+        sendJson(res, { commits, hasMore: commits.length === count });
+      } catch (err) {
+        sendError(res, 500, `Failed to get commits: ${err}`);
+      }
+      return;
+    }
+
     if (pathname === '/api/diff') {
+      const ref = url.searchParams.get('ref');
       const whitespace = url.searchParams.get('whitespace');
+      const extraArgs = whitespace === 'hide' ? ['-w'] : [];
+
+      if (ref) {
+        sendJson(res, parseDiff(resolveRef(ref, extraArgs)));
+        return;
+      }
+
       if (whitespace === 'hide') {
         sendJson(res, parseDiff(getFullDiff([...diffArgs, '-w'])));
         return;
@@ -110,6 +198,7 @@ export function startServer(options: ServerOptions): Promise<ServerResult> {
       sendJson(res, {
         ...info,
         description: description || diffArgs.join(' ') || 'unstaged changes',
+        review: review || null,
       });
       return;
     }

@@ -5,10 +5,40 @@ export interface RepoInfo {
   branch: string;
   root: string;
   description: string;
+  review: string | null;
 }
 
-export async function fetchDiff(hideWhitespace: boolean): Promise<ParsedDiff> {
-  const url = hideWhitespace ? '/api/diff?whitespace=hide' : '/api/diff';
+export interface Commit {
+  hash: string;
+  shortHash: string;
+  message: string;
+  relativeDate: string;
+}
+
+export interface OverviewFile {
+  path: string;
+  status: 'staged' | 'modified' | 'added';
+}
+
+export interface Overview {
+  files: OverviewFile[];
+}
+
+export interface CommitsPage {
+  commits: Commit[];
+  hasMore: boolean;
+}
+
+export async function fetchDiff(hideWhitespace: boolean, ref?: string): Promise<ParsedDiff> {
+  const params = new URLSearchParams();
+  if (hideWhitespace) {
+    params.set('whitespace', 'hide');
+  }
+  if (ref) {
+    params.set('ref', ref);
+  }
+  const query = params.toString();
+  const url = query ? `/api/diff?${query}` : '/api/diff';
   const res = await fetch(url);
   if (!res.ok) {
     throw new Error(`HTTP ${res.status}`);
@@ -18,6 +48,22 @@ export async function fetchDiff(hideWhitespace: boolean): Promise<ParsedDiff> {
 
 export async function fetchRepoInfo(): Promise<RepoInfo> {
   const res = await fetch('/api/info');
+  if (!res.ok) {
+    throw new Error(`HTTP ${res.status}`);
+  }
+  return res.json();
+}
+
+export async function fetchOverview(): Promise<Overview> {
+  const res = await fetch('/api/overview');
+  if (!res.ok) {
+    throw new Error(`HTTP ${res.status}`);
+  }
+  return res.json();
+}
+
+export async function fetchCommits(skip = 0, count = 25): Promise<CommitsPage> {
+  const res = await fetch(`/api/commits?skip=${skip}&count=${count}`);
   if (!res.ok) {
     throw new Error(`HTTP ${res.status}`);
   }

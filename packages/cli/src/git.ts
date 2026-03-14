@@ -92,6 +92,55 @@ export function getFileContent(path: string, ref?: string): string {
   });
 }
 
+export function getStagedFiles(): string[] {
+  const output = execSync('git diff --staged --name-only', {
+    encoding: 'utf-8',
+    stdio: ['pipe', 'pipe', 'pipe'],
+  }).trim();
+
+  if (!output) {
+    return [];
+  }
+
+  return output.split('\n');
+}
+
+export function getUnstagedFiles(): string[] {
+  const output = execSync('git diff --name-only', {
+    encoding: 'utf-8',
+    stdio: ['pipe', 'pipe', 'pipe'],
+  }).trim();
+
+  if (!output) {
+    return [];
+  }
+
+  return output.split('\n');
+}
+
+export interface Commit {
+  hash: string;
+  shortHash: string;
+  message: string;
+  relativeDate: string;
+}
+
+export function getRecentCommits(count: number, skip = 0): Commit[] {
+  const output = execSync(`git log -n ${count} --skip=${skip} --format="%H|%h|%s|%cr"`, {
+    encoding: 'utf-8',
+    stdio: ['pipe', 'pipe', 'pipe'],
+  }).trim();
+
+  if (!output) {
+    return [];
+  }
+
+  return output.split('\n').map((line) => {
+    const [hash, shortHash, message, relativeDate] = line.split('|');
+    return { hash, shortHash, message, relativeDate };
+  });
+}
+
 export interface RepoInfo {
   name: string;
   branch: string;
