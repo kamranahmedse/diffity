@@ -1,5 +1,4 @@
-import { useState, useRef, useMemo, useCallback } from 'react';
-import { flushSync } from 'react-dom';
+import { useState, useMemo, useCallback } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { useInView } from 'react-intersection-observer';
 import type { DiffFile, DiffLine as DiffLineType } from '@diffity/parser';
@@ -63,7 +62,6 @@ export function FileBlock(props: FileBlockProps) {
   const [largeDiffExpanded, setLargeDiffExpanded] = useState(false);
   const [expansions, setExpansions] = useState<Map<string, GapExpansion>>(new Map());
   const [loadingGap, setLoadingGap] = useState<string | null>(null);
-  const containerRef = useRef<HTMLDivElement>(null);
 
   const filePath = getFilePath(file);
   const showRename = file.status === 'renamed' && file.oldPath !== file.newPath;
@@ -124,7 +122,6 @@ export function FileBlock(props: FileBlockProps) {
   });
 
   const setRefs = useCallback((node: HTMLDivElement | null) => {
-    containerRef.current = node;
     inViewRef(node);
   }, [inViewRef]);
 
@@ -174,58 +171,45 @@ export function FileBlock(props: FileBlockProps) {
       setFileLineCount(lines.length);
     }
 
-    const updateExpansions = () => {
-      setExpansions(prev => {
-        const next = new Map(prev);
-        const existing = next.get(gap.id) || { fromTop: 0, fromBottom: 0, linesFromTop: [], linesFromBottom: [] };
-        const newOffset = gap.newStart - gap.oldStart;
-        const range = getExpandRange(gap, direction, existing);
+    setExpansions(prev => {
+      const next = new Map(prev);
+      const existing = next.get(gap.id) || { fromTop: 0, fromBottom: 0, linesFromTop: [], linesFromBottom: [] };
+      const newOffset = gap.newStart - gap.oldStart;
+      const range = getExpandRange(gap, direction, existing);
 
-        if (!range) {
-          return prev;
-        }
-
-        const contextLines = createContextLines(lines, range.oldStart, range.oldEnd, newOffset);
-
-        if (direction === 'all') {
-          next.set(gap.id, {
-            fromTop: gap.oldEnd - gap.oldStart + 1,
-            fromBottom: 0,
-            linesFromTop: contextLines,
-            linesFromBottom: [],
-          });
-        } else if (direction === 'down') {
-          const newExpansion = {
-            ...existing,
-            fromTop: existing.fromTop + (range.oldEnd - range.oldStart + 1),
-            linesFromTop: [...existing.linesFromTop, ...contextLines],
-          };
-          next.set(gap.id, newExpansion);
-        } else {
-          const newExpansion = {
-            ...existing,
-            fromBottom: existing.fromBottom + (range.oldEnd - range.oldStart + 1),
-            linesFromBottom: [...contextLines, ...existing.linesFromBottom],
-          };
-          next.set(gap.id, newExpansion);
-        }
-
-        return next;
-      });
-      setLoadingGap(null);
-    };
-
-    if (direction === 'up') {
-      const scrollContainer = containerRef.current?.closest('main') as HTMLElement | null;
-      if (scrollContainer) {
-        const scrollHeightBefore = scrollContainer.scrollHeight;
-        flushSync(updateExpansions);
-        scrollContainer.scrollTop += scrollContainer.scrollHeight - scrollHeightBefore;
-        return;
+      if (!range) {
+        return prev;
       }
-    }
 
-    updateExpansions();
+      const contextLines = createContextLines(lines, range.oldStart, range.oldEnd, newOffset);
+
+      if (direction === 'all') {
+        next.set(gap.id, {
+          fromTop: gap.oldEnd - gap.oldStart + 1,
+          fromBottom: 0,
+          linesFromTop: contextLines,
+          linesFromBottom: [],
+        });
+      } else if (direction === 'down') {
+        const newExpansion = {
+          ...existing,
+          fromTop: existing.fromTop + (range.oldEnd - range.oldStart + 1),
+          linesFromTop: [...existing.linesFromTop, ...contextLines],
+        };
+        next.set(gap.id, newExpansion);
+      } else {
+        const newExpansion = {
+          ...existing,
+          fromBottom: existing.fromBottom + (range.oldEnd - range.oldStart + 1),
+          linesFromBottom: [...contextLines, ...existing.linesFromBottom],
+        };
+        next.set(gap.id, newExpansion);
+      }
+
+      return next;
+    });
+
+    setLoadingGap(null);
   }, [fileContentPath, fileLineCount, queryClient, baseRef]);
 
   const getGapRemaining = useCallback((gap: ExpandableGap): { total: number; up: number; down: number } => {

@@ -77,6 +77,14 @@ export function DiffView(props: DiffViewProps) {
     },
   }), [diff.files, virtualizer]);
 
+  const items = virtualizer.getVirtualItems();
+  const [paddingTop, paddingBottom] = items.length > 0
+    ? [
+        items[0].start,
+        virtualizer.getTotalSize() - items[items.length - 1].end,
+      ]
+    : [0, 0];
+
   return (
     <main
       ref={(node) => {
@@ -87,8 +95,8 @@ export function DiffView(props: DiffViewProps) {
       }}
       className="flex-1 overflow-y-auto pb-12"
     >
-      <div className="py-2" style={{ height: virtualizer.getTotalSize(), position: 'relative' }}>
-        {virtualizer.getVirtualItems().map((virtualItem) => {
+      <div className="py-2" style={{ paddingTop, paddingBottom }}>
+        {items.map((virtualItem) => {
           const file = diff.files[virtualItem.index];
           const filePath = getFilePath(file);
           return (
@@ -96,13 +104,6 @@ export function DiffView(props: DiffViewProps) {
               key={filePath + '-' + virtualItem.index}
               data-index={virtualItem.index}
               ref={virtualizer.measureElement}
-              style={{
-                position: 'absolute',
-                top: 0,
-                left: 0,
-                width: '100%',
-                transform: `translateY(${virtualItem.start}px)`,
-              }}
             >
               <FileBlock
                 file={file}
