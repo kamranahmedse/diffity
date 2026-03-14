@@ -6,7 +6,7 @@ const LANG_MAP: Record<string, BundledLanguage> = {
   tsx: 'tsx',
   js: 'javascript',
   jsx: 'jsx',
-  json: 'json',
+  json: 'javascript',
   css: 'css',
   html: 'html',
   md: 'markdown',
