@@ -69,7 +69,7 @@ export function FileBlock(props: FileBlockProps) {
 
   const queryClient = useQueryClient();
   const fileContentPath = file.oldPath || filePath;
-  const [fileLineCount, setFileLineCount] = useState<number | null>(null);
+  const fileLineCount = file.oldFileLineCount ?? null;
 
   const { copied: pathCopied, copy: copyPath } = useCopy();
 
@@ -167,9 +167,6 @@ export function FileBlock(props: FileBlockProps) {
     const lines = await queryClient.ensureQueryData(
       fileContentOptions(fileContentPath, true, baseRef)
     );
-    if (lines.length > 0 && fileLineCount === null) {
-      setFileLineCount(lines.length);
-    }
 
     setExpansions(prev => {
       const next = new Map(prev);
@@ -210,7 +207,7 @@ export function FileBlock(props: FileBlockProps) {
     });
 
     setLoadingGap(null);
-  }, [fileContentPath, fileLineCount, queryClient, baseRef]);
+  }, [fileContentPath, queryClient, baseRef]);
 
   const getGapRemaining = useCallback((gap: ExpandableGap): { total: number; up: number; down: number } => {
     const expansion = expansions.get(gap.id);

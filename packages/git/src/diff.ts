@@ -65,3 +65,12 @@ export function getMergeBase(a: string, b: string): string {
 export function getFileContent(path: string, ref = 'HEAD'): string {
   return exec(`git show ${ref}:${path}`);
 }
+
+export function getFileLineCount(path: string, ref = 'HEAD'): number | null {
+  try {
+    const content = exec(`git show ${ref}:${path}`);
+    return content.split('\n').length;
+  } catch {
+    return null;
+  }
+}

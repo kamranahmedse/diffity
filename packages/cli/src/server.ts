@@ -3,7 +3,7 @@ import { readFileSync, writeFileSync, existsSync } from 'node:fs';
 import { join, extname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { dirname } from 'node:path';
-import { parseDiff } from '@diffity/parser';
+import { parseDiff, type ParsedDiff } from '@diffity/parser';
 import {
   getDiff,
   getUntrackedFiles,
@@ -13,6 +13,7 @@ import {
   getStagedFiles,
   getUnstagedFiles,
   getRecentCommits,
+  getFileLineCount,
   getMergeBase,
   resolveRef,
 } from '@diffity/git';
@@ -136,6 +137,20 @@ export function startServer(options: ServerOptions): Promise<ServerResult> {
   }
 
   const includeUntracked = diffArgs.length === 0;
+  function enrichWithLineCounts(diff: ParsedDiff, baseRef: string): ParsedDiff {
+    for (const file of diff.files) {
+      if (file.status === 'added' || file.isBinary) {
+        continue;
+      }
+      const path = file.oldPath || file.newPath;
+      const count = getFileLineCount(path, baseRef);
+      if (count !== null) {
+        file.oldFileLineCount = count;
+      }
+    }
+    return diff;
+  }
+
   function getFullDiff(args: string[]): string {
     let raw = getDiff(args);
     if (includeUntracked) {
@@ -225,17 +240,18 @@ export function startServer(options: ServerOptions): Promise<ServerResult> {
       const ref = url.searchParams.get('ref');
       const whitespace = url.searchParams.get('whitespace');
       const extraArgs = whitespace === 'hide' ? ['-w'] : [];
+      const baseRef = ref ? resolveBaseRef(ref) : 'HEAD';
 
       if (ref) {
-        sendJson(res, parseDiff(resolveRef(ref, extraArgs)));
+        sendJson(res, enrichWithLineCounts(parseDiff(resolveRef(ref, extraArgs)), baseRef));
         return;
       }
 
       if (whitespace === 'hide') {
-        sendJson(res, parseDiff(getFullDiff([...diffArgs, '-w'])));
+        sendJson(res, enrichWithLineCounts(parseDiff(getFullDiff([...diffArgs, '-w'])), baseRef));
         return;
       }
-      sendJson(res, parseDiff(getFullDiff(diffArgs)));
+      sendJson(res, enrichWithLineCounts(parseDiff(getFullDiff(diffArgs)), baseRef));
       return;
     }
 

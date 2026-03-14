@@ -54,10 +54,11 @@ export function computeGaps(hunks: DiffHunk[], fileLineCount: number | null): Ex
     }
   }
 
+  const lastHunk = hunks[hunks.length - 1];
+  const lastOldEnd = lastHunk.oldStart + lastHunk.oldCount;
+  const lastNewEnd = lastHunk.newStart + lastHunk.newCount;
+
   if (fileLineCount !== null) {
-    const lastHunk = hunks[hunks.length - 1];
-    const lastOldEnd = lastHunk.oldStart + lastHunk.oldCount;
-    const lastNewEnd = lastHunk.newStart + lastHunk.newCount;
     const remaining = fileLineCount - lastOldEnd + 1;
 
     if (remaining > 0) {

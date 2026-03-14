@@ -39,6 +39,7 @@ export interface DiffFile {
   oldMode?: string;
   newMode?: string;
   similarityIndex?: number;
+  oldFileLineCount?: number;
 }
 
 export interface ParsedDiff {
