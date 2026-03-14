@@ -193,6 +193,30 @@ export function DiffPage(props: DiffPageProps) {
     return <PageLoader />;
   }
 
+  if (diff && diff.files.length === 0 && !diffLoading) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-screen bg-bg text-text font-sans gap-3">
+        <div className="text-added opacity-50 mb-2">
+          <CheckCircleIcon />
+        </div>
+        <h2 className="text-xl text-text-secondary">No changes found</h2>
+        <p className="text-text-muted">There are no differences to display.</p>
+        <div className="mt-4 flex flex-col gap-2 items-center">
+          <p className="text-sm text-text-muted mb-1">Try one of these:</p>
+          <code className="inline-block px-3 py-1 bg-bg-secondary border border-border rounded-md font-mono text-sm text-text">
+            diffity --staged
+          </code>
+          <code className="inline-block px-3 py-1 bg-bg-secondary border border-border rounded-md font-mono text-sm text-text">
+            diffity HEAD~1
+          </code>
+          <code className="inline-block px-3 py-1 bg-bg-secondary border border-border rounded-md font-mono text-sm text-text">
+            diffity main..feature
+          </code>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <CommentsProvider>
     <div className="flex flex-col h-screen bg-bg text-text font-sans">
@@ -211,6 +235,7 @@ export function DiffPage(props: DiffPageProps) {
         theme={theme}
         onToggleTheme={toggleTheme}
         diff={diff || undefined}
+        diffRef={refParam}
       />
       <div className="flex flex-1 overflow-hidden">
         <Sidebar
@@ -235,27 +260,6 @@ export function DiffPage(props: DiffPageProps) {
             }}
           />
         ) : null}
-        {diff && diff.files.length === 0 && !diffLoading && (
-          <div className="flex-1 flex flex-col items-center justify-center p-12 text-text-muted text-center gap-3 min-h-[400px]">
-            <div className="text-added opacity-50 mb-2">
-              <CheckCircleIcon />
-            </div>
-            <h2 className="text-xl text-text-secondary">No changes found</h2>
-            <p>There are no differences to display.</p>
-            <div className="mt-4 flex flex-col gap-2 items-center">
-              <p className="text-sm mb-1">Try one of these:</p>
-              <code className="inline-block px-3 py-1 bg-bg-secondary border border-border rounded-md font-mono text-sm text-text">
-                diffity --staged
-              </code>
-              <code className="inline-block px-3 py-1 bg-bg-secondary border border-border rounded-md font-mono text-sm text-text">
-                diffity HEAD~1
-              </code>
-              <code className="inline-block px-3 py-1 bg-bg-secondary border border-border rounded-md font-mono text-sm text-text">
-                diffity main..feature
-              </code>
-            </div>
-          </div>
-        )}
       </div>
       {showHelp && <ShortcutModal onClose={() => setShowHelp(false)} />}
     </div>

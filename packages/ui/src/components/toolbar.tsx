@@ -16,6 +16,7 @@ interface ToolbarProps {
   theme: 'light' | 'dark';
   onToggleTheme: () => void;
   diff?: ParsedDiff;
+  diffRef?: string;
 }
 
 function extractCodeContext(diff: ParsedDiff | undefined, filePath: string, side: 'old' | 'new', startLine: number, endLine: number): string[] {
@@ -42,50 +43,46 @@ function extractCodeContext(diff: ParsedDiff | undefined, filePath: string, side
   return lines;
 }
 
-function formatThreadsForCopy(threads: CommentThread[], diff?: ParsedDiff): string {
-  if (threads.length === 0) {
+function formatThreadsForCopy(threads: CommentThread[], diff?: ParsedDiff, diffRef?: string): string {
+  const unresolvedThreads = threads.filter(t => !t.isResolved);
+  if (unresolvedThreads.length === 0) {
     return '';
   }
 
-  const grouped = new Map<string, CommentThread[]>();
-  for (const thread of threads) {
-    const existing = grouped.get(thread.filePath) || [];
-    existing.push(thread);
-    grouped.set(thread.filePath, existing);
+  const parts: string[] = [];
+
+  if (diffRef) {
+    parts.push(`Diff ref: ${diffRef}`);
+    parts.push('');
   }
 
-  const parts: string[] = [];
-  for (const [filePath, fileThreads] of grouped) {
-    parts.push(`## ${filePath}`);
-    for (const thread of fileThreads) {
-      const lineRange = thread.startLine === thread.endLine
-        ? `${thread.startLine}`
-        : `${thread.startLine}-${thread.endLine}`;
-      const sideDesc = thread.side === 'old' ? 'old' : 'new';
-      const resolved = thread.isResolved ? ' (resolved)' : '';
+  for (const thread of unresolvedThreads) {
+    const lineRange = thread.startLine === thread.endLine
+      ? `${thread.startLine}`
+      : `${thread.startLine}-${thread.endLine}`;
+    const sideDesc = thread.side === 'old' ? 'before change' : 'after change';
 
-      parts.push(`### Line ${lineRange} (${sideDesc})${resolved}`);
+    parts.push(`## ${thread.filePath}:${lineRange} (${sideDesc})`);
 
-      const codeLines = extractCodeContext(diff, filePath, thread.side, thread.startLine, thread.endLine);
-      if (codeLines.length > 0) {
-        parts.push('```diff');
-        parts.push(...codeLines);
-        parts.push('```');
-      }
-
-      const uniqueAuthors = new Set(thread.comments.map(c => c.author.name));
-      const singleAuthor = uniqueAuthors.size === 1;
-
-      for (const comment of thread.comments) {
-        if (singleAuthor) {
-          parts.push(comment.body);
-        } else {
-          const authorName = comment.author.name === 'You' ? 'User' : comment.author.name;
-          parts.push(`**${authorName}:** ${comment.body}`);
-        }
-      }
-      parts.push('');
+    const codeLines = extractCodeContext(diff, thread.filePath, thread.side, thread.startLine, thread.endLine);
+    if (codeLines.length > 0) {
+      parts.push('```diff');
+      parts.push(...codeLines);
+      parts.push('```');
     }
+
+    const uniqueAuthors = new Set(thread.comments.map(c => c.author.name));
+    const singleAuthor = uniqueAuthors.size === 1;
+
+    for (const comment of thread.comments) {
+      if (singleAuthor) {
+        parts.push(comment.body);
+      } else {
+        const authorName = comment.author.name === 'You' ? 'User' : comment.author.name;
+        parts.push(`**${authorName}:** ${comment.body}`);
+      }
+    }
+    parts.push('');
   }
 
   return parts.join('\n');
@@ -100,6 +97,7 @@ export function Toolbar(props: ToolbarProps) {
     theme,
     onToggleTheme,
     diff,
+    diffRef,
   } = props;
 
   const { threads } = useComments();
@@ -149,15 +147,15 @@ export function Toolbar(props: ToolbarProps) {
           {theme === 'light' ? 'Dark' : 'Light'}
         </button>
       </div>
-      {threads.length > 0 && (
+      {unresolvedCount > 0 && (
         <div className="flex items-center gap-2 ml-auto">
           <span className="text-xs text-text-muted">
             {unresolvedCount} comment{unresolvedCount !== 1 ? 's' : ''}
           </span>
           <button
-            onClick={() => copy(formatThreadsForCopy(threads, diff))}
+            onClick={() => copy(formatThreadsForCopy(threads, diff, diffRef))}
             className={cn(baseBtn, 'rounded-md flex items-center gap-1.5', inactiveBtn)}
-            title="Copy all comments to clipboard"
+            title="Copy unresolved comments to clipboard"
           >
             {copied ? (
               <>
