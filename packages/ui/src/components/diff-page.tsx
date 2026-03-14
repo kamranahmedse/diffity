@@ -36,6 +36,7 @@ export function DiffPage(props: DiffPageProps) {
   const diffViewRef = useRef<DiffViewHandle>(null);
   const currentFileIdx = useRef(0);
   const initializedDiffRef = useRef<typeof diff>(null);
+  const scrollTargetRef = useRef<string | null>(null);
 
   useEffect(() => {
     if (!diff || diff === initializedDiffRef.current) {
@@ -179,8 +180,19 @@ export function DiffPage(props: DiffPageProps) {
   });
 
   const handleSidebarFileClick = useCallback((path: string) => {
+    scrollTargetRef.current = path;
     setActiveFile(path);
     diffViewRef.current?.scrollToFile(path);
+  }, []);
+
+  const handleActiveFileFromScroll = useCallback((path: string) => {
+    if (scrollTargetRef.current) {
+      if (path === scrollTargetRef.current) {
+        scrollTargetRef.current = null;
+      }
+      return;
+    }
+    setActiveFile(path);
   }, []);
 
   if (error) {
@@ -258,7 +270,7 @@ export function DiffPage(props: DiffPageProps) {
             onToggleCollapse={handleToggleCollapse}
             reviewedFiles={reviewedFiles}
             onReviewedChange={handleReviewedChange}
-            onActiveFileChange={setActiveFile}
+            onActiveFileChange={handleActiveFileFromScroll}
             handle={diffViewRef}
             baseRef={refParam}
             scrollRef={(node) => {
