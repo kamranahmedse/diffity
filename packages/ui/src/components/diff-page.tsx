@@ -155,8 +155,13 @@ export function DiffPage(props: DiffPageProps) {
     },
     onToggleReviewed: () => {
       const path = getFilePathAtIndex(currentFileIdx.current);
-      if (path) {
-        handleReviewedChange(path, !reviewedFiles.has(path));
+      if (!path) {
+        return;
+      }
+      const wasReviewed = reviewedFiles.has(path);
+      handleReviewedChange(path, !wasReviewed);
+      if (!wasReviewed) {
+        navigateFile(1);
       }
     },
     onUnifiedView: () => setViewMode('unified'),
