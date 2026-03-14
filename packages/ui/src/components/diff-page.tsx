@@ -1,4 +1,5 @@
-import { useState, useCallback, useRef, useEffect } from 'react';
+import { useState, useCallback, useRef, useEffect, useMemo } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { useDiff } from '../hooks/use-diff.js';
 import { useInfo } from '../hooks/use-info.js';
 import { useTheme } from '../hooks/use-theme.js';
@@ -11,7 +12,7 @@ import { Sidebar } from './sidebar.js';
 import { ShortcutModal } from './shortcut-modal.js';
 import { CheckCircleIcon } from './icons/check-circle-icon.js';
 import { PageLoader } from './skeleton.js';
-import { type ViewMode, getFilePath, getAutoCollapsedPaths } from '../lib/diff-utils.js';
+import { type ViewMode, getFilePath, getAutoCollapsedPaths, isWorkingTreeRef } from '../lib/diff-utils.js';
 import { getFileBlocks, getHunkHeaders, scrollToElement } from '../lib/dom-utils.js';
 
 interface DiffPageProps {
@@ -179,6 +180,13 @@ export function DiffPage(props: DiffPageProps) {
     onEscape: () => setShowHelp(false),
   });
 
+  const queryClient = useQueryClient();
+  const canRevert = useMemo(() => isWorkingTreeRef(refParam), [refParam]);
+
+  const handleRevert = useCallback(() => {
+    queryClient.invalidateQueries({ queryKey: ['diff'] });
+  }, [queryClient]);
+
   const handleSidebarFileClick = useCallback((path: string) => {
     scrollTargetRef.current = path;
     setActiveFile(path);
@@ -273,6 +281,8 @@ export function DiffPage(props: DiffPageProps) {
             onActiveFileChange={handleActiveFileFromScroll}
             handle={diffViewRef}
             baseRef={refParam}
+            canRevert={canRevert}
+            onRevert={handleRevert}
             scrollRef={(node) => {
               mainRef.current = node;
             }}

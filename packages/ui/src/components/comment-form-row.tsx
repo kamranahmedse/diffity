@@ -11,10 +11,11 @@ interface CommentFormRowProps {
   onSubmit: (filePath: string, side: CommentSide, startLine: number, endLine: number, body: string, author: CommentAuthor) => void;
   onCancel: () => void;
   viewMode?: 'unified' | 'split';
+  originalCode?: string;
 }
 
 export function CommentFormRow(props: CommentFormRowProps) {
-  const { colSpan, filePath, side, startLine, endLine, currentAuthor, onSubmit, onCancel, viewMode } = props;
+  const { colSpan, filePath, side, startLine, endLine, currentAuthor, onSubmit, onCancel, viewMode, originalCode } = props;
 
   const lineLabel = startLine === endLine
     ? `${startLine}`
@@ -26,6 +27,7 @@ export function CommentFormRow(props: CommentFormRowProps) {
         onSubmit={(body) => onSubmit(filePath, side, startLine, endLine, body, currentAuthor)}
         onCancel={onCancel}
         lineLabel={`Add a comment on line${startLine !== endLine ? 's' : ''} ${lineLabel}`}
+        originalCode={originalCode}
       />
     </div>
   );

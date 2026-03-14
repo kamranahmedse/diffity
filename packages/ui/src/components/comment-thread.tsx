@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import type { CommentThread as CommentThreadType } from '../types/comment.js';
 import type { CommentAuthor, CommentSide } from '../types/comment.js';
+import { hasSuggestion, parseSuggestion } from '../lib/parse-suggestion.js';
 import { CommentForm } from './comment-form.js';
 import { CommentBubble } from './comment-bubble.js';
 import { TrashIcon } from './icons/trash-icon.js';
@@ -17,10 +18,13 @@ interface CommentThreadProps {
   colSpan: number;
   viewMode?: 'unified' | 'split';
   side?: CommentSide;
+  originalCode?: string;
+  canApply?: boolean;
+  onApplySuggestion?: (filePath: string, startLine: number, endLine: number, newContent: string) => void;
 }
 
 export function CommentThread(props: CommentThreadProps) {
-  const { thread, onReply, onResolve, onUnresolve, onDeleteComment, onDeleteThread, currentAuthor, colSpan, viewMode, side } = props;
+  const { thread, onReply, onResolve, onUnresolve, onDeleteComment, onDeleteThread, currentAuthor, colSpan, viewMode, side, originalCode, canApply, onApplySuggestion } = props;
   const [showReply, setShowReply] = useState(false);
   const [isCollapsed, setIsCollapsed] = useState(thread.isResolved);
 
@@ -99,13 +103,30 @@ export function CommentThread(props: CommentThreadProps) {
           </div>
         </div>
         <div>
-          {thread.comments.map((comment) => (
-            <CommentBubble
-              key={comment.id}
-              comment={comment}
-              onDelete={() => onDeleteComment(thread.id, comment.id)}
-            />
-          ))}
+          {thread.comments.map((comment) => {
+            const commentHasSuggestion = hasSuggestion(comment.body);
+            const handleApply = commentHasSuggestion && onApplySuggestion
+              ? () => {
+                  const parsed = parseSuggestion(comment.body);
+                  if (parsed) {
+                    onApplySuggestion(thread.filePath, thread.startLine, thread.endLine, parsed.suggestion);
+                    onResolve(thread.id);
+                  }
+                }
+              : undefined;
+
+            return (
+              <CommentBubble
+                key={comment.id}
+                comment={comment}
+                onDelete={() => onDeleteComment(thread.id, comment.id)}
+                thread={thread}
+                originalCode={commentHasSuggestion ? originalCode : undefined}
+                canApply={canApply}
+                onApply={handleApply}
+              />
+            );
+          })}
         </div>
         {showReply ? (
           <div className="px-3 py-2 border-t border-border">

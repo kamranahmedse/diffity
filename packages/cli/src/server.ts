@@ -16,6 +16,9 @@ import {
   getFileLineCount,
   getMergeBase,
   resolveRef,
+  revertFile,
+  revertHunk,
+  applySuggestion,
 } from '@diffity/git';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -193,6 +196,54 @@ export function startServer(options: ServerOptions): Promise<ServerResult> {
         sendJson(res, { ok: true });
       } catch (err) {
         sendError(res, 400, `Invalid JSON: ${err}`);
+      }
+      return;
+    }
+
+    if (pathname === '/api/revert-file' && req.method === 'POST') {
+      try {
+        const body = JSON.parse(await readBody(req));
+        const { filePath: path, isUntracked } = body;
+        if (!path || typeof path !== 'string') {
+          sendError(res, 400, 'Missing filePath');
+          return;
+        }
+        revertFile(path, !!isUntracked);
+        sendJson(res, { ok: true });
+      } catch (err) {
+        sendError(res, 500, `Failed to revert file: ${err}`);
+      }
+      return;
+    }
+
+    if (pathname === '/api/revert-hunk' && req.method === 'POST') {
+      try {
+        const body = JSON.parse(await readBody(req));
+        const { patch } = body;
+        if (!patch || typeof patch !== 'string') {
+          sendError(res, 400, 'Missing patch');
+          return;
+        }
+        revertHunk(patch);
+        sendJson(res, { ok: true });
+      } catch (err) {
+        sendError(res, 500, `Failed to revert hunk: ${err}`);
+      }
+      return;
+    }
+
+    if (pathname === '/api/apply-suggestion' && req.method === 'POST') {
+      try {
+        const body = JSON.parse(await readBody(req));
+        const { filePath: path, startLine, endLine, newContent } = body;
+        if (!path || typeof path !== 'string' || typeof startLine !== 'number' || typeof endLine !== 'number' || typeof newContent !== 'string') {
+          sendError(res, 400, 'Missing or invalid parameters');
+          return;
+        }
+        applySuggestion(path, startLine, endLine, newContent);
+        sendJson(res, { ok: true });
+      } catch (err) {
+        sendError(res, 500, `Failed to apply suggestion: ${err}`);
       }
       return;
     }

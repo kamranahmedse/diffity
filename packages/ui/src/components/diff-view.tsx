@@ -28,6 +28,8 @@ interface DiffViewProps {
   scrollRef?: React.RefCallback<HTMLElement>;
   handle?: React.Ref<DiffViewHandle>;
   baseRef?: string;
+  canRevert?: boolean;
+  onRevert?: () => void;
 }
 
 function estimateFileHeight(file: { hunks: { lines: { length: number } }[]; isBinary: boolean }, collapsed: boolean): number {
@@ -48,7 +50,7 @@ function estimateFileHeight(file: { hunks: { lines: { length: number } }[]; isBi
 }
 
 export function DiffView(props: DiffViewProps) {
-  const { diff, viewMode, theme, collapsedFiles, onToggleCollapse, reviewedFiles, onReviewedChange, onActiveFileChange, scrollRef, handle, baseRef } = props;
+  const { diff, viewMode, theme, collapsedFiles, onToggleCollapse, reviewedFiles, onReviewedChange, onActiveFileChange, scrollRef, handle, baseRef, canRevert, onRevert } = props;
   const { highlight } = useHighlighter();
   const scrollElementRef = useRef<HTMLElement>(null);
 
@@ -115,6 +117,8 @@ export function DiffView(props: DiffViewProps) {
                 onVisible={onActiveFileChange}
                 highlightLine={highlighters.get(filePath)}
                 baseRef={baseRef}
+                canRevert={canRevert}
+                onRevert={onRevert}
               />
             </div>
           );

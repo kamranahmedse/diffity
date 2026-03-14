@@ -1,4 +1,5 @@
-import { exec, execLarge, execLines } from './exec.js';
+import { readFileSync, writeFileSync } from 'node:fs';
+import { exec, execLarge, execLines, execWithStdin } from './exec.js';
 
 export function getDiff(args: string[] = []): string {
   const cmd = ['git', 'diff', ...args].join(' ');
@@ -56,6 +57,26 @@ export function resolveRef(ref: string, extraArgs: string[] = []): string {
       return getDiff([ref, ...extraArgs]);
     }
   }
+}
+
+export function revertFile(filePath: string, isUntracked: boolean): void {
+  if (isUntracked) {
+    exec(`rm "${filePath}"`);
+  } else {
+    exec(`git checkout HEAD -- "${filePath}"`);
+  }
+}
+
+export function revertHunk(patch: string): void {
+  execWithStdin('git apply --reverse --unidiff-zero', patch);
+}
+
+export function applySuggestion(filePath: string, startLine: number, endLine: number, newContent: string): void {
+  const content = readFileSync(filePath, 'utf-8');
+  const lines = content.split('\n');
+  const newLines = newContent === '' ? [] : newContent.split('\n');
+  lines.splice(startLine - 1, endLine - startLine + 1, ...newLines);
+  writeFileSync(filePath, lines.join('\n'));
 }
 
 export function getMergeBase(a: string, b: string): string {

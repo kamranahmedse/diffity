@@ -1,11 +1,15 @@
 import { useState, useMemo, useCallback } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
+import type { DiffHunk } from '@diffity/parser';
 import { useInView } from 'react-intersection-observer';
 import type { DiffFile, DiffLine as DiffLineType } from '@diffity/parser';
 import type { SyntaxToken } from '../lib/syntax-token.js';
 import type { HighlightedTokens } from '../hooks/use-highlighter.js';
 import type { CommentSide, LineSelection } from '../types/comment.js';
-import { type ViewMode, getFilePath } from '../lib/diff-utils.js';
+import { type ViewMode, getFilePath, buildHunkPatch, extractLinesFromDiff } from '../lib/diff-utils.js';
+import { revertFile as apiRevertFile, revertHunk as apiRevertHunk, applySuggestion as apiApplySuggestion } from '../lib/api.js';
+import { UndoIcon } from './icons/undo-icon.js';
+import { ConfirmDialog } from './ui/confirm-dialog.js';
 import { computeGaps, createContextLines, getExpandRange, type ExpandableGap } from '../lib/context-expansion.js';
 import { fileContentOptions } from '../queries/file.js';
 import { useComments } from '../context/comments-context.js';
@@ -44,6 +48,8 @@ interface FileBlockProps {
   onVisible?: (path: string) => void;
   highlightLine?: (code: string) => HighlightedTokens[] | null;
   baseRef?: string;
+  canRevert?: boolean;
+  onRevert?: () => void;
 }
 
 interface GapExpansion {
@@ -54,7 +60,7 @@ interface GapExpansion {
 }
 
 export function FileBlock(props: FileBlockProps) {
-  const { file, viewMode, collapsed, onToggleCollapse, reviewed, onReviewedChange, onVisible, highlightLine, baseRef } = props;
+  const { file, viewMode, collapsed, onToggleCollapse, reviewed, onReviewedChange, onVisible, highlightLine, baseRef, canRevert, onRevert } = props;
 
   const totalLines = getTotalLineCount(file);
   const isLargeDiff = totalLines >= LARGE_DIFF_LINE_THRESHOLD;
@@ -72,6 +78,32 @@ export function FileBlock(props: FileBlockProps) {
   const fileLineCount = file.oldFileLineCount ?? null;
 
   const { copied: pathCopied, copy: copyPath } = useCopy();
+
+  const [confirmRevertFile, setConfirmRevertFile] = useState(false);
+  const [confirmRevertHunk, setConfirmRevertHunk] = useState<DiffHunk | null>(null);
+
+  const handleRevertFile = useCallback(async () => {
+    setConfirmRevertFile(false);
+    const isUntracked = file.status === 'added' && file.oldPath === '/dev/null';
+    await apiRevertFile(filePath, isUntracked);
+    onRevert?.();
+  }, [file, filePath, onRevert]);
+
+  const handleRevertHunk = useCallback(async (hunk: DiffHunk) => {
+    setConfirmRevertHunk(null);
+    const patch = buildHunkPatch(file, hunk);
+    await apiRevertHunk(patch);
+    onRevert?.();
+  }, [file, onRevert]);
+
+  const getOriginalCode = useCallback((side: CommentSide, startLine: number, endLine: number) => {
+    return extractLinesFromDiff(file.hunks, side, startLine, endLine);
+  }, [file.hunks]);
+
+  const handleApplySuggestion = useCallback(async (path: string, startLine: number, endLine: number, newContent: string) => {
+    await apiApplySuggestion(path, startLine, endLine, newContent);
+    onRevert?.();
+  }, [onRevert]);
 
   const {
     getThreadsForFile, addThread, addReply, resolveThread, unresolveThread, deleteComment, deleteThread,
@@ -295,6 +327,16 @@ export function FileBlock(props: FileBlockProps) {
         {file.status !== 'modified' && <StatusBadge status={file.status} />}
         {file.isBinary && <Badge className="bg-bg-tertiary text-text-muted">Binary</Badge>}
         <div className="ml-auto flex items-center gap-3 shrink-0">
+          {canRevert && (
+            <button
+              onClick={(e) => { e.stopPropagation(); setConfirmRevertFile(true); }}
+              className="flex items-center gap-1 text-xs text-text-muted hover:text-deleted transition-colors cursor-pointer"
+              title="Undo all changes in this file"
+            >
+              <UndoIcon className="w-3 h-3" />
+              Undo
+            </button>
+          )}
           {fileThreads.length > 0 && (
             <span className="text-xs text-text-muted flex items-center gap-1">
               <CommentIcon className="w-3.5 h-3.5" />
@@ -394,6 +436,7 @@ export function FileBlock(props: FileBlockProps) {
                     onDeleteThread={deleteThread}
                     onCancelPending={handleCancelPending}
                     filePath={filePath}
+                    onRevertHunk={canRevert ? (h: DiffHunk) => setConfirmRevertHunk(h) : undefined}
                   />
                 );
               })}
@@ -429,6 +472,22 @@ export function FileBlock(props: FileBlockProps) {
             </table>
           )}
         </div>
+      )}
+      {confirmRevertFile && (
+        <ConfirmDialog
+          title="Undo file changes"
+          message={`This will discard all changes to "${filePath}". This cannot be undone.`}
+          onConfirm={handleRevertFile}
+          onCancel={() => setConfirmRevertFile(false)}
+        />
+      )}
+      {confirmRevertHunk && (
+        <ConfirmDialog
+          title="Undo change"
+          message="This will undo the selected change. This cannot be undone."
+          onConfirm={() => handleRevertHunk(confirmRevertHunk)}
+          onCancel={() => setConfirmRevertHunk(null)}
+        />
       )}
     </div>
   );

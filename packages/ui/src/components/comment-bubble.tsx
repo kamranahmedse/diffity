@@ -1,9 +1,15 @@
-import type { Comment } from '../types/comment.js';
+import type { Comment, CommentThread as CommentThreadType } from '../types/comment.js';
+import { parseSuggestion } from '../lib/parse-suggestion.js';
 import { TrashIcon } from './icons/trash-icon.js';
+import { SuggestionDiff } from './suggestion-diff.js';
 
 interface CommentBubbleProps {
   comment: Comment;
   onDelete: () => void;
+  thread?: CommentThreadType;
+  originalCode?: string;
+  canApply?: boolean;
+  onApply?: () => void;
 }
 
 function formatRelativeTime(dateStr: string): string {
@@ -50,7 +56,8 @@ function AuthorAvatar(props: { name: string; avatarUrl?: string; type: 'user' | 
 }
 
 export function CommentBubble(props: CommentBubbleProps) {
-  const { comment, onDelete } = props;
+  const { comment, onDelete, thread, originalCode, canApply, onApply } = props;
+  const parsed = parseSuggestion(comment.body);
 
   return (
     <div className="px-3 py-2 border-b border-border last:border-b-0 group">
@@ -69,7 +76,25 @@ export function CommentBubble(props: CommentBubbleProps) {
           <TrashIcon className="w-3.5 h-3.5" />
         </button>
       </div>
-      <div className="text-sm text-text whitespace-pre-wrap pl-7">{comment.body}</div>
+      <div className="text-sm text-text pl-7">
+        {parsed ? (
+          <>
+            {parsed.before && <p className="whitespace-pre-wrap mb-1">{parsed.before}</p>}
+            {thread && originalCode !== undefined && (
+              <SuggestionDiff
+                originalCode={originalCode}
+                suggestion={parsed.suggestion}
+                canApply={canApply}
+                onApply={onApply}
+                thread={thread}
+              />
+            )}
+            {parsed.after && <p className="whitespace-pre-wrap mt-1">{parsed.after}</p>}
+          </>
+        ) : (
+          <span className="whitespace-pre-wrap">{comment.body}</span>
+        )}
+      </div>
     </div>
   );
 }

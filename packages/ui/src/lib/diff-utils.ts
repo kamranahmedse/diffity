@@ -1,6 +1,13 @@
-import type { DiffFile } from '@diffity/parser';
+import type { DiffFile, DiffHunk } from '@diffity/parser';
+import type { CommentSide } from '../types/comment.js';
 
 export type ViewMode = 'unified' | 'split';
+
+const WORKING_TREE_REFS = new Set(['work', 'staged', 'unstaged', 'working', 'untracked']);
+
+export function isWorkingTreeRef(ref?: string): boolean {
+  return !!ref && WORKING_TREE_REFS.has(ref);
+}
 
 export function getFilePath(file: DiffFile): string {
   if (file.status === 'deleted') {
@@ -107,6 +114,45 @@ export function getAutoCollapsedPaths(files: DiffFile[]): Set<string> {
     }
   }
   return paths;
+}
+
+export function buildHunkPatch(file: DiffFile, hunk: DiffHunk): string {
+  const oldPath = file.status === 'added' ? '/dev/null' : `a/${file.oldPath}`;
+  const newPath = file.status === 'deleted' ? '/dev/null' : `b/${file.newPath}`;
+  const lines: string[] = [
+    `--- ${oldPath}`,
+    `+++ ${newPath}`,
+    hunk.header,
+  ];
+  for (const line of hunk.lines) {
+    const prefix = line.type === 'add' ? '+' : line.type === 'delete' ? '-' : ' ';
+    lines.push(`${prefix}${line.content}`);
+    if (line.noNewline) {
+      lines.push('\\ No newline at end of file');
+    }
+  }
+  return lines.join('\n') + '\n';
+}
+
+export function extractLinesFromDiff(
+  hunks: DiffHunk[],
+  side: CommentSide,
+  startLine: number,
+  endLine: number,
+): string {
+  const result: string[] = [];
+  for (const hunk of hunks) {
+    for (const line of hunk.lines) {
+      const lineNum = side === 'old' ? line.oldLineNumber : line.newLineNumber;
+      if (lineNum === null || lineNum < startLine || lineNum > endLine) continue;
+      if (side === 'old' && (line.type === 'delete' || line.type === 'context')) {
+        result.push(line.content);
+      } else if (side === 'new' && (line.type === 'add' || line.type === 'context')) {
+        result.push(line.content);
+      }
+    }
+  }
+  return result.join('\n');
 }
 
 export function getStatusColor(status: string): string {
