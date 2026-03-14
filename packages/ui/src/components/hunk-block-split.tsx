@@ -76,7 +76,7 @@ function getCellBg(line: DiffLineType | null): string {
 
 function renderCellContent(line: DiffLineType, syntaxTokens?: SyntaxToken[]) {
   if (line.wordDiff && line.wordDiff.length > 0) {
-    return <WordDiff line={line} />;
+    return <WordDiff line={line} syntaxTokens={syntaxTokens} />;
   }
 
   if (syntaxTokens && syntaxTokens.length > 0) {
@@ -94,11 +94,7 @@ function renderCellContent(line: DiffLineType, syntaxTokens?: SyntaxToken[]) {
   return <span>{line.content || '\n'}</span>;
 }
 
-function getSyntaxKey(line: DiffLineType, side: 'left' | 'right'): string {
-  if (line.type === 'context') {
-    const num = side === 'left' ? line.oldLineNumber : line.newLineNumber;
-    return `context-${num}`;
-  }
+function getSyntaxKey(line: DiffLineType): string {
   const num = line.type === 'delete' ? line.oldLineNumber : line.newLineNumber;
   return `${line.type}-${num}`;
 }
@@ -110,20 +106,20 @@ function SplitCell(props: { line: DiffLineType | null; side: 'left' | 'right'; s
     return (
       <>
         <LineNumberCell lineNumber={null} className="bg-bg-secondary" />
-        <td className="px-3 whitespace-pre overflow-hidden border-r border-border-muted align-top bg-bg-secondary"></td>
+        <td className="px-3 whitespace-pre border-r border-border-muted align-top bg-bg-secondary"></td>
       </>
     );
   }
 
   const bgClass = getCellBg(line);
   const lineNum = side === 'left' ? line.oldLineNumber : line.newLineNumber;
-  const syntaxKey = getSyntaxKey(line, side);
+  const syntaxKey = getSyntaxKey(line);
   const tokens = syntaxMap?.get(syntaxKey);
 
   return (
     <>
       <LineNumberCell lineNumber={lineNum} className={bgClass} />
-      <td className={cn('px-3 whitespace-pre overflow-hidden border-r border-border-muted align-top', bgClass)}>
+      <td className={cn('px-3 whitespace-pre-wrap break-all border-r border-border-muted align-top', bgClass)}>
         <span className="inline">{renderCellContent(line, tokens)}</span>
       </td>
     </>
@@ -140,7 +136,7 @@ export function HunkBlockSplit(props: HunkBlockSplitProps) {
       {topExpansionRows}
       {bottomExpansionRows}
       {rows.map((row, i) => (
-        <tr key={i} className="font-mono text-sm leading-5">
+        <tr key={i} className="font-mono text-sm leading-6">
           <SplitCell line={row.left} side="left" syntaxMap={syntaxMap} />
           <SplitCell line={row.right} side="right" syntaxMap={syntaxMap} />
         </tr>

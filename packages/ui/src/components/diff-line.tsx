@@ -16,7 +16,7 @@ interface DiffLineProps {
 
 function renderContent(line: DiffLineType, syntaxTokens?: SyntaxToken[]) {
   if (line.wordDiff && line.wordDiff.length > 0) {
-    return <WordDiff line={line} />;
+    return <WordDiff line={line} syntaxTokens={syntaxTokens} />;
   }
 
   if (syntaxTokens && syntaxTokens.length > 0) {
@@ -60,13 +60,13 @@ export function DiffLine(props: DiffLineProps) {
   const { line, syntaxTokens } = props;
 
   return (
-    <tr className={cn('font-mono text-sm leading-5 hover:brightness-[0.97]', getLineBg(line.type))}>
+    <tr className={cn('font-mono text-sm leading-6 hover:brightness-[0.97]', getLineBg(line.type))}>
       <LineNumberCell lineNumber={line.oldLineNumber} className="border-r border-border-muted hover:text-accent" />
       <LineNumberCell lineNumber={line.newLineNumber} className="border-r border-border-muted hover:text-accent" />
       <td className={cn('w-5 min-w-5 px-1 text-center select-none align-top', getPrefixColor(line.type))}>
         {getPrefix(line.type)}
       </td>
-      <td className="px-3 whitespace-pre overflow-x-auto break-all">
+      <td className="px-3 whitespace-pre-wrap break-all">
         <span className="inline">{renderContent(line, syntaxTokens)}</span>
       </td>
     </tr>

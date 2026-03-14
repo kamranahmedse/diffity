@@ -85,9 +85,6 @@ export function FileBlock(props: FileBlockProps) {
 
     for (const hunk of file.hunks) {
       for (const line of hunk.lines) {
-        if (line.wordDiff && line.wordDiff.length > 0) {
-          continue;
-        }
         const highlighted = highlightLine(line.content);
         if (highlighted && highlighted.length > 0) {
           const num = line.type === 'delete' ? line.oldLineNumber : line.newLineNumber;
@@ -299,7 +296,7 @@ export function FileBlock(props: FileBlockProps) {
         </div>
       </div>
       {!collapsed && (
-        <div className="overflow-x-auto">
+        <div>
           {file.isBinary ? (
             <div className="p-4 text-center text-text-muted italic">Binary file not shown</div>
           ) : file.hunks.length === 0 ? (
@@ -435,13 +432,13 @@ function ContextRow(props: { line: DiffLineType; viewMode: ViewMode; highlightLi
 
   if (viewMode === 'split') {
     return (
-      <tr className="font-mono text-sm leading-5 bg-diff-expanded-bg">
+      <tr className="font-mono text-sm leading-6 bg-diff-expanded-bg">
         <LineNumberCell lineNumber={line.oldLineNumber} className="border-r border-border-muted bg-diff-expanded-gutter" />
-        <td className="px-3 whitespace-pre overflow-hidden border-r border-border-muted align-top">
+        <td className="px-3 whitespace-pre-wrap break-all border-r border-border-muted align-top">
           <span className="inline">{renderedContent}</span>
         </td>
         <LineNumberCell lineNumber={line.newLineNumber} className="border-r border-border-muted bg-diff-expanded-gutter" />
-        <td className="px-3 whitespace-pre overflow-hidden border-r border-border-muted align-top">
+        <td className="px-3 whitespace-pre-wrap break-all border-r border-border-muted align-top">
           <span className="inline">{renderedContent}</span>
         </td>
       </tr>
@@ -449,11 +446,11 @@ function ContextRow(props: { line: DiffLineType; viewMode: ViewMode; highlightLi
   }
 
   return (
-    <tr className="font-mono text-sm leading-5 bg-diff-expanded-bg">
+    <tr className="font-mono text-sm leading-6 bg-diff-expanded-bg">
       <LineNumberCell lineNumber={line.oldLineNumber} className="border-r border-border-muted bg-diff-expanded-gutter" />
       <LineNumberCell lineNumber={line.newLineNumber} className="border-r border-border-muted bg-diff-expanded-gutter" />
       <td className="w-5 min-w-5 px-1 text-center select-none align-top text-text-muted"> </td>
-      <td className="px-3 whitespace-pre overflow-x-auto break-all">
+      <td className="px-3 whitespace-pre-wrap break-all">
         <span className="inline">{renderedContent}</span>
       </td>
     </tr>
