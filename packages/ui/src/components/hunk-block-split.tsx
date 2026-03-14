@@ -105,8 +105,8 @@ function SplitCell(props: { line: DiffLineType | null; side: 'left' | 'right'; s
   if (!line) {
     return (
       <>
-        <LineNumberCell lineNumber={null} className="bg-bg-secondary" />
-        <td className="px-3 whitespace-pre border-r border-border-muted align-top bg-bg-secondary"></td>
+        <LineNumberCell lineNumber={null} className="diff-empty-cell" />
+        <td className="px-3 whitespace-pre border-r border-border-muted align-top diff-empty-cell"></td>
       </>
     );
   }
