@@ -28,7 +28,7 @@ export function DiffPage(props: DiffPageProps) {
   const [showHelp, setShowHelp] = useState(false);
   const { theme, toggleTheme } = useTheme();
   const { data: diff, loading: diffLoading, error } = useDiff(hideWhitespace, refParam);
-  const { data: info, loading: infoLoading } = useInfo();
+  const { data: info, loading: infoLoading } = useInfo(refParam);
   const [activeFile, setActiveFile] = useState<string | null>(null);
   const [reviewedFiles, setReviewedFiles] = useState<Set<string>>(new Set());
   const [collapsedFiles, setCollapsedFiles] = useState<Set<string>>(new Set());

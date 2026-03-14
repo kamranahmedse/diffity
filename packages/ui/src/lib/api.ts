@@ -46,8 +46,14 @@ export async function fetchDiff(hideWhitespace: boolean, ref?: string): Promise<
   return res.json();
 }
 
-export async function fetchRepoInfo(): Promise<RepoInfo> {
-  const res = await fetch('/api/info');
+export async function fetchRepoInfo(ref?: string): Promise<RepoInfo> {
+  const params = new URLSearchParams();
+  if (ref) {
+    params.set('ref', ref);
+  }
+  const query = params.toString();
+  const url = query ? `/api/info?${query}` : '/api/info';
+  const res = await fetch(url);
   if (!res.ok) {
     throw new Error(`HTTP ${res.status}`);
   }

@@ -59,6 +59,26 @@ function serveStatic(res: ServerResponse, filePath: string) {
   res.end(content);
 }
 
+function descriptionForRef(ref: string): string {
+  switch (ref) {
+    case 'staged':
+      return 'Staged changes';
+    case 'unstaged':
+      return 'Unstaged changes';
+    case 'working':
+      return 'Working tree changes';
+    case 'untracked':
+      return 'Untracked files';
+    case 'all':
+      return 'All changes';
+    default:
+      if (ref.includes('..')) {
+        return ref;
+      }
+      return `Changes from ${ref}`;
+  }
+}
+
 interface ServerResult {
   port: number;
   close: () => void;
@@ -208,10 +228,15 @@ export function startServer(options: ServerOptions): Promise<ServerResult> {
     }
 
     if (pathname === '/api/info') {
+      const ref = url.searchParams.get('ref');
       const info = getRepoInfo();
+      let refDescription = description || diffArgs.join(' ') || 'Unstaged changes';
+      if (ref) {
+        refDescription = descriptionForRef(ref);
+      }
       sendJson(res, {
         ...info,
-        description: description || diffArgs.join(' ') || 'unstaged changes',
+        description: refDescription,
         review: review || null,
       });
       return;

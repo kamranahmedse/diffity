@@ -41,6 +41,25 @@ interface HunkWithGapProps {
   filePath?: string;
 }
 
+function buildExpansionSyntaxMap(lines: DiffLineType[], highlightLine?: (code: string) => HighlightedTokens[] | null): Map<string, SyntaxToken[]> {
+  const map = new Map<string, SyntaxToken[]>();
+  if (!highlightLine) {
+    return map;
+  }
+  for (const line of lines) {
+    if (!line.content) {
+      continue;
+    }
+    const highlighted = highlightLine(line.content);
+    if (!highlighted || highlighted.length === 0) {
+      continue;
+    }
+    const key = `${line.type}-${line.type === 'delete' ? line.oldLineNumber : line.newLineNumber}`;
+    map.set(key, highlighted[0].tokens);
+  }
+  return map;
+}
+
 export function HunkWithGap(props: HunkWithGapProps) {
   const {
     hunk, viewMode, syntaxMap, expandControls, topExpansionLines, gapExpansion, gapId, highlightLine,
@@ -52,16 +71,13 @@ export function HunkWithGap(props: HunkWithGapProps) {
 
   const HunkComponent = viewMode === 'split' ? HunkBlockSplit : HunkBlock;
 
-  const topExpansionRows = topExpansionLines && topExpansionLines.length > 0
-    ? topExpansionLines.map((line) => (
-        <ContextRow key={`top-${line.oldLineNumber}`} line={line} viewMode={viewMode} highlightLine={highlightLine} />
-      ))
-    : undefined;
-
-  const gapBottomRows = gapExpansion && gapExpansion.linesFromBottom.length > 0
-    ? gapExpansion.linesFromBottom.map((line) => (
-        <ContextRow key={`${gapId}-bot-${line.oldLineNumber}`} line={line} viewMode={viewMode} highlightLine={highlightLine} />
-      ))
+  const allExpansionLines = [
+    ...(topExpansionLines || []),
+    ...(gapExpansion?.linesFromTop || []),
+    ...(gapExpansion?.linesFromBottom || []),
+  ];
+  const expansionSyntaxMap = allExpansionLines.length > 0
+    ? buildExpansionSyntaxMap(allExpansionLines, highlightLine)
     : undefined;
 
   return (
@@ -69,7 +85,8 @@ export function HunkWithGap(props: HunkWithGapProps) {
       {gapExpansion && gapExpansion.linesFromTop.length > 0 && (
         <tbody>
           {gapExpansion.linesFromTop.map((line) => (
-            <ContextRow key={`${gapId}-top-${line.oldLineNumber}`} line={line} viewMode={viewMode} highlightLine={highlightLine} />
+            <ContextRow key={`${gapId}-top-${line.oldLineNumber}`} line={line} viewMode={viewMode} highlightLine={highlightLine}
+              onLineMouseDown={onLineMouseDown} onLineMouseEnter={onLineMouseEnter} onCommentClick={onCommentClick} />
           ))}
         </tbody>
       )}
@@ -77,8 +94,9 @@ export function HunkWithGap(props: HunkWithGapProps) {
         hunk={hunk}
         syntaxMap={syntaxMap}
         expandControls={expandControls}
-        topExpansionRows={topExpansionRows}
-        bottomExpansionRows={gapBottomRows}
+        topExpansionLines={topExpansionLines && topExpansionLines.length > 0 ? topExpansionLines : undefined}
+        bottomExpansionLines={gapExpansion && gapExpansion.linesFromBottom.length > 0 ? gapExpansion.linesFromBottom : undefined}
+        expansionSyntaxMap={expansionSyntaxMap}
         threads={threads}
         pendingSelection={pendingSelection}
         currentAuthor={currentAuthor}

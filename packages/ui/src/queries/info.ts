@@ -1,9 +1,9 @@
 import { queryOptions } from '@tanstack/react-query';
 import { fetchRepoInfo } from '../lib/api.js';
 
-export function repoInfoOptions() {
+export function repoInfoOptions(ref?: string) {
   return queryOptions({
-    queryKey: ['repo-info'],
-    queryFn: fetchRepoInfo,
+    queryKey: ['repo-info', ref],
+    queryFn: () => fetchRepoInfo(ref),
   });
 }

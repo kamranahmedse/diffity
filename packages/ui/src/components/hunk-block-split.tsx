@@ -14,8 +14,9 @@ interface HunkBlockSplitProps {
   hunk: DiffHunk;
   syntaxMap?: Map<string, SyntaxToken[]>;
   expandControls?: ExpandControls;
-  topExpansionRows?: React.ReactNode[];
-  bottomExpansionRows?: React.ReactNode[];
+  topExpansionLines?: DiffLineType[];
+  bottomExpansionLines?: DiffLineType[];
+  expansionSyntaxMap?: Map<string, SyntaxToken[]>;
   threads?: CommentThreadType[];
   pendingSelection?: LineSelection | null;
   currentAuthor?: CommentAuthor;
@@ -102,12 +103,13 @@ function SplitCell(props: {
   line: DiffLineType | null;
   side: 'left' | 'right';
   syntaxMap?: Map<string, SyntaxToken[]>;
+  expanded?: boolean;
   isSelected?: boolean;
   onMouseDown?: () => void;
   onMouseEnter?: () => void;
   onCommentClick?: () => void;
 }) {
-  const { line, side, syntaxMap, isSelected, onMouseDown, onMouseEnter, onCommentClick } = props;
+  const { line, side, syntaxMap, expanded, isSelected, onMouseDown, onMouseEnter, onCommentClick } = props;
   const [contentHovered, setContentHovered] = useState(false);
 
   if (!line) {
@@ -119,7 +121,8 @@ function SplitCell(props: {
     );
   }
 
-  const bgClass = getCellBg(line);
+  const bgClass = expanded ? 'bg-diff-expanded-gutter' : getCellBg(line);
+  const contentBgClass = expanded ? 'bg-diff-expanded-bg' : getCellBg(line);
   const lineNum = side === 'left' ? line.oldLineNumber : line.newLineNumber;
   const syntaxKey = getSyntaxKey(line);
   const tokens = syntaxMap?.get(syntaxKey);
@@ -137,7 +140,7 @@ function SplitCell(props: {
         onCommentClick={onCommentClick}
       />
       <td
-        className={cn('px-3 whitespace-pre-wrap break-all border-r border-border-muted align-top', isSelected ? 'bg-diff-comment-bg' : bgClass)}
+        className={cn('px-3 whitespace-pre-wrap break-all border-r border-border-muted align-top', isSelected ? 'bg-diff-comment-bg' : contentBgClass)}
         onMouseEnter={() => setContentHovered(true)}
         onMouseLeave={() => setContentHovered(false)}
       >
@@ -147,65 +150,79 @@ function SplitCell(props: {
   );
 }
 
-export function HunkBlockSplit(props: HunkBlockSplitProps) {
-  const {
-    hunk, syntaxMap, expandControls, topExpansionRows, bottomExpansionRows,
-    threads, pendingSelection, currentAuthor, isLineSelected,
-    onLineMouseDown, onLineMouseEnter, onCommentClick,
-    onAddThread, onReply, onResolve, onUnresolve, onDeleteComment, onDeleteThread,
-    onCancelPending, filePath,
-  } = props;
-  const splitRows = buildSplitRows(hunk.lines);
-
-  const rows: React.ReactNode[] = [];
+function renderSplitRows(
+  lines: DiffLineType[],
+  expanded: boolean,
+  syntaxMap: Map<string, SyntaxToken[]> | undefined,
+  keyPrefix: string,
+  props: {
+    isLineSelected?: (line: number, side: CommentSide) => boolean;
+    onLineMouseDown?: (line: number, side: CommentSide) => void;
+    onLineMouseEnter?: (line: number, side: CommentSide) => void;
+    onCommentClick?: (line: number, side: CommentSide) => void;
+    threads?: CommentThreadType[];
+    pendingSelection?: LineSelection | null;
+    currentAuthor?: CommentAuthor;
+    onAddThread?: (filePath: string, side: CommentSide, startLine: number, endLine: number, body: string, author: CommentAuthor) => void;
+    onCancelPending?: () => void;
+    filePath?: string;
+    onReply?: (threadId: string, body: string, author: CommentAuthor) => void;
+    onResolve?: (threadId: string) => void;
+    onUnresolve?: (threadId: string) => void;
+    onDeleteComment?: (threadId: string, commentId: string) => void;
+    onDeleteThread?: (threadId: string) => void;
+  },
+): React.ReactNode[] {
+  const splitRows = buildSplitRows(lines);
+  const result: React.ReactNode[] = [];
 
   for (let i = 0; i < splitRows.length; i++) {
     const row = splitRows[i];
-
     const leftLine = row.left;
     const rightLine = row.right;
     const leftNum = leftLine?.oldLineNumber ?? null;
     const rightNum = rightLine?.newLineNumber ?? null;
 
-    rows.push(
-      <tr key={i} className="font-mono text-sm leading-6">
+    result.push(
+      <tr key={`${keyPrefix}-${i}`} className="font-mono text-sm leading-6">
         <SplitCell
           line={leftLine}
           side="left"
           syntaxMap={syntaxMap}
-          isSelected={leftNum !== null ? isLineSelected?.(leftNum, 'old') : false}
-          onMouseDown={leftNum !== null ? () => onLineMouseDown?.(leftNum, 'old') : undefined}
-          onMouseEnter={leftNum !== null ? () => onLineMouseEnter?.(leftNum, 'old') : undefined}
-          onCommentClick={leftNum !== null ? () => onCommentClick?.(leftNum, 'old') : undefined}
+          expanded={expanded}
+          isSelected={leftNum !== null ? props.isLineSelected?.(leftNum, 'old') : false}
+          onMouseDown={leftNum !== null ? () => props.onLineMouseDown?.(leftNum, 'old') : undefined}
+          onMouseEnter={leftNum !== null ? () => props.onLineMouseEnter?.(leftNum, 'old') : undefined}
+          onCommentClick={leftNum !== null ? () => props.onCommentClick?.(leftNum, 'old') : undefined}
         />
         <SplitCell
           line={rightLine}
           side="right"
           syntaxMap={syntaxMap}
-          isSelected={rightNum !== null ? isLineSelected?.(rightNum, 'new') : false}
-          onMouseDown={rightNum !== null ? () => onLineMouseDown?.(rightNum, 'new') : undefined}
-          onMouseEnter={rightNum !== null ? () => onLineMouseEnter?.(rightNum, 'new') : undefined}
-          onCommentClick={rightNum !== null ? () => onCommentClick?.(rightNum, 'new') : undefined}
+          expanded={expanded}
+          isSelected={rightNum !== null ? props.isLineSelected?.(rightNum, 'new') : false}
+          onMouseDown={rightNum !== null ? () => props.onLineMouseDown?.(rightNum, 'new') : undefined}
+          onMouseEnter={rightNum !== null ? () => props.onLineMouseEnter?.(rightNum, 'new') : undefined}
+          onCommentClick={rightNum !== null ? () => props.onCommentClick?.(rightNum, 'new') : undefined}
         />
       </tr>
     );
 
-    // Render threads/forms after the relevant line
     const threadRows: React.ReactNode[] = [];
 
-    if (leftNum !== null && threads) {
-      const leftThreads = threads.filter(t => t.endLine === leftNum && t.side === 'old');
+    if (leftNum !== null && props.threads) {
+      const leftThreads = props.threads.filter(t => t.endLine === leftNum && t.side === 'old');
       for (const thread of leftThreads) {
         threadRows.push(
           <CommentThread
             key={`thread-${thread.id}`}
             thread={thread}
-            onReply={onReply!}
-            onResolve={onResolve!}
-            onUnresolve={onUnresolve!}
-            onDeleteComment={onDeleteComment!}
-            onDeleteThread={onDeleteThread!}
-            currentAuthor={currentAuthor!}
+            onReply={props.onReply!}
+            onResolve={props.onResolve!}
+            onUnresolve={props.onUnresolve!}
+            onDeleteComment={props.onDeleteComment!}
+            onDeleteThread={props.onDeleteThread!}
+            currentAuthor={props.currentAuthor!}
             colSpan={2}
             viewMode="split"
             side="old"
@@ -214,19 +231,19 @@ export function HunkBlockSplit(props: HunkBlockSplitProps) {
       }
     }
 
-    if (rightNum !== null && threads) {
-      const rightThreads = threads.filter(t => t.endLine === rightNum && t.side === 'new');
+    if (rightNum !== null && props.threads) {
+      const rightThreads = props.threads.filter(t => t.endLine === rightNum && t.side === 'new');
       for (const thread of rightThreads) {
         threadRows.push(
           <CommentThread
             key={`thread-${thread.id}`}
             thread={thread}
-            onReply={onReply!}
-            onResolve={onResolve!}
-            onUnresolve={onUnresolve!}
-            onDeleteComment={onDeleteComment!}
-            onDeleteThread={onDeleteThread!}
-            currentAuthor={currentAuthor!}
+            onReply={props.onReply!}
+            onResolve={props.onResolve!}
+            onUnresolve={props.onUnresolve!}
+            onDeleteComment={props.onDeleteComment!}
+            onDeleteThread={props.onDeleteThread!}
+            currentAuthor={props.currentAuthor!}
             colSpan={2}
             viewMode="split"
             side="new"
@@ -235,21 +252,21 @@ export function HunkBlockSplit(props: HunkBlockSplitProps) {
       }
     }
 
-    if (pendingSelection && filePath && currentAuthor && onAddThread && onCancelPending) {
-      const showForLeft = leftNum !== null && pendingSelection.endLine === leftNum && pendingSelection.side === 'old';
-      const showForRight = rightNum !== null && pendingSelection.endLine === rightNum && pendingSelection.side === 'new';
+    if (props.pendingSelection && props.filePath && props.currentAuthor && props.onAddThread && props.onCancelPending) {
+      const showForLeft = leftNum !== null && props.pendingSelection.endLine === leftNum && props.pendingSelection.side === 'old';
+      const showForRight = rightNum !== null && props.pendingSelection.endLine === rightNum && props.pendingSelection.side === 'new';
       if (showForLeft || showForRight) {
         threadRows.push(
           <CommentFormRow
             key="pending-comment"
             colSpan={2}
-            filePath={filePath}
-            side={pendingSelection.side}
-            startLine={pendingSelection.startLine}
-            endLine={pendingSelection.endLine}
-            currentAuthor={currentAuthor}
-            onSubmit={onAddThread}
-            onCancel={onCancelPending}
+            filePath={props.filePath}
+            side={props.pendingSelection.side}
+            startLine={props.pendingSelection.startLine}
+            endLine={props.pendingSelection.endLine}
+            currentAuthor={props.currentAuthor}
+            onSubmit={props.onAddThread}
+            onCancel={props.onCancelPending}
             viewMode="split"
           />
         );
@@ -257,15 +274,44 @@ export function HunkBlockSplit(props: HunkBlockSplitProps) {
     }
 
     if (threadRows.length > 0) {
-      rows.push(...threadRows);
+      result.push(...threadRows);
     }
   }
+
+  return result;
+}
+
+export function HunkBlockSplit(props: HunkBlockSplitProps) {
+  const {
+    hunk, syntaxMap, expandControls, topExpansionLines, bottomExpansionLines, expansionSyntaxMap,
+    threads, pendingSelection, currentAuthor, isLineSelected,
+    onLineMouseDown, onLineMouseEnter, onCommentClick,
+    onAddThread, onReply, onResolve, onUnresolve, onDeleteComment, onDeleteThread,
+    onCancelPending, filePath,
+  } = props;
+
+  const commentProps = {
+    isLineSelected, onLineMouseDown, onLineMouseEnter, onCommentClick,
+    threads, pendingSelection, currentAuthor,
+    onAddThread, onReply, onResolve, onUnresolve, onDeleteComment, onDeleteThread,
+    onCancelPending, filePath,
+  };
+
+  const rows: React.ReactNode[] = [];
+
+  if (topExpansionLines && topExpansionLines.length > 0) {
+    rows.push(...renderSplitRows(topExpansionLines, true, expansionSyntaxMap, 'top-exp', commentProps));
+  }
+
+  if (bottomExpansionLines && bottomExpansionLines.length > 0) {
+    rows.push(...renderSplitRows(bottomExpansionLines, true, expansionSyntaxMap, 'bot-exp', commentProps));
+  }
+
+  rows.push(...renderSplitRows(hunk.lines, false, syntaxMap, 'hunk', commentProps));
 
   return (
     <tbody className={expandControls?.wasExpanded && expandControls.remainingLines <= 0 ? '' : 'border-t border-border-muted'}>
       <HunkHeader hunk={hunk} expandControls={expandControls} />
-      {topExpansionRows}
-      {bottomExpansionRows}
       {rows}
     </tbody>
   );

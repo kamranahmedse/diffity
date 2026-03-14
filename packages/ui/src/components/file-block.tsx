@@ -417,7 +417,8 @@ export function FileBlock(props: FileBlockProps) {
               {bottomGap && (
                 <tbody>
                   {expansions.get('bottom')?.linesFromTop.map((line) => (
-                    <ContextRow key={`bottom-top-${line.oldLineNumber}`} line={line} viewMode={viewMode} highlightLine={highlightLine} />
+                    <ContextRow key={`bottom-top-${line.oldLineNumber}`} line={line} viewMode={viewMode} highlightLine={highlightLine}
+                      onLineMouseDown={handleLineMouseDown} onLineMouseEnter={handleLineMouseEnter} onCommentClick={handleCommentClick} />
                   ))}
                   <ExpandRow
                     position="bottom"
@@ -426,7 +427,8 @@ export function FileBlock(props: FileBlockProps) {
                     onExpand={(dir) => handleExpand(bottomGap, dir)}
                   />
                   {expansions.get('bottom')?.linesFromBottom.map((line) => (
-                    <ContextRow key={`bottom-bot-${line.oldLineNumber}`} line={line} viewMode={viewMode} highlightLine={highlightLine} />
+                    <ContextRow key={`bottom-bot-${line.oldLineNumber}`} line={line} viewMode={viewMode} highlightLine={highlightLine}
+                      onLineMouseDown={handleLineMouseDown} onLineMouseEnter={handleLineMouseEnter} onCommentClick={handleCommentClick} />
                   ))}
                 </tbody>
               )}

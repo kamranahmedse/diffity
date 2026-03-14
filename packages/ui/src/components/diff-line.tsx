@@ -11,6 +11,7 @@ export type { SyntaxToken };
 interface DiffLineProps {
   line: DiffLineType;
   syntaxTokens?: SyntaxToken[];
+  expanded?: boolean;
   isSelected?: boolean;
   onLineMouseDown?: (line: number, side: CommentSide) => void;
   onLineMouseEnter?: (line: number, side: CommentSide) => void;
@@ -40,16 +41,17 @@ function getPrefixColor(type: string): string {
 }
 
 export function DiffLine(props: DiffLineProps) {
-  const { line, syntaxTokens, isSelected, onLineMouseDown, onLineMouseEnter, onCommentClick } = props;
+  const { line, syntaxTokens, expanded, isSelected, onLineMouseDown, onLineMouseEnter, onCommentClick } = props;
 
   const side: CommentSide = line.type === 'delete' ? 'old' : 'new';
   const activeLine = side === 'old' ? line.oldLineNumber : line.newLineNumber;
+  const gutterBg = expanded ? 'bg-diff-expanded-gutter' : '';
 
   return (
-    <tr className={cn('group/row font-mono text-sm leading-6 hover:brightness-[0.97]', getLineBg(line.type))}>
+    <tr className={cn('group/row font-mono text-sm leading-6 hover:brightness-[0.97]', expanded ? 'bg-diff-expanded-bg' : getLineBg(line.type))}>
       <CommentLineNumber
         lineNumber={line.oldLineNumber}
-        className="border-r border-border-muted"
+        className={cn('border-r border-border-muted', gutterBg)}
         showCommentButton={line.type === 'delete' && line.oldLineNumber !== null}
         isSelected={isSelected && side === 'old'}
         onMouseDown={line.oldLineNumber !== null ? () => onLineMouseDown?.(line.oldLineNumber!, line.type === 'delete' ? 'old' : 'new') : undefined}
@@ -58,7 +60,7 @@ export function DiffLine(props: DiffLineProps) {
       />
       <CommentLineNumber
         lineNumber={line.newLineNumber}
-        className="border-r border-border-muted"
+        className={cn('border-r border-border-muted', gutterBg)}
         showCommentButton={line.type !== 'delete' && line.newLineNumber !== null}
         isSelected={isSelected && side === 'new'}
         onMouseDown={line.newLineNumber !== null ? () => onLineMouseDown?.(line.newLineNumber!, line.type === 'delete' ? 'old' : 'new') : undefined}
