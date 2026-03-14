@@ -9,6 +9,7 @@ import { DiffView } from './diff-view.js';
 import { Sidebar } from './sidebar.js';
 import { ShortcutModal } from './shortcut-modal.js';
 import { CheckCircleIcon } from './icons/check-circle-icon.js';
+import { PageLoader } from './skeleton.js';
 import { type ViewMode, getFilePath, getAutoCollapsedPaths } from '../lib/diff-utils.js';
 import { getFileBlocks, getHunkHeaders, scrollToElement } from '../lib/dom-utils.js';
 
@@ -25,8 +26,8 @@ export function DiffPage(props: DiffPageProps) {
   const [hideWhitespace, setHideWhitespace] = useState(false);
   const [showHelp, setShowHelp] = useState(false);
   const { theme, toggleTheme } = useTheme();
-  const { data: diff, loading, error } = useDiff(hideWhitespace, refParam);
-  const { data: info } = useInfo();
+  const { data: diff, loading: diffLoading, error } = useDiff(hideWhitespace, refParam);
+  const { data: info, loading: infoLoading } = useInfo();
   const [activeFile, setActiveFile] = useState<string | null>(null);
   const [reviewedFiles, setReviewedFiles] = useState<Set<string>>(new Set());
   const [collapsedFiles, setCollapsedFiles] = useState<Set<string>>(new Set());
@@ -189,6 +190,10 @@ export function DiffPage(props: DiffPageProps) {
     );
   }
 
+  if ((diffLoading || infoLoading) && !diff) {
+    return <PageLoader />;
+  }
+
   return (
     <div className="flex flex-col h-screen bg-bg text-text font-sans">
       <SummaryBar
@@ -227,21 +232,8 @@ export function DiffPage(props: DiffPageProps) {
               mainRef.current = node;
             }}
           />
-        ) : (
-          <main
-            ref={(node) => {
-              mainRef.current = node;
-            }}
-            className="flex-1 overflow-y-auto pb-12"
-          >
-            {loading && (
-              <div className="flex items-center justify-center p-12 text-text-muted text-lg">
-                Loading diff...
-              </div>
-            )}
-          </main>
-        )}
-        {diff && diff.files.length === 0 && !loading && (
+        ) : null}
+        {diff && diff.files.length === 0 && !diffLoading && (
           <div className="flex-1 flex flex-col items-center justify-center p-12 text-text-muted text-center gap-3 min-h-[400px]">
             <div className="text-added opacity-50 mb-2">
               <CheckCircleIcon />

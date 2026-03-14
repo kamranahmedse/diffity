@@ -4,6 +4,7 @@ import { useInfo } from '../hooks/use-info.js';
 import { OverviewFileList } from './overview-file-list.js';
 import { CommitList } from './commit-list.js';
 import { CheckCircleIcon } from './icons/check-circle-icon.js';
+import { PageLoader } from './skeleton.js';
 
 interface DashboardProps {
   onNavigate: (ref: string) => void;
@@ -11,9 +12,11 @@ interface DashboardProps {
 
 export function Dashboard(props: DashboardProps) {
   const { onNavigate } = props;
-  const { data: overview, loading, error } = useOverview();
-  const { data: commitsPage } = useCommits();
-  const { data: info } = useInfo();
+  const { data: overview, loading: overviewLoading, error } = useOverview();
+  const { data: commitsPage, loading: commitsLoading } = useCommits();
+  const { data: info, loading: infoLoading } = useInfo();
+
+  const anyLoading = overviewLoading || commitsLoading || infoLoading;
 
   if (error) {
     return (
@@ -26,14 +29,8 @@ export function Dashboard(props: DashboardProps) {
     );
   }
 
-  if (loading || !overview) {
-    return (
-      <div className="flex flex-col min-h-screen bg-bg text-text font-sans">
-        <div className="flex items-center justify-center p-12 text-text-muted text-lg">
-          Loading...
-        </div>
-      </div>
-    );
+  if (anyLoading || !overview) {
+    return <PageLoader />;
   }
 
   const isClean = overview.files.length === 0;
@@ -74,15 +71,11 @@ export function Dashboard(props: DashboardProps) {
             <div className="px-4 py-3 border-b border-border">
               <h3 className="font-medium text-text">Recent commits</h3>
             </div>
-            {commitsPage ? (
-              <CommitList
-                initialCommits={commitsPage.commits}
-                initialHasMore={commitsPage.hasMore}
-                onCommitClick={(hash) => onNavigate(hash)}
-              />
-            ) : (
-              <p className="text-sm text-text-muted px-4 py-3">Loading commits...</p>
-            )}
+            <CommitList
+              initialCommits={commitsPage?.commits ?? []}
+              initialHasMore={commitsPage?.hasMore ?? false}
+              onCommitClick={(hash) => onNavigate(hash)}
+            />
           </div>
         </div>
       </div>
