@@ -5,7 +5,7 @@ import { DiffPage } from './components/diff-page.js';
 
 export function App() {
   const { ref, navigate, goHome } = useSearchParams();
-  const { data: info } = useInfo();
+  const { data: info } = useInfo(ref ?? undefined);
 
   const isReview = !!info?.review;
 

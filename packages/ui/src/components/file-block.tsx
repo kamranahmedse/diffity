@@ -43,6 +43,7 @@ interface FileBlockProps {
   onReviewedChange: (path: string, reviewed: boolean) => void;
   onVisible?: (path: string) => void;
   highlightLine?: (code: string) => HighlightedTokens[] | null;
+  baseRef?: string;
 }
 
 interface GapExpansion {
@@ -53,7 +54,7 @@ interface GapExpansion {
 }
 
 export function FileBlock(props: FileBlockProps) {
-  const { file, viewMode, collapsed, onToggleCollapse, reviewed, onReviewedChange, onVisible, highlightLine } = props;
+  const { file, viewMode, collapsed, onToggleCollapse, reviewed, onReviewedChange, onVisible, highlightLine, baseRef } = props;
 
   const totalLines = getTotalLineCount(file);
   const isLargeDiff = totalLines >= LARGE_DIFF_LINE_THRESHOLD;
@@ -166,7 +167,7 @@ export function FileBlock(props: FileBlockProps) {
     setLoadingGap(gap.id);
 
     const lines = await queryClient.ensureQueryData(
-      fileContentOptions(fileContentPath, true)
+      fileContentOptions(fileContentPath, true, baseRef)
     );
     if (lines.length > 0 && fileLineCount === null) {
       setFileLineCount(lines.length);
@@ -224,7 +225,7 @@ export function FileBlock(props: FileBlockProps) {
         }
       });
     }
-  }, [fileContentPath, fileLineCount, queryClient]);
+  }, [fileContentPath, fileLineCount, queryClient, baseRef]);
 
   const getGapRemaining = useCallback((gap: ExpandableGap): { total: number; up: number; down: number } => {
     const expansion = expansions.get(gap.id);

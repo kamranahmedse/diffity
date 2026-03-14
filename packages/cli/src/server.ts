@@ -13,6 +13,7 @@ import {
   getStagedFiles,
   getUnstagedFiles,
   getRecentCommits,
+  getMergeBase,
   resolveRef,
 } from '@diffity/git';
 
@@ -77,6 +78,29 @@ function descriptionForRef(ref: string): string {
       }
       return `Changes from ${ref}`;
   }
+}
+
+function resolveBaseRef(ref: string): string {
+  if (['staged', 'working', 'all'].includes(ref)) {
+    return 'HEAD';
+  }
+  if (ref === 'unstaged' || ref === 'untracked') {
+    return 'HEAD';
+  }
+
+  const threeDotsIdx = ref.indexOf('...');
+  if (threeDotsIdx !== -1) {
+    const left = ref.slice(0, threeDotsIdx);
+    const right = ref.slice(threeDotsIdx + 3);
+    return getMergeBase(left, right);
+  }
+
+  const twoDotsIdx = ref.indexOf('..');
+  if (twoDotsIdx !== -1) {
+    return ref.slice(0, twoDotsIdx);
+  }
+
+  return ref;
 }
 
 interface ServerResult {
@@ -218,8 +242,9 @@ export function startServer(options: ServerOptions): Promise<ServerResult> {
     if (pathname.startsWith('/api/file/')) {
       const filePath = decodeURIComponent(pathname.slice('/api/file/'.length));
       const ref = url.searchParams.get('ref') || undefined;
+      const baseRef = ref ? resolveBaseRef(ref) : 'HEAD';
       try {
-        const content = getFileContent(filePath, ref);
+        const content = getFileContent(filePath, baseRef);
         sendJson(res, { path: filePath, content: content.split('\n') });
       } catch {
         sendError(res, 404, `File not found: ${filePath}`);

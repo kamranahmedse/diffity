@@ -260,6 +260,7 @@ export function DiffPage(props: DiffPageProps) {
             onReviewedChange={handleReviewedChange}
             onActiveFileChange={setActiveFile}
             handle={diffViewRef}
+            baseRef={refParam}
             scrollRef={(node) => {
               mainRef.current = node;
             }}

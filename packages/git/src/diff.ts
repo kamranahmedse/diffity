@@ -58,6 +58,10 @@ export function resolveRef(ref: string, extraArgs: string[] = []): string {
   }
 }
 
+export function getMergeBase(a: string, b: string): string {
+  return exec(`git merge-base ${a} ${b}`);
+}
+
 export function getFileContent(path: string, ref = 'HEAD'): string {
   return exec(`git show ${ref}:${path}`);
 }

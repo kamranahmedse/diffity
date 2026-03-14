@@ -96,8 +96,16 @@ export async function saveComments(threads: unknown[]): Promise<void> {
   });
 }
 
-export async function fetchFileContent(filePath: string): Promise<string[]> {
-  const res = await fetch(`/api/file/${encodeURIComponent(filePath)}`);
+export async function fetchFileContent(filePath: string, ref?: string): Promise<string[]> {
+  const params = new URLSearchParams();
+  if (ref) {
+    params.set('ref', ref);
+  }
+  const query = params.toString();
+  const url = query
+    ? `/api/file/${encodeURIComponent(filePath)}?${query}`
+    : `/api/file/${encodeURIComponent(filePath)}`;
+  const res = await fetch(url);
   if (!res.ok) {
     throw new Error(`HTTP ${res.status}`);
   }

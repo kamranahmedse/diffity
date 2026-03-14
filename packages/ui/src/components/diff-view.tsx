@@ -27,6 +27,7 @@ interface DiffViewProps {
   onActiveFileChange?: (path: string) => void;
   scrollRef?: React.RefCallback<HTMLElement>;
   handle?: React.Ref<DiffViewHandle>;
+  baseRef?: string;
 }
 
 function estimateFileHeight(file: { hunks: { lines: { length: number } }[]; isBinary: boolean }, collapsed: boolean): number {
@@ -47,7 +48,7 @@ function estimateFileHeight(file: { hunks: { lines: { length: number } }[]; isBi
 }
 
 export function DiffView(props: DiffViewProps) {
-  const { diff, viewMode, theme, collapsedFiles, onToggleCollapse, reviewedFiles, onReviewedChange, onActiveFileChange, scrollRef, handle } = props;
+  const { diff, viewMode, theme, collapsedFiles, onToggleCollapse, reviewedFiles, onReviewedChange, onActiveFileChange, scrollRef, handle, baseRef } = props;
   const { highlight } = useHighlighter();
   const scrollElementRef = useRef<HTMLElement>(null);
 
@@ -112,6 +113,7 @@ export function DiffView(props: DiffViewProps) {
                 onReviewedChange={onReviewedChange}
                 onVisible={onActiveFileChange}
                 highlightLine={highlighters.get(filePath)}
+                baseRef={baseRef}
               />
             </div>
           );
