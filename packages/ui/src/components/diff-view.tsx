@@ -1,9 +1,13 @@
-import { useMemo, useRef } from 'react';
+import { useMemo, useRef, useImperativeHandle } from 'react';
 import { useVirtualizer } from '@tanstack/react-virtual';
 import type { ParsedDiff } from '@diffity/parser';
 import { FileBlock, LARGE_DIFF_LINE_THRESHOLD } from './file-block.js';
 import { useHighlighter } from '../hooks/use-highlighter.js';
 import { type ViewMode, getFilePath } from '../lib/diff-utils.js';
+
+export interface DiffViewHandle {
+  scrollToFile: (path: string) => void;
+}
 
 const VIRTUALIZER_OVERSCAN = 3;
 const FILE_HEADER_HEIGHT = 56;
@@ -22,6 +26,7 @@ interface DiffViewProps {
   onReviewedChange: (path: string, reviewed: boolean) => void;
   onActiveFileChange?: (path: string) => void;
   scrollRef?: React.RefCallback<HTMLElement>;
+  handle?: React.Ref<DiffViewHandle>;
 }
 
 function estimateFileHeight(file: { hunks: { lines: { length: number } }[]; isBinary: boolean }, collapsed: boolean): number {
@@ -42,7 +47,7 @@ function estimateFileHeight(file: { hunks: { lines: { length: number } }[]; isBi
 }
 
 export function DiffView(props: DiffViewProps) {
-  const { diff, viewMode, theme, collapsedFiles, onToggleCollapse, reviewedFiles, onReviewedChange, onActiveFileChange, scrollRef } = props;
+  const { diff, viewMode, theme, collapsedFiles, onToggleCollapse, reviewedFiles, onReviewedChange, onActiveFileChange, scrollRef, handle } = props;
   const { highlight } = useHighlighter();
   const scrollElementRef = useRef<HTMLElement>(null);
 
@@ -61,6 +66,15 @@ export function DiffView(props: DiffViewProps) {
     estimateSize: (index) => estimateFileHeight(diff.files[index], collapsedFiles.has(getFilePath(diff.files[index]))),
     overscan: VIRTUALIZER_OVERSCAN,
   });
+
+  useImperativeHandle(handle, () => ({
+    scrollToFile: (path: string) => {
+      const index = diff.files.findIndex((f) => getFilePath(f) === path);
+      if (index >= 0) {
+        virtualizer.scrollToIndex(index, { align: 'start' });
+      }
+    },
+  }), [diff.files, virtualizer]);
 
   return (
     <main

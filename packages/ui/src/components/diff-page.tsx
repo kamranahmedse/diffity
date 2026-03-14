@@ -5,7 +5,7 @@ import { useTheme } from '../hooks/use-theme.js';
 import { useKeyboard } from '../hooks/use-keyboard.js';
 import { SummaryBar } from './summary-bar.js';
 import { Toolbar } from './toolbar.js';
-import { DiffView } from './diff-view.js';
+import { DiffView, type DiffViewHandle } from './diff-view.js';
 import { Sidebar } from './sidebar.js';
 import { ShortcutModal } from './shortcut-modal.js';
 import { CheckCircleIcon } from './icons/check-circle-icon.js';
@@ -32,6 +32,7 @@ export function DiffPage(props: DiffPageProps) {
   const [reviewedFiles, setReviewedFiles] = useState<Set<string>>(new Set());
   const [collapsedFiles, setCollapsedFiles] = useState<Set<string>>(new Set());
   const mainRef = useRef<HTMLElement | null>(null);
+  const diffViewRef = useRef<DiffViewHandle>(null);
   const currentFileIdx = useRef(0);
   const initializedDiffRef = useRef<typeof diff>(null);
 
@@ -173,10 +174,7 @@ export function DiffPage(props: DiffPageProps) {
 
   const handleSidebarFileClick = useCallback((path: string) => {
     setActiveFile(path);
-    const el = document.getElementById(`file-${encodeURIComponent(path)}`);
-    if (el) {
-      scrollToElement(el);
-    }
+    diffViewRef.current?.scrollToFile(path);
   }, []);
 
   if (error) {
@@ -228,6 +226,7 @@ export function DiffPage(props: DiffPageProps) {
             reviewedFiles={reviewedFiles}
             onReviewedChange={handleReviewedChange}
             onActiveFileChange={setActiveFile}
+            handle={diffViewRef}
             scrollRef={(node) => {
               mainRef.current = node;
             }}
