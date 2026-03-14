@@ -1,6 +1,6 @@
 import type { DiffHunk, DiffLine as DiffLineType } from '@diffity/parser';
 import type { SyntaxToken } from '../lib/syntax-token.js';
-import type { CommentThread as CommentThreadType, CommentAuthor, CommentSide, LineSelection } from '../types/comment.js';
+import type { CommentThread as CommentThreadType, CommentAuthor, CommentSide, LineSelection, LineRenderProps } from '../types/comment.js';
 import { DiffLine } from './diff-line.js';
 import { HunkHeader, type ExpandControls } from './hunk-header.js';
 import { CommentThread } from './comment-thread.js';
@@ -30,28 +30,12 @@ interface HunkBlockProps {
   filePath?: string;
 }
 
-function renderLineWithComments(
+export function renderLineWithComments(
   line: DiffLineType,
   index: number,
   expanded: boolean,
   syntaxMap: Map<string, SyntaxToken[]> | undefined,
-  props: {
-    isLineSelected?: (line: number, side: CommentSide) => boolean;
-    onLineMouseDown?: (line: number, side: CommentSide) => void;
-    onLineMouseEnter?: (line: number, side: CommentSide) => void;
-    onCommentClick?: (line: number, side: CommentSide) => void;
-    threads?: CommentThreadType[];
-    pendingSelection?: LineSelection | null;
-    currentAuthor?: CommentAuthor;
-    onAddThread?: (filePath: string, side: CommentSide, startLine: number, endLine: number, body: string, author: CommentAuthor) => void;
-    onCancelPending?: () => void;
-    filePath?: string;
-    onReply?: (threadId: string, body: string, author: CommentAuthor) => void;
-    onResolve?: (threadId: string) => void;
-    onUnresolve?: (threadId: string) => void;
-    onDeleteComment?: (threadId: string, commentId: string) => void;
-    onDeleteThread?: (threadId: string) => void;
-  },
+  props: LineRenderProps,
 ): React.ReactNode[] {
   const side: CommentSide = line.type === 'delete' ? 'old' : 'new';
   const activeLine = side === 'old' ? line.oldLineNumber : line.newLineNumber;

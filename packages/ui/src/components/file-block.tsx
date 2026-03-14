@@ -19,7 +19,7 @@ import { Badge } from './ui/badge.js';
 import { IconButton } from './ui/icon-button.js';
 import { StatusBadge } from './ui/status-badge.js';
 import { HunkWithGap } from './hunk-with-gap.js';
-import { ContextRow } from './context-row.js';
+import { buildExpansionSyntaxMap, renderExpansionRows } from './render-expansion-rows.js';
 import { ExpandRow } from './expand-row.js';
 
 export const LARGE_DIFF_LINE_THRESHOLD = 200;
@@ -397,24 +397,35 @@ export function FileBlock(props: FileBlockProps) {
                   />
                 );
               })}
-              {bottomGap && (
-                <tbody>
-                  {expansions.get('bottom')?.linesFromTop.map((line) => (
-                    <ContextRow key={`bottom-top-${line.oldLineNumber}`} line={line} viewMode={viewMode} highlightLine={highlightLine}
-                      onLineMouseDown={handleLineMouseDown} onLineMouseEnter={handleLineMouseEnter} onCommentClick={handleCommentClick} />
-                  ))}
-                  <ExpandRow
-                    position="bottom"
-                    remainingLines={bottomRemaining}
-                    loading={loadingGap === 'bottom'}
-                    onExpand={(dir) => handleExpand(bottomGap, dir)}
-                  />
-                  {expansions.get('bottom')?.linesFromBottom.map((line) => (
-                    <ContextRow key={`bottom-bot-${line.oldLineNumber}`} line={line} viewMode={viewMode} highlightLine={highlightLine}
-                      onLineMouseDown={handleLineMouseDown} onLineMouseEnter={handleLineMouseEnter} onCommentClick={handleCommentClick} />
-                  ))}
-                </tbody>
-              )}
+              {bottomGap && (() => {
+                const bottomExpansion = expansions.get('bottom');
+                const bottomLines = [
+                  ...(bottomExpansion?.linesFromTop ?? []),
+                  ...(bottomExpansion?.linesFromBottom ?? []),
+                ];
+                const bottomSyntaxMap = buildExpansionSyntaxMap(bottomLines, highlightLine);
+                const bottomCommentProps = {
+                  isLineSelected, onLineMouseDown: handleLineMouseDown, onLineMouseEnter: handleLineMouseEnter,
+                  onCommentClick: handleCommentClick, threads: fileThreads, pendingSelection: filePendingSelection,
+                  currentAuthor: DEFAULT_AUTHOR, onAddThread: addThread, onReply: addReply,
+                  onResolve: resolveThread, onUnresolve: unresolveThread, onDeleteComment: deleteComment,
+                  onDeleteThread: deleteThread, onCancelPending: handleCancelPending, filePath,
+                };
+                return (
+                  <tbody>
+                    {bottomExpansion?.linesFromTop && bottomExpansion.linesFromTop.length > 0 &&
+                      renderExpansionRows(bottomExpansion.linesFromTop, viewMode, 'bottom-top', bottomSyntaxMap, bottomCommentProps)}
+                    <ExpandRow
+                      position="bottom"
+                      remainingLines={bottomRemaining}
+                      loading={loadingGap === 'bottom'}
+                      onExpand={(dir) => handleExpand(bottomGap, dir)}
+                    />
+                    {bottomExpansion?.linesFromBottom && bottomExpansion.linesFromBottom.length > 0 &&
+                      renderExpansionRows(bottomExpansion.linesFromBottom, viewMode, 'bottom-bot', bottomSyntaxMap, bottomCommentProps)}
+                  </tbody>
+                );
+              })()}
             </table>
           )}
         </div>
