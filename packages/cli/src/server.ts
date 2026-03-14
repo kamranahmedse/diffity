@@ -14,6 +14,7 @@ import {
   getStagedFiles,
   getUnstagedFiles,
   getRecentCommits,
+  resolveRef,
 } from '@diffity/git';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -60,38 +61,6 @@ function serveStatic(res: ServerResponse, filePath: string) {
 interface ServerResult {
   port: number;
   close: () => void;
-}
-
-function resolveRef(ref: string, extraArgs: string[] = []): string {
-  switch (ref) {
-    case 'staged': {
-      return getDiff(['--staged', ...extraArgs]);
-    }
-    case 'unstaged': {
-      return getDiff(extraArgs);
-    }
-    case 'working': {
-      return getDiff(['HEAD', ...extraArgs]);
-    }
-    case 'untracked': {
-      const files = getUntrackedFiles();
-      if (files.length === 0) {
-        return '';
-      }
-      return getUntrackedDiff(files);
-    }
-    case 'all': {
-      let raw = getDiff(['HEAD', ...extraArgs]);
-      const untrackedFiles = getUntrackedFiles();
-      if (untrackedFiles.length > 0) {
-        raw += '\n' + getUntrackedDiff(untrackedFiles);
-      }
-      return raw;
-    }
-    default: {
-      return getDiff([ref, ...extraArgs]);
-    }
-  }
 }
 
 export function startServer(options: ServerOptions): Promise<ServerResult> {

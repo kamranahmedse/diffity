@@ -26,6 +26,38 @@ export function getUntrackedDiff(files: string[]): string {
   return diffs.join('\n');
 }
 
+export function resolveRef(ref: string, extraArgs: string[] = []): string {
+  switch (ref) {
+    case 'staged': {
+      return getDiff(['--staged', ...extraArgs]);
+    }
+    case 'unstaged': {
+      return getDiff(extraArgs);
+    }
+    case 'working': {
+      return getDiff(['HEAD', ...extraArgs]);
+    }
+    case 'untracked': {
+      const files = getUntrackedFiles();
+      if (files.length === 0) {
+        return '';
+      }
+      return getUntrackedDiff(files);
+    }
+    case 'all': {
+      let raw = getDiff(['HEAD', ...extraArgs]);
+      const untrackedFiles = getUntrackedFiles();
+      if (untrackedFiles.length > 0) {
+        raw += '\n' + getUntrackedDiff(untrackedFiles);
+      }
+      return raw;
+    }
+    default: {
+      return getDiff([ref, ...extraArgs]);
+    }
+  }
+}
+
 export function getFileContent(path: string, ref = 'HEAD'): string {
   return exec(`git show ${ref}:${path}`);
 }
