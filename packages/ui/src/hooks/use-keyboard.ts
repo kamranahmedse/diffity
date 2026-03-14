@@ -30,6 +30,10 @@ export function useKeyboard(actions: KeyboardActions) {
         return;
       }
 
+      if (e.metaKey || e.ctrlKey || e.altKey) {
+        return;
+      }
+
       switch (e.key) {
         case 'j':
           e.preventDefault();

@@ -82,6 +82,12 @@ export function App() {
         next.add(path);
         return next;
       });
+    } else {
+      setCollapsedFiles(prev => {
+        const next = new Set(prev);
+        next.delete(path);
+        return next;
+      });
     }
   }, []);
 

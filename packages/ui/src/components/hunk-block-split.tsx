@@ -10,6 +10,8 @@ interface HunkBlockSplitProps {
   hunk: DiffHunk;
   syntaxMap?: Map<string, SyntaxToken[]>;
   expandControls?: ExpandControls;
+  topExpansionRows?: React.ReactNode[];
+  bottomExpansionRows?: React.ReactNode[];
 }
 
 interface SplitRow {
@@ -129,12 +131,14 @@ function SplitCell(props: { line: DiffLineType | null; side: 'left' | 'right'; s
 }
 
 export function HunkBlockSplit(props: HunkBlockSplitProps) {
-  const { hunk, syntaxMap, expandControls } = props;
+  const { hunk, syntaxMap, expandControls, topExpansionRows, bottomExpansionRows } = props;
   const rows = buildSplitRows(hunk.lines);
 
   return (
     <tbody className={expandControls?.wasExpanded && expandControls.remainingLines <= 0 ? '' : 'border-t border-border-muted'}>
       <HunkHeader hunk={hunk} expandControls={expandControls} />
+      {topExpansionRows}
+      {bottomExpansionRows}
       {rows.map((row, i) => (
         <tr key={i} className="font-mono text-sm leading-5">
           <SplitCell line={row.left} side="left" syntaxMap={syntaxMap} />

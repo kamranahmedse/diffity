@@ -173,17 +173,19 @@ export function FileBlock(props: FileBlockProps) {
             linesFromBottom: [],
           });
         } else if (direction === 'down') {
-          next.set(gap.id, {
+          const newExpansion = {
             ...existing,
             fromTop: existing.fromTop + (range.oldEnd - range.oldStart + 1),
             linesFromTop: [...existing.linesFromTop, ...contextLines],
-          });
+          };
+          next.set(gap.id, newExpansion);
         } else {
-          next.set(gap.id, {
+          const newExpansion = {
             ...existing,
             fromBottom: existing.fromBottom + (range.oldEnd - range.oldStart + 1),
             linesFromBottom: [...contextLines, ...existing.linesFromBottom],
-          });
+          };
+          next.set(gap.id, newExpansion);
         }
 
         return next;
@@ -241,7 +243,9 @@ export function FileBlock(props: FileBlockProps) {
   }, [gapMap, getGapRemaining, loadingGap, handleExpand, expansions]);
 
   const total = file.additions + file.deletions;
-  const addPct = total > 0 ? (file.additions / total) * 100 : 0;
+  const addBlocks = total > 0 ? Math.round((file.additions / total) * Math.min(5, total)) : 0;
+  const delBlocks = total > 0 ? Math.min(5, total) - addBlocks : 0;
+  const neutralBlocks = 5 - addBlocks - delBlocks;
 
   const bottomGap = gapMap.get('bottom');
   const bottomRemaining = bottomGap ? getGapRemaining(bottomGap).total : 0;
@@ -256,20 +260,6 @@ export function FileBlock(props: FileBlockProps) {
         >
           {collapsed ? '\u25b6' : '\u25bc'}
         </IconButton>
-        <div className="flex gap-px shrink-0">
-          {Array.from({ length: Math.min(5, total) }).map((_, i) => (
-            <span
-              key={i}
-              className={cn(
-                'w-2 h-2 rounded-[1px]',
-                i < Math.round((addPct / 100) * Math.min(5, total))
-                  ? 'bg-added'
-                  : 'bg-deleted'
-              )}
-            />
-          ))}
-        </div>
-        <DiffStats additions={file.additions} deletions={file.deletions} />
         <span className="font-mono text-sm font-semibold truncate">
           {showRename ? (
             <>
@@ -283,7 +273,21 @@ export function FileBlock(props: FileBlockProps) {
         </span>
         {file.status !== 'modified' && <StatusBadge status={file.status} />}
         {file.isBinary && <Badge className="bg-bg-tertiary text-text-muted">Binary</Badge>}
-        <div className="ml-auto flex items-center shrink-0">
+        <div className="ml-auto flex items-center gap-3 shrink-0">
+          <div className="flex items-center gap-1.5">
+            <DiffStats additions={file.additions} deletions={file.deletions} />
+            <div className="flex gap-px">
+              {Array.from({ length: addBlocks }).map((_, i) => (
+                <span key={`a${i}`} className="w-2 h-2 rounded-[1px] bg-added" />
+              ))}
+              {Array.from({ length: delBlocks }).map((_, i) => (
+                <span key={`d${i}`} className="w-2 h-2 rounded-[1px] bg-deleted" />
+              ))}
+              {Array.from({ length: neutralBlocks }).map((_, i) => (
+                <span key={`n${i}`} className="w-2 h-2 rounded-[1px] bg-border" />
+              ))}
+            </div>
+          </div>
           <label className="flex items-center gap-1.5 text-xs text-text-muted cursor-pointer select-none hover:text-text transition-colors">
             <input
               type="checkbox"
@@ -391,26 +395,28 @@ function HunkWithGap(props: HunkWithGapProps) {
 
   const HunkComponent = viewMode === 'split' ? HunkBlockSplit : HunkBlock;
 
+  const topExpansionRows = topExpansionLines && topExpansionLines.length > 0
+    ? topExpansionLines.map((line) => (
+        <ContextRow key={`top-${line.oldLineNumber}`} line={line} viewMode={viewMode} highlightLine={highlightLine} />
+      ))
+    : undefined;
+
+  const gapBottomRows = gapExpansion && gapExpansion.linesFromBottom.length > 0
+    ? gapExpansion.linesFromBottom.map((line) => (
+        <ContextRow key={`${gapId}-bot-${line.oldLineNumber}`} line={line} viewMode={viewMode} highlightLine={highlightLine} />
+      ))
+    : undefined;
+
   return (
     <>
-      {topExpansionLines && topExpansionLines.length > 0 && (
-        <tbody>
-          {topExpansionLines.map((line) => (
-            <ContextRow key={`top-${line.oldLineNumber}`} line={line} viewMode={viewMode} highlightLine={highlightLine} />
-          ))}
-        </tbody>
-      )}
-      {gapExpansion && (
+      {gapExpansion && gapExpansion.linesFromTop.length > 0 && (
         <tbody>
           {gapExpansion.linesFromTop.map((line) => (
             <ContextRow key={`${gapId}-top-${line.oldLineNumber}`} line={line} viewMode={viewMode} highlightLine={highlightLine} />
           ))}
-          {gapExpansion.linesFromBottom.map((line) => (
-            <ContextRow key={`${gapId}-bot-${line.oldLineNumber}`} line={line} viewMode={viewMode} highlightLine={highlightLine} />
-          ))}
         </tbody>
       )}
-      <HunkComponent hunk={hunk} syntaxMap={syntaxMap} expandControls={expandControls} />
+      <HunkComponent hunk={hunk} syntaxMap={syntaxMap} expandControls={expandControls} topExpansionRows={topExpansionRows} bottomExpansionRows={gapBottomRows} />
     </>
   );
 }

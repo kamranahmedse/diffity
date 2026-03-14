@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { computeWordDiff } from '../word-diff.js';
+import { computeWordDiff } from '../src/word-diff.js';
 
 describe('computeWordDiff', () => {
   it('returns equal segment for identical lines', () => {

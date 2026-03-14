@@ -2,11 +2,11 @@ import { describe, it, expect } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { parseDiff } from '../index.js';
+import { parseDiff } from '../src/index.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const fixture = (name: string) =>
-  readFileSync(resolve(__dirname, '../__fixtures__', name), 'utf-8');
+  readFileSync(resolve(__dirname, './fixtures', name), 'utf-8');
 
 describe('word diff integration', () => {
   it('attaches word diff to paired delete+add lines', () => {

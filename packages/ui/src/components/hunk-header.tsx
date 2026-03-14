@@ -39,7 +39,7 @@ function Spinner() {
   );
 }
 
-function ExpandDownIcon() {
+function ArrowUpIcon() {
   return (
     <svg className="w-[14px] h-[14px]" viewBox="0 0 16 16" fill="currentColor">
       <path d="M2 2.75a.75.75 0 01.75-.75h1a.75.75 0 010 1.5h-1A.75.75 0 012 2.75zm4 0a.75.75 0 01.75-.75h1a.75.75 0 010 1.5h-1A.75.75 0 016 2.75zm4 0a.75.75 0 01.75-.75h1a.75.75 0 010 1.5h-1a.75.75 0 01-.75-.75zM7.47 5.97a.75.75 0 011.06 0l3.25 3.25a.75.75 0 11-1.06 1.06L8.5 8.06V14.25a.75.75 0 01-1.5 0V8.06L4.78 10.28a.75.75 0 01-1.06-1.06l3.25-3.25z" />
@@ -47,7 +47,7 @@ function ExpandDownIcon() {
   );
 }
 
-function ExpandUpIcon() {
+function ArrowDownIcon() {
   return (
     <svg className="w-[14px] h-[14px]" viewBox="0 0 16 16" fill="currentColor">
       <path d="M2 13.25a.75.75 0 00.75.75h1a.75.75 0 000-1.5h-1a.75.75 0 00-.75.75zm4 0a.75.75 0 00.75.75h1a.75.75 0 000-1.5h-1a.75.75 0 00-.75.75zm4 0a.75.75 0 00.75.75h1a.75.75 0 000-1.5h-1a.75.75 0 00-.75.75zM7.47 10.03a.75.75 0 001.06 0l3.25-3.25a.75.75 0 00-1.06-1.06L8.5 7.94V1.75a.75.75 0 00-1.5 0v6.19L4.78 5.72a.75.75 0 00-1.06 1.06l3.25 3.25z" />
@@ -97,23 +97,18 @@ export function HunkHeader(props: HunkHeaderProps) {
 
   if (position === 'top') {
     return (
-      <>
-        <tr className={expandRow}>
-          {loading ? <Spinner /> : (
-            <td className={gutterCell}>
-              <button className={expandBtn} onClick={() => onExpand('up')} title={`Expand ${Math.min(remainingLines, 20)} lines`}>
-                <ExpandUpIcon />
-              </button>
-            </td>
-          )}
-          <td colSpan={3} />
-        </tr>
-        <tr className="bg-diff-hunk-bg">
-          <td colSpan={4} className="px-3 py-1 font-mono text-xs text-diff-hunk-text select-none">
-            {formatHunkHeader(hunk)}
+      <tr className="bg-diff-hunk-bg">
+        {loading ? <Spinner /> : (
+          <td className={gutterCell}>
+            <button className={expandBtn} onClick={() => onExpand('up')} title={`Expand ${Math.min(remainingLines, 20)} lines`}>
+              <ArrowUpIcon />
+            </button>
           </td>
-        </tr>
-      </>
+        )}
+        <td colSpan={3} className="px-3 py-1 font-mono text-xs text-diff-hunk-text select-none">
+          {formatHunkHeader(hunk)}
+        </td>
+      </tr>
     );
   }
 
@@ -127,7 +122,7 @@ export function HunkHeader(props: HunkHeaderProps) {
               onClick={() => onExpand(isSmallGap ? 'all' : showUp ? 'up' : 'down')}
               title={isSmallGap ? `Expand all ${remainingLines} lines` : `Expand ${Math.min(remainingLines, 20)} lines`}
             >
-              {isSmallGap ? <ChevronUpDownIcon /> : showUp ? <ExpandUpIcon /> : <ExpandDownIcon />}
+              {isSmallGap ? <ChevronUpDownIcon /> : showUp ? <ArrowUpIcon /> : <ArrowDownIcon />}
             </button>
           </td>
         )}
@@ -143,8 +138,8 @@ export function HunkHeader(props: HunkHeaderProps) {
       <tr className={expandRow}>
         {loading ? <Spinner /> : (
           <td className={gutterCell}>
-            <button className={expandBtn} onClick={() => onExpand('down')} title="Expand up">
-              <ExpandUpIcon />
+            <button className={expandBtn} onClick={() => onExpand('down')} title="Expand down">
+              <ArrowDownIcon />
             </button>
           </td>
         )}
@@ -158,8 +153,8 @@ export function HunkHeader(props: HunkHeaderProps) {
       </tr>
       <tr className={expandRow}>
         <td className={gutterCell}>
-          <button className={expandBtn} onClick={() => onExpand('up')} title="Expand down">
-            <ExpandDownIcon />
+          <button className={expandBtn} onClick={() => onExpand('up')} title="Expand up">
+            <ArrowUpIcon />
           </button>
         </td>
         <td colSpan={3} />
@@ -184,7 +179,8 @@ export function ExpandRow(props: { position: 'top' | 'bottom'; remainingLines: n
             onClick={() => onExpand('down')}
             title={`Expand ${Math.min(remainingLines, 20)} lines`}
           >
-            {position === 'bottom' ? <ExpandUpIcon /> : <ExpandDownIcon />}
+            {position === 'bottom' ? <ArrowDownIcon /> : <ArrowUpIcon />}
+
           </button>
         </td>
       )}

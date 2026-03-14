@@ -10,7 +10,7 @@
   ],
   "scripts": {
     "build": "npm run build -w @diffity/parser && npm run build -w @diffity/ui && npm run build -w diffity",
-    "test": "npm run test -w @diffity/parser",
+    "test": "npm run test -w @diffity/parser && npm run test -w @diffity/ui",
     "dev": "npm run dev -w @diffity/ui",
     "start": "npm run dev -w diffity"
   },
