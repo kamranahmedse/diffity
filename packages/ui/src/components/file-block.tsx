@@ -8,7 +8,6 @@ import { IconButton } from './ui/icon-button.js';
 import { StatusBadge } from './ui/status-badge.js';
 import type { SyntaxToken } from './diff-line.js';
 import type { HighlightedTokens } from '../hooks/use-highlighter.js';
-import { cn } from '../lib/cn.js';
 import { type ViewMode, getFilePath } from '../lib/diff-utils.js';
 import { computeGaps, createContextLines, getExpandRange, type ExpandableGap } from '../lib/context-expansion.js';
 import { ExpandRow } from './hunk-header.js';
@@ -260,7 +259,7 @@ export function FileBlock(props: FileBlockProps) {
         >
           {collapsed ? '\u25b6' : '\u25bc'}
         </IconButton>
-        <span className="font-mono text-sm font-semibold truncate">
+        <span className="font-mono text-sm truncate">
           {showRename ? (
             <>
               <span className="line-through text-text-muted">{file.oldPath}</span>

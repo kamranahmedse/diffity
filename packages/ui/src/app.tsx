@@ -8,7 +8,7 @@ import { Toolbar } from './components/toolbar.js';
 import { DiffView } from './components/diff-view.js';
 import { Sidebar } from './components/sidebar.js';
 import { ShortcutModal } from './components/shortcut-modal.js';
-import { type ViewMode, getFilePath } from './lib/diff-utils.js';
+import { type ViewMode, getFilePath, getAutoCollapsedPaths } from './lib/diff-utils.js';
 
 function getFileBlocks(): HTMLElement[] {
   return Array.from(document.querySelectorAll('[id^="file-"]'));
@@ -44,13 +44,9 @@ export function App() {
     }
     initializedDiffRef.current = diff;
 
-    const deletedPaths = new Set(
-      diff.files
-        .filter(f => f.status === 'deleted')
-        .map(f => getFilePath(f))
-    );
-    if (deletedPaths.size > 0) {
-      setCollapsedFiles(deletedPaths);
+    const autoCollapsed = getAutoCollapsedPaths(diff.files);
+    if (autoCollapsed.size > 0) {
+      setCollapsedFiles(autoCollapsed);
     }
   }, [diff]);
 
