@@ -5,9 +5,5 @@
     "rootDir": "./src",
     "composite": true
   },
-  "include": ["src/**/*.ts"],
-  "references": [
-    { "path": "../git" },
-    { "path": "../parser" }
-  ]
+  "include": ["src/**/*.ts"]
 }

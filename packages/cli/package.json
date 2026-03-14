@@ -12,6 +12,7 @@
     "dev": "tsx src/index.ts"
   },
   "dependencies": {
+    "@diffity/git": "0.1.0",
     "@diffity/parser": "0.1.0",
     "commander": "latest",
     "open": "latest",

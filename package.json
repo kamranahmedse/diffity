@@ -5,11 +5,12 @@
   "description": "GitHub-style git diff viewer in the browser",
   "workspaces": [
     "packages/cli",
+    "packages/git",
     "packages/parser",
     "packages/ui"
   ],
   "scripts": {
-    "build": "npm run build -w @diffity/parser && npm run build -w @diffity/ui && npm run build -w diffity",
+    "build": "npm run build -w @diffity/parser && npm run build -w @diffity/git && npm run build -w @diffity/ui && npm run build -w diffity",
     "test": "npm run test -w @diffity/parser && npm run test -w @diffity/ui",
     "dev": "npm run dev -w @diffity/ui",
     "start": "npm run dev -w diffity"

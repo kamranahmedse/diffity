@@ -15,6 +15,7 @@
   },
   "references": [
     { "path": "./packages/parser" },
+    { "path": "./packages/git" },
     { "path": "./packages/cli" },
     { "path": "./packages/ui" }
   ]

@@ -6,7 +6,7 @@ import { dirname } from 'node:path';
 import { parseDiff } from '@diffity/parser';
 import type { ParsedDiff } from '@diffity/parser';
 import {
-  getGitDiff,
+  getDiff,
   getUntrackedFiles,
   getUntrackedDiff,
   getRepoInfo,
@@ -14,7 +14,7 @@ import {
   getStagedFiles,
   getUnstagedFiles,
   getRecentCommits,
-} from './git.js';
+} from '@diffity/git';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
@@ -65,13 +65,13 @@ interface ServerResult {
 function resolveRef(ref: string, extraArgs: string[] = []): string {
   switch (ref) {
     case 'staged': {
-      return getGitDiff(['--staged', ...extraArgs]);
+      return getDiff(['--staged', ...extraArgs]);
     }
     case 'unstaged': {
-      return getGitDiff(extraArgs);
+      return getDiff(extraArgs);
     }
     case 'working': {
-      return getGitDiff(['HEAD', ...extraArgs]);
+      return getDiff(['HEAD', ...extraArgs]);
     }
     case 'untracked': {
       const files = getUntrackedFiles();
@@ -81,7 +81,7 @@ function resolveRef(ref: string, extraArgs: string[] = []): string {
       return getUntrackedDiff(files);
     }
     case 'all': {
-      let raw = getGitDiff(['HEAD', ...extraArgs]);
+      let raw = getDiff(['HEAD', ...extraArgs]);
       const untrackedFiles = getUntrackedFiles();
       if (untrackedFiles.length > 0) {
         raw += '\n' + getUntrackedDiff(untrackedFiles);
@@ -89,7 +89,7 @@ function resolveRef(ref: string, extraArgs: string[] = []): string {
       return raw;
     }
     default: {
-      return getGitDiff([ref, ...extraArgs]);
+      return getDiff([ref, ...extraArgs]);
     }
   }
 }
@@ -99,7 +99,7 @@ export function startServer(options: ServerOptions): Promise<ServerResult> {
 
   const includeUntracked = diffArgs.length === 0;
   function getFullDiff(args: string[]): string {
-    let raw = getGitDiff(args);
+    let raw = getDiff(args);
     if (includeUntracked) {
       const untrackedFiles = getUntrackedFiles();
       if (untrackedFiles.length > 0) {

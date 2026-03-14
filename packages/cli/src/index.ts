@@ -3,7 +3,7 @@
 import { Command } from 'commander';
 import open from 'open';
 import pc from 'picocolors';
-import { isGitRepo } from './git.js';
+import { isGitRepo } from '@diffity/git';
 import { startServer } from './server.js';
 
 const program = new Command();
