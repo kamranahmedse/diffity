@@ -1,12 +1,12 @@
 import type { DiffHunk, DiffLine as DiffLineType } from '@diffity/parser';
-import type { SyntaxToken } from '../lib/syntax-token.js';
 import type { HighlightedTokens } from '../hooks/use-highlighter.js';
 import type { ViewMode } from '../lib/diff-utils.js';
+import type { SyntaxToken } from '../lib/syntax-token.js';
 import type { ExpandControls } from './hunk-header.js';
 import type { CommentThread as CommentThreadType, CommentAuthor, CommentSide, LineSelection } from '../types/comment.js';
 import { HunkBlock } from './hunk-block.js';
 import { HunkBlockSplit } from './hunk-block-split.js';
-import { ContextRow } from './context-row.js';
+import { buildExpansionSyntaxMap, renderExpansionRows } from './render-expansion-rows.js';
 
 interface GapExpansion {
   fromTop: number;
@@ -41,25 +41,6 @@ interface HunkWithGapProps {
   filePath?: string;
 }
 
-function buildExpansionSyntaxMap(lines: DiffLineType[], highlightLine?: (code: string) => HighlightedTokens[] | null): Map<string, SyntaxToken[]> {
-  const map = new Map<string, SyntaxToken[]>();
-  if (!highlightLine) {
-    return map;
-  }
-  for (const line of lines) {
-    if (!line.content) {
-      continue;
-    }
-    const highlighted = highlightLine(line.content);
-    if (!highlighted || highlighted.length === 0) {
-      continue;
-    }
-    const key = `${line.type}-${line.type === 'delete' ? line.oldLineNumber : line.newLineNumber}`;
-    map.set(key, highlighted[0].tokens);
-  }
-  return map;
-}
-
 export function HunkWithGap(props: HunkWithGapProps) {
   const {
     hunk, viewMode, syntaxMap, expandControls, topExpansionLines, gapExpansion, gapId, highlightLine,
@@ -80,14 +61,24 @@ export function HunkWithGap(props: HunkWithGapProps) {
     ? buildExpansionSyntaxMap(allExpansionLines, highlightLine)
     : undefined;
 
+  const commentProps = {
+    isLineSelected, onLineMouseDown, onLineMouseEnter, onCommentClick,
+    threads, pendingSelection, currentAuthor,
+    onAddThread, onReply, onResolve, onUnresolve, onDeleteComment, onDeleteThread,
+    onCancelPending, filePath,
+  };
+
   return (
     <>
       {gapExpansion && gapExpansion.linesFromTop.length > 0 && (
         <tbody>
-          {gapExpansion.linesFromTop.map((line) => (
-            <ContextRow key={`${gapId}-top-${line.oldLineNumber}`} line={line} viewMode={viewMode} highlightLine={highlightLine}
-              onLineMouseDown={onLineMouseDown} onLineMouseEnter={onLineMouseEnter} onCommentClick={onCommentClick} />
-          ))}
+          {renderExpansionRows(
+            gapExpansion.linesFromTop,
+            viewMode,
+            `${gapId}-top`,
+            expansionSyntaxMap,
+            commentProps,
+          )}
         </tbody>
       )}
       <HunkComponent
