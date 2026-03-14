@@ -1,8 +1,16 @@
-import { useMemo } from 'react';
+import { useMemo, useRef } from 'react';
+import { useVirtualizer } from '@tanstack/react-virtual';
 import type { ParsedDiff } from '@diffity/parser';
-import { FileBlock } from './file-block.js';
+import { FileBlock, LARGE_DIFF_LINE_THRESHOLD } from './file-block.js';
 import { useHighlighter } from '../hooks/use-highlighter.js';
 import { type ViewMode, getFilePath } from '../lib/diff-utils.js';
+
+const VIRTUALIZER_OVERSCAN = 3;
+const FILE_HEADER_HEIGHT = 56;
+const EMPTY_CONTENT_HEIGHT = 100;
+const LINE_HEIGHT = 24;
+const HUNK_HEADER_HEIGHT = 32;
+const FILE_BLOCK_PADDING = 16;
 
 interface DiffViewProps {
   diff: ParsedDiff;
@@ -13,11 +21,30 @@ interface DiffViewProps {
   reviewedFiles: Set<string>;
   onReviewedChange: (path: string, reviewed: boolean) => void;
   onActiveFileChange?: (path: string) => void;
+  scrollRef?: React.RefCallback<HTMLElement>;
+}
+
+function estimateFileHeight(file: { hunks: { lines: { length: number } }[]; isBinary: boolean }, collapsed: boolean): number {
+  if (collapsed) {
+    return FILE_HEADER_HEIGHT;
+  }
+  if (file.isBinary || file.hunks.length === 0) {
+    return EMPTY_CONTENT_HEIGHT;
+  }
+  let lineCount = 0;
+  for (const hunk of file.hunks) {
+    lineCount += hunk.lines.length;
+  }
+  if (lineCount >= LARGE_DIFF_LINE_THRESHOLD) {
+    return EMPTY_CONTENT_HEIGHT;
+  }
+  return FILE_HEADER_HEIGHT + lineCount * LINE_HEIGHT + file.hunks.length * HUNK_HEADER_HEIGHT + FILE_BLOCK_PADDING;
 }
 
 export function DiffView(props: DiffViewProps) {
-  const { diff, viewMode, theme, collapsedFiles, onToggleCollapse, reviewedFiles, onReviewedChange, onActiveFileChange } = props;
+  const { diff, viewMode, theme, collapsedFiles, onToggleCollapse, reviewedFiles, onReviewedChange, onActiveFileChange, scrollRef } = props;
   const { highlight } = useHighlighter();
+  const scrollElementRef = useRef<HTMLElement>(null);
 
   const highlighters = useMemo(() => {
     const map = new Map<string, (code: string) => ReturnType<typeof highlight>>();
@@ -28,24 +55,54 @@ export function DiffView(props: DiffViewProps) {
     return map;
   }, [diff, highlight, theme]);
 
+  const virtualizer = useVirtualizer({
+    count: diff.files.length,
+    getScrollElement: () => scrollElementRef.current,
+    estimateSize: (index) => estimateFileHeight(diff.files[index], collapsedFiles.has(getFilePath(diff.files[index]))),
+    overscan: VIRTUALIZER_OVERSCAN,
+  });
+
   return (
-    <div className="py-2">
-      {diff.files.map((file, i) => {
-        const filePath = getFilePath(file);
-        return (
-          <FileBlock
-            key={filePath + '-' + i}
-            file={file}
-            viewMode={viewMode}
-            collapsed={collapsedFiles.has(filePath)}
-            onToggleCollapse={onToggleCollapse}
-            reviewed={reviewedFiles.has(filePath)}
-            onReviewedChange={onReviewedChange}
-            onVisible={onActiveFileChange}
-            highlightLine={highlighters.get(filePath)}
-          />
-        );
-      })}
-    </div>
+    <main
+      ref={(node) => {
+        scrollElementRef.current = node;
+        if (scrollRef) {
+          scrollRef(node);
+        }
+      }}
+      className="flex-1 overflow-y-auto pb-12"
+    >
+      <div className="py-2" style={{ height: virtualizer.getTotalSize(), position: 'relative' }}>
+        {virtualizer.getVirtualItems().map((virtualItem) => {
+          const file = diff.files[virtualItem.index];
+          const filePath = getFilePath(file);
+          return (
+            <div
+              key={filePath + '-' + virtualItem.index}
+              data-index={virtualItem.index}
+              ref={virtualizer.measureElement}
+              style={{
+                position: 'absolute',
+                top: 0,
+                left: 0,
+                width: '100%',
+                transform: `translateY(${virtualItem.start}px)`,
+              }}
+            >
+              <FileBlock
+                file={file}
+                viewMode={viewMode}
+                collapsed={collapsedFiles.has(filePath)}
+                onToggleCollapse={onToggleCollapse}
+                reviewed={reviewedFiles.has(filePath)}
+                onReviewedChange={onReviewedChange}
+                onVisible={onActiveFileChange}
+                highlightLine={highlighters.get(filePath)}
+              />
+            </div>
+          );
+        })}
+      </div>
+    </main>
   );
 }
