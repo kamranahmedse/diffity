@@ -1,17 +1,19 @@
-import { useState, useRef, useEffect, useMemo, useCallback } from 'react';
+import { useState, useRef, useMemo, useCallback } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
+import { useInView } from 'react-intersection-observer';
 import type { DiffFile, DiffLine as DiffLineType } from '@diffity/parser';
-import { HunkBlock } from './hunk-block.js';
-import { HunkBlockSplit } from './hunk-block-split.js';
+import type { SyntaxToken } from '../lib/syntax-token.js';
+import type { HighlightedTokens } from '../hooks/use-highlighter.js';
+import { type ViewMode, getFilePath } from '../lib/diff-utils.js';
+import { computeGaps, createContextLines, getExpandRange, type ExpandableGap } from '../lib/context-expansion.js';
+import { fileContentOptions } from '../queries/file.js';
 import { DiffStats } from './diff-stats.js';
 import { Badge } from './ui/badge.js';
 import { IconButton } from './ui/icon-button.js';
 import { StatusBadge } from './ui/status-badge.js';
-import type { SyntaxToken } from './diff-line.js';
-import type { HighlightedTokens } from '../hooks/use-highlighter.js';
-import { type ViewMode, getFilePath } from '../lib/diff-utils.js';
-import { computeGaps, createContextLines, getExpandRange, type ExpandableGap } from '../lib/context-expansion.js';
-import { ExpandRow } from './hunk-header.js';
-import { LineNumberCell } from './line-number-cell.js';
+import { HunkWithGap } from './hunk-with-gap.js';
+import { ContextRow } from './context-row.js';
+import { ExpandRow } from './expand-row.js';
 
 const LARGE_DIFF_LINE_THRESHOLD = 200;
 
@@ -48,33 +50,31 @@ export function FileBlock(props: FileBlockProps) {
   const isLargeDiff = totalLines >= LARGE_DIFF_LINE_THRESHOLD;
 
   const [largeDiffExpanded, setLargeDiffExpanded] = useState(false);
-  const [fileContent, setFileContent] = useState<string[] | null>(null);
-  const [fileLineCount, setFileLineCount] = useState<number | null>(null);
   const [expansions, setExpansions] = useState<Map<string, GapExpansion>>(new Map());
   const [loadingGap, setLoadingGap] = useState<string | null>(null);
-  const ref = useRef<HTMLDivElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
 
   const filePath = getFilePath(file);
   const showRename = file.status === 'renamed' && file.oldPath !== file.newPath;
   const isNewFile = file.status === 'added';
 
-  useEffect(() => {
-    if (!ref.current || !onVisible) {
-      return;
-    }
+  const queryClient = useQueryClient();
+  const fileContentPath = file.oldPath || filePath;
+  const [fileLineCount, setFileLineCount] = useState<number | null>(null);
 
-    const observer = new IntersectionObserver(
-      entries => {
-        if (entries[0].isIntersecting) {
-          onVisible(filePath);
-        }
-      },
-      { threshold: 0.1 }
-    );
+  const { ref: inViewRef } = useInView({
+    threshold: 0.1,
+    onChange: (inView) => {
+      if (inView && onVisible) {
+        onVisible(filePath);
+      }
+    },
+  });
 
-    observer.observe(ref.current);
-    return () => observer.disconnect();
-  }, [filePath, onVisible]);
+  const setRefs = useCallback((node: HTMLDivElement | null) => {
+    containerRef.current = node;
+    inViewRef(node);
+  }, [inViewRef]);
 
   const syntaxMap = useMemo(() => {
     if (!highlightLine) {
@@ -112,43 +112,22 @@ export function FileBlock(props: FileBlockProps) {
     return map;
   }, [gaps]);
 
-  const fetchFileContent = useCallback(async (): Promise<string[] | null> => {
-    if (fileContent) {
-      return fileContent;
-    }
-
-    const res = await fetch(`/api/file/${encodeURIComponent(file.oldPath || filePath)}`);
-    if (!res.ok) {
-      return null;
-    }
-    const json = await res.json();
-    const lines = json.content as string[];
-    setFileContent(lines);
-    setFileLineCount(lines.length);
-    return lines;
-  }, [fileContent, file.oldPath, filePath]);
-
-  useEffect(() => {
-    if (isNewFile || file.isBinary || file.hunks.length === 0 || fileLineCount !== null) {
-      return;
-    }
-    fetchFileContent();
-  }, [isNewFile, file.isBinary, file.hunks.length, fileLineCount, fetchFileContent]);
-
   const handleExpand = useCallback(async (gap: ExpandableGap, direction: 'up' | 'down' | 'all') => {
     setLoadingGap(gap.id);
 
-    const scrollContainer = ref.current?.closest('main') as HTMLElement | null;
-    const fileEl = ref.current;
+    const lines = await queryClient.ensureQueryData(
+      fileContentOptions(fileContentPath, true)
+    );
+    if (lines.length > 0 && fileLineCount === null) {
+      setFileLineCount(lines.length);
+    }
+
+    const scrollContainer = containerRef.current?.closest('main') as HTMLElement | null;
+    const fileEl = containerRef.current;
     const anchor = fileEl?.querySelector('tbody:last-of-type tr:first-child') as HTMLElement | null;
     const anchorTop = anchor?.getBoundingClientRect().top ?? 0;
 
     try {
-      const lines = await fetchFileContent();
-      if (!lines) {
-        return;
-      }
-
       setExpansions(prev => {
         const next = new Map(prev);
         const existing = next.get(gap.id) || { fromTop: 0, fromBottom: 0, linesFromTop: [], linesFromBottom: [] };
@@ -195,7 +174,7 @@ export function FileBlock(props: FileBlockProps) {
         }
       });
     }
-  }, [fetchFileContent]);
+  }, [fileContentPath, fileLineCount, queryClient]);
 
   const getGapRemaining = useCallback((gap: ExpandableGap): { total: number; up: number; down: number } => {
     const expansion = expansions.get(gap.id);
@@ -247,7 +226,7 @@ export function FileBlock(props: FileBlockProps) {
   const bottomRemaining = bottomGap ? getGapRemaining(bottomGap).total : 0;
 
   return (
-    <div ref={ref} className="border border-border rounded-lg mx-4 my-4 overflow-hidden" id={`file-${encodeURIComponent(filePath)}`}>
+    <div ref={setRefs} className="border border-border rounded-lg mx-4 my-4 overflow-hidden" id={`file-${encodeURIComponent(filePath)}`}>
       <div className="flex items-center gap-2 px-3 py-2 bg-bg-secondary border-b border-border text-sm sticky top-0 z-10 shadow-sticky">
         <IconButton
           className="text-[10px] w-5 h-5 shrink-0"
@@ -372,87 +351,5 @@ export function FileBlock(props: FileBlockProps) {
         </div>
       )}
     </div>
-  );
-}
-
-interface HunkWithGapProps {
-  hunk: import('@diffity/parser').DiffHunk;
-  viewMode: ViewMode;
-  syntaxMap?: Map<string, SyntaxToken[]>;
-  expandControls?: import('./hunk-header.js').ExpandControls;
-  topExpansionLines?: DiffLineType[];
-  gapExpansion?: GapExpansion;
-  gapId?: string;
-  highlightLine?: (code: string) => HighlightedTokens[] | null;
-}
-
-function HunkWithGap(props: HunkWithGapProps) {
-  const { hunk, viewMode, syntaxMap, expandControls, topExpansionLines, gapExpansion, gapId, highlightLine } = props;
-
-  const HunkComponent = viewMode === 'split' ? HunkBlockSplit : HunkBlock;
-
-  const topExpansionRows = topExpansionLines && topExpansionLines.length > 0
-    ? topExpansionLines.map((line) => (
-        <ContextRow key={`top-${line.oldLineNumber}`} line={line} viewMode={viewMode} highlightLine={highlightLine} />
-      ))
-    : undefined;
-
-  const gapBottomRows = gapExpansion && gapExpansion.linesFromBottom.length > 0
-    ? gapExpansion.linesFromBottom.map((line) => (
-        <ContextRow key={`${gapId}-bot-${line.oldLineNumber}`} line={line} viewMode={viewMode} highlightLine={highlightLine} />
-      ))
-    : undefined;
-
-  return (
-    <>
-      {gapExpansion && gapExpansion.linesFromTop.length > 0 && (
-        <tbody>
-          {gapExpansion.linesFromTop.map((line) => (
-            <ContextRow key={`${gapId}-top-${line.oldLineNumber}`} line={line} viewMode={viewMode} highlightLine={highlightLine} />
-          ))}
-        </tbody>
-      )}
-      <HunkComponent hunk={hunk} syntaxMap={syntaxMap} expandControls={expandControls} topExpansionRows={topExpansionRows} bottomExpansionRows={gapBottomRows} />
-    </>
-  );
-}
-
-function ContextRow(props: { line: DiffLineType; viewMode: ViewMode; highlightLine?: (code: string) => HighlightedTokens[] | null }) {
-  const { line, viewMode, highlightLine } = props;
-
-  let renderedContent: React.ReactNode = line.content || '\n';
-  if (highlightLine && line.content) {
-    const highlighted = highlightLine(line.content);
-    if (highlighted && highlighted.length > 0) {
-      renderedContent = highlighted[0].tokens.map((token: { text: string; color?: string }, i: number) => (
-        <span key={i} style={token.color ? { color: token.color } : undefined}>{token.text}</span>
-      ));
-    }
-  }
-
-  if (viewMode === 'split') {
-    return (
-      <tr className="font-mono text-sm leading-6 bg-diff-expanded-bg">
-        <LineNumberCell lineNumber={line.oldLineNumber} className="border-r border-border-muted bg-diff-expanded-gutter" />
-        <td className="px-3 whitespace-pre-wrap break-all border-r border-border-muted align-top">
-          <span className="inline">{renderedContent}</span>
-        </td>
-        <LineNumberCell lineNumber={line.newLineNumber} className="border-r border-border-muted bg-diff-expanded-gutter" />
-        <td className="px-3 whitespace-pre-wrap break-all border-r border-border-muted align-top">
-          <span className="inline">{renderedContent}</span>
-        </td>
-      </tr>
-    );
-  }
-
-  return (
-    <tr className="font-mono text-sm leading-6 bg-diff-expanded-bg">
-      <LineNumberCell lineNumber={line.oldLineNumber} className="border-r border-border-muted bg-diff-expanded-gutter" />
-      <LineNumberCell lineNumber={line.newLineNumber} className="border-r border-border-muted bg-diff-expanded-gutter" />
-      <td className="w-5 min-w-5 px-1 text-center select-none align-top text-text-muted"> </td>
-      <td className="px-3 whitespace-pre-wrap break-all">
-        <span className="inline">{renderedContent}</span>
-      </td>
-    </tr>
   );
 }

@@ -8,21 +8,9 @@ import { Toolbar } from './components/toolbar.js';
 import { DiffView } from './components/diff-view.js';
 import { Sidebar } from './components/sidebar.js';
 import { ShortcutModal } from './components/shortcut-modal.js';
+import { CheckCircleIcon } from './components/icons/check-circle-icon.js';
 import { type ViewMode, getFilePath, getAutoCollapsedPaths } from './lib/diff-utils.js';
-
-function getFileBlocks(): HTMLElement[] {
-  return Array.from(document.querySelectorAll('[id^="file-"]'));
-}
-
-function getHunkHeaders(): HTMLElement[] {
-  return Array.from(
-    document.querySelectorAll('tbody > tr:first-child')
-  );
-}
-
-function scrollToElement(el: HTMLElement) {
-  el.scrollIntoView({ behavior: 'instant', block: 'start' });
-}
+import { getFileBlocks, getHunkHeaders, scrollToElement } from './lib/dom-utils.js';
 
 export function App() {
   const [viewMode, setViewMode] = useState<ViewMode>('unified');
@@ -234,10 +222,7 @@ export function App() {
           {diff && diff.files.length === 0 && !loading && (
             <div className="flex flex-col items-center justify-center p-12 text-text-muted text-center gap-3 min-h-[400px]">
               <div className="text-added opacity-50 mb-2">
-                <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M9 12l2 2 4-4" />
-                  <circle cx="12" cy="12" r="10" />
-                </svg>
+                <CheckCircleIcon />
               </div>
               <h2 className="text-xl text-text-secondary">No changes found</h2>
               <p>There are no differences to display.</p>

@@ -1,5 +1,6 @@
 import type { DiffHunk } from '@diffity/parser';
-import { DiffLine, type SyntaxToken } from './diff-line.js';
+import type { SyntaxToken } from '../lib/syntax-token.js';
+import { DiffLine } from './diff-line.js';
 import { HunkHeader, type ExpandControls } from './hunk-header.js';
 
 interface HunkBlockProps {

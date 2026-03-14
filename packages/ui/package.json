@@ -12,9 +12,12 @@
   },
   "dependencies": {
     "@tailwindcss/vite": "^4.2.1",
+    "@tanstack/react-query": "^5.90.21",
     "clsx": "^2.1.1",
     "react": "latest",
     "react-dom": "latest",
+    "react-hotkeys-hook": "^5.2.4",
+    "react-intersection-observer": "^10.0.3",
     "shiki": "^4.0.2",
     "tailwind-merge": "^3.5.0",
     "tailwindcss": "^4.2.1"

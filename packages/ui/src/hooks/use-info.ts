@@ -1,40 +1,12 @@
-import { useState, useEffect } from 'react';
+import { useQuery } from '@tanstack/react-query';
+import { repoInfoOptions } from '../queries/info.js';
 
-interface RepoInfo {
-  name: string;
-  branch: string;
-  root: string;
-  description: string;
-}
+export function useInfo() {
+  const { data, isLoading, error } = useQuery(repoInfoOptions());
 
-interface UseInfoResult {
-  data: RepoInfo | null;
-  loading: boolean;
-  error: string | null;
-}
-
-export function useInfo(): UseInfoResult {
-  const [data, setData] = useState<RepoInfo | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    fetch('/api/info')
-      .then(res => {
-        if (!res.ok) {
-          throw new Error(`HTTP ${res.status}`);
-        }
-        return res.json();
-      })
-      .then(json => {
-        setData(json as RepoInfo);
-        setLoading(false);
-      })
-      .catch(err => {
-        setError(err.message);
-        setLoading(false);
-      });
-  }, []);
-
-  return { data, loading, error };
+  return {
+    data: data ?? null,
+    loading: isLoading,
+    error: error?.message ?? null,
+  };
 }

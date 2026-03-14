@@ -1,4 +1,4 @@
-import { useMemo, useState, useCallback, useEffect } from 'react';
+import { useMemo, useState, useCallback, useRef } from 'react';
 import type { DiffFile } from '@diffity/parser';
 import {
   buildFileTree,
@@ -6,7 +6,6 @@ import {
   sortTree,
   filterTree,
   collectAllDirPaths,
-  type TreeNode,
 } from '../lib/file-tree.js';
 import { FileTreeItem } from './file-tree-item.js';
 
@@ -25,11 +24,13 @@ export function FileTree(props: FileTreeProps) {
     return sortTree(collapseSingleChildDirs(buildFileTree(files)));
   }, [files]);
 
-  const [expandedDirs, setExpandedDirs] = useState<Set<string>>(new Set());
+  const prevTreeRef = useRef(tree);
+  const [expandedDirs, setExpandedDirs] = useState<Set<string>>(() => new Set(collectAllDirPaths(tree)));
 
-  useEffect(() => {
+  if (prevTreeRef.current !== tree) {
+    prevTreeRef.current = tree;
     setExpandedDirs(new Set(collectAllDirPaths(tree)));
-  }, [tree]);
+  }
 
   const displayTree = useMemo(() => {
     if (!search) {

@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useHotkeys } from 'react-hotkeys-hook';
 
 interface KeyboardActions {
   onNextFile: () => void;
@@ -15,77 +15,19 @@ interface KeyboardActions {
   onEscape: () => void;
 }
 
+const HOTKEY_OPTIONS = { preventDefault: true };
+
 export function useKeyboard(actions: KeyboardActions) {
-  const actionsRef = useRef(actions);
-  actionsRef.current = actions;
-
-  useEffect(() => {
-    function handler(e: KeyboardEvent) {
-      const target = e.target as HTMLElement;
-      if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA') {
-        if (e.key === 'Escape') {
-          (target as HTMLInputElement).blur();
-          actionsRef.current.onEscape();
-        }
-        return;
-      }
-
-      if (e.metaKey || e.ctrlKey || e.altKey) {
-        return;
-      }
-
-      switch (e.key) {
-        case 'j':
-          e.preventDefault();
-          actionsRef.current.onNextFile();
-          break;
-        case 'k':
-          e.preventDefault();
-          actionsRef.current.onPrevFile();
-          break;
-        case 'n':
-          e.preventDefault();
-          actionsRef.current.onNextHunk();
-          break;
-        case 'p':
-          e.preventDefault();
-          actionsRef.current.onPrevHunk();
-          break;
-        case 'x':
-          e.preventDefault();
-          if (e.shiftKey) {
-            actionsRef.current.onCollapseAll();
-          } else {
-            actionsRef.current.onToggleCollapse();
-          }
-          break;
-        case 'r':
-          e.preventDefault();
-          actionsRef.current.onToggleReviewed();
-          break;
-        case 'u':
-          e.preventDefault();
-          actionsRef.current.onUnifiedView();
-          break;
-        case 's':
-          e.preventDefault();
-          actionsRef.current.onSplitView();
-          break;
-        case '?':
-          e.preventDefault();
-          actionsRef.current.onShowHelp();
-          break;
-        case '/':
-          e.preventDefault();
-          actionsRef.current.onFocusSearch();
-          break;
-        case 'Escape':
-          actionsRef.current.onEscape();
-          break;
-      }
-    }
-
-    document.addEventListener('keydown', handler);
-    return () => document.removeEventListener('keydown', handler);
-  }, []);
+  useHotkeys('j', actions.onNextFile, HOTKEY_OPTIONS);
+  useHotkeys('k', actions.onPrevFile, HOTKEY_OPTIONS);
+  useHotkeys('n', actions.onNextHunk, HOTKEY_OPTIONS);
+  useHotkeys('p', actions.onPrevHunk, HOTKEY_OPTIONS);
+  useHotkeys('x', actions.onToggleCollapse, HOTKEY_OPTIONS);
+  useHotkeys('shift+x', actions.onCollapseAll, HOTKEY_OPTIONS);
+  useHotkeys('r', actions.onToggleReviewed, HOTKEY_OPTIONS);
+  useHotkeys('u', actions.onUnifiedView, HOTKEY_OPTIONS);
+  useHotkeys('s', actions.onSplitView, HOTKEY_OPTIONS);
+  useHotkeys('shift+/', actions.onShowHelp, HOTKEY_OPTIONS);
+  useHotkeys('/', actions.onFocusSearch, HOTKEY_OPTIONS);
+  useHotkeys('escape', actions.onEscape, { enableOnFormTags: ['INPUT', 'TEXTAREA'] });
 }

@@ -1,37 +1,15 @@
 import type { DiffLine as DiffLineType } from '@diffity/parser';
 import { cn } from '../lib/cn.js';
 import { getLineBg } from '../lib/diff-utils.js';
-import { WordDiff } from './word-diff.js';
+import { renderContent } from '../lib/render-content.js';
+import type { SyntaxToken } from '../lib/syntax-token.js';
 import { LineNumberCell } from './line-number-cell.js';
 
-export interface SyntaxToken {
-  text: string;
-  color?: string;
-}
+export type { SyntaxToken };
 
 interface DiffLineProps {
   line: DiffLineType;
   syntaxTokens?: SyntaxToken[];
-}
-
-function renderContent(line: DiffLineType, syntaxTokens?: SyntaxToken[]) {
-  if (line.wordDiff && line.wordDiff.length > 0) {
-    return <WordDiff line={line} syntaxTokens={syntaxTokens} />;
-  }
-
-  if (syntaxTokens && syntaxTokens.length > 0) {
-    return (
-      <>
-        {syntaxTokens.map((token, i) => (
-          <span key={i} style={token.color ? { color: token.color } : undefined}>
-            {token.text}
-          </span>
-        ))}
-      </>
-    );
-  }
-
-  return <span>{line.content || '\n'}</span>;
 }
 
 function getPrefix(type: string): string {

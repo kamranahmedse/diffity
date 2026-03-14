@@ -1,10 +1,10 @@
 import type { DiffHunk, DiffLine as DiffLineType } from '@diffity/parser';
 import { cn } from '../lib/cn.js';
 import { getLineBg } from '../lib/diff-utils.js';
-import { WordDiff } from './word-diff.js';
+import { renderContent } from '../lib/render-content.js';
+import type { SyntaxToken } from '../lib/syntax-token.js';
 import { HunkHeader, type ExpandControls } from './hunk-header.js';
 import { LineNumberCell } from './line-number-cell.js';
-import type { SyntaxToken } from './diff-line.js';
 
 interface HunkBlockSplitProps {
   hunk: DiffHunk;
@@ -74,26 +74,6 @@ function getCellBg(line: DiffLineType | null): string {
   return getLineBg(line.type);
 }
 
-function renderCellContent(line: DiffLineType, syntaxTokens?: SyntaxToken[]) {
-  if (line.wordDiff && line.wordDiff.length > 0) {
-    return <WordDiff line={line} syntaxTokens={syntaxTokens} />;
-  }
-
-  if (syntaxTokens && syntaxTokens.length > 0) {
-    return (
-      <>
-        {syntaxTokens.map((token, i) => (
-          <span key={i} style={token.color ? { color: token.color } : undefined}>
-            {token.text}
-          </span>
-        ))}
-      </>
-    );
-  }
-
-  return <span>{line.content || '\n'}</span>;
-}
-
 function getSyntaxKey(line: DiffLineType): string {
   const num = line.type === 'delete' ? line.oldLineNumber : line.newLineNumber;
   return `${line.type}-${num}`;
@@ -120,7 +100,7 @@ function SplitCell(props: { line: DiffLineType | null; side: 'left' | 'right'; s
     <>
       <LineNumberCell lineNumber={lineNum} className={bgClass} />
       <td className={cn('px-3 whitespace-pre-wrap break-all border-r border-border-muted align-top', bgClass)}>
-        <span className="inline">{renderCellContent(line, tokens)}</span>
+        <span className="inline">{renderContent(line, tokens)}</span>
       </td>
     </>
   );

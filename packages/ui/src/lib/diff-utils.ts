@@ -72,7 +72,7 @@ const GENERATED_PATTERNS = [
 ];
 
 function isAutoCollapsible(file: DiffFile): boolean {
-  if (file.status === 'deleted') {
+  if (file.status === 'deleted' || file.status === 'renamed') {
     return true;
   }
 
