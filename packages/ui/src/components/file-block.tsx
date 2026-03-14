@@ -142,8 +142,10 @@ export function FileBlock(props: FileBlockProps) {
   const handleExpand = useCallback(async (gap: ExpandableGap, direction: 'up' | 'down' | 'all') => {
     setLoadingGap(gap.id);
 
-    const scrollContainer = ref.current?.closest('main');
-    const scrollTop = scrollContainer?.scrollTop ?? 0;
+    const scrollContainer = ref.current?.closest('main') as HTMLElement | null;
+    const fileEl = ref.current;
+    const anchor = fileEl?.querySelector('tbody:last-of-type tr:first-child') as HTMLElement | null;
+    const anchorTop = anchor?.getBoundingClientRect().top ?? 0;
 
     try {
       const lines = await fetchFileContent();
@@ -189,8 +191,9 @@ export function FileBlock(props: FileBlockProps) {
     } finally {
       setLoadingGap(null);
       requestAnimationFrame(() => {
-        if (scrollContainer) {
-          scrollContainer.scrollTop = scrollTop;
+        if (scrollContainer && anchor) {
+          const newAnchorTop = anchor.getBoundingClientRect().top;
+          scrollContainer.scrollTop += newAnchorTop - anchorTop;
         }
       });
     }
