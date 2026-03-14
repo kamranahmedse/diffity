@@ -15,7 +15,7 @@ import { HunkWithGap } from './hunk-with-gap.js';
 import { ContextRow } from './context-row.js';
 import { ExpandRow } from './expand-row.js';
 
-const LARGE_DIFF_LINE_THRESHOLD = 200;
+export const LARGE_DIFF_LINE_THRESHOLD = 200;
 
 function getTotalLineCount(file: DiffFile): number {
   let count = 0;

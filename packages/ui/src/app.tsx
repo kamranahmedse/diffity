@@ -22,7 +22,7 @@ export function App() {
   const [activeFile, setActiveFile] = useState<string | null>(null);
   const [reviewedFiles, setReviewedFiles] = useState<Set<string>>(new Set());
   const [collapsedFiles, setCollapsedFiles] = useState<Set<string>>(new Set());
-  const mainRef = useRef<HTMLElement>(null);
+  const mainRef = useRef<HTMLElement | null>(null);
   const currentFileIdx = useRef(0);
   const initializedDiffRef = useRef<typeof diff>(null);
 
@@ -201,40 +201,42 @@ export function App() {
           reviewedFiles={reviewedFiles}
           onFileClick={handleSidebarFileClick}
         />
-        <main ref={mainRef} className="flex-1 overflow-y-auto pb-12">
-          {loading && (
-            <div className="flex items-center justify-center p-12 text-text-muted text-lg">
-              Loading diff...
-            </div>
-          )}
-          {diff && (
-            <DiffView
-              diff={diff}
-              viewMode={viewMode}
-              theme={theme}
-              collapsedFiles={collapsedFiles}
-              onToggleCollapse={handleToggleCollapse}
-              reviewedFiles={reviewedFiles}
-              onReviewedChange={handleReviewedChange}
-              onActiveFileChange={setActiveFile}
-            />
-          )}
-          {diff && diff.files.length === 0 && !loading && (
-            <div className="flex flex-col items-center justify-center p-12 text-text-muted text-center gap-3 min-h-[400px]">
-              <div className="text-added opacity-50 mb-2">
-                <CheckCircleIcon />
+        {diff ? (
+          <DiffView
+            diff={diff}
+            viewMode={viewMode}
+            theme={theme}
+            collapsedFiles={collapsedFiles}
+            onToggleCollapse={handleToggleCollapse}
+            reviewedFiles={reviewedFiles}
+            onReviewedChange={handleReviewedChange}
+            onActiveFileChange={setActiveFile}
+            scrollRef={(node) => { mainRef.current = node; }}
+          />
+        ) : (
+          <main ref={(node) => { mainRef.current = node; }} className="flex-1 overflow-y-auto pb-12">
+            {loading && (
+              <div className="flex items-center justify-center p-12 text-text-muted text-lg">
+                Loading diff...
               </div>
-              <h2 className="text-xl text-text-secondary">No changes found</h2>
-              <p>There are no differences to display.</p>
-              <div className="mt-4 flex flex-col gap-2 items-center">
-                <p className="text-sm mb-1">Try one of these:</p>
-                <code className="inline-block px-3 py-1 bg-bg-secondary border border-border rounded-md font-mono text-sm text-text">diffity --staged</code>
-                <code className="inline-block px-3 py-1 bg-bg-secondary border border-border rounded-md font-mono text-sm text-text">diffity HEAD~1</code>
-                <code className="inline-block px-3 py-1 bg-bg-secondary border border-border rounded-md font-mono text-sm text-text">diffity main..feature</code>
-              </div>
+            )}
+          </main>
+        )}
+        {diff && diff.files.length === 0 && !loading && (
+          <div className="flex-1 flex flex-col items-center justify-center p-12 text-text-muted text-center gap-3 min-h-[400px]">
+            <div className="text-added opacity-50 mb-2">
+              <CheckCircleIcon />
             </div>
-          )}
-        </main>
+            <h2 className="text-xl text-text-secondary">No changes found</h2>
+            <p>There are no differences to display.</p>
+            <div className="mt-4 flex flex-col gap-2 items-center">
+              <p className="text-sm mb-1">Try one of these:</p>
+              <code className="inline-block px-3 py-1 bg-bg-secondary border border-border rounded-md font-mono text-sm text-text">diffity --staged</code>
+              <code className="inline-block px-3 py-1 bg-bg-secondary border border-border rounded-md font-mono text-sm text-text">diffity HEAD~1</code>
+              <code className="inline-block px-3 py-1 bg-bg-secondary border border-border rounded-md font-mono text-sm text-text">diffity main..feature</code>
+            </div>
+          </div>
+        )}
       </div>
       {showHelp && <ShortcutModal onClose={() => setShowHelp(false)} />}
     </div>
