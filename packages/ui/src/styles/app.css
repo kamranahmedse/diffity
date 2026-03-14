@@ -24,6 +24,8 @@
   --color-diff-del-word: #ff818266;
   --color-diff-hunk-bg: #ddf4ff;
   --color-diff-hunk-text: #0969da;
+  --color-diff-expanded-bg: #f6fcff;
+  --color-diff-expanded-gutter: #edf7ff;
 
   --color-accent: #0969da;
   --color-accent-hover: #0550ae;
@@ -59,6 +61,8 @@
   --color-diff-del-word: rgba(248, 81, 73, 0.4);
   --color-diff-hunk-bg: rgba(56, 139, 253, 0.15);
   --color-diff-hunk-text: #58a6ff;
+  --color-diff-expanded-bg: rgba(56, 139, 253, 0.07);
+  --color-diff-expanded-gutter: rgba(56, 139, 253, 0.10);
 
   --color-accent: #58a6ff;
   --color-accent-hover: #79c0ff;

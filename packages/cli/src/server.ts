@@ -56,8 +56,6 @@ export function startServer(options: ServerOptions): Promise<ServerResult> {
   const { port, diffArgs, description } = options;
 
   const includeUntracked = diffArgs.length === 0;
-  let cachedDiff: ParsedDiff | null = null;
-
   function getFullDiff(args: string[]): string {
     let raw = getGitDiff(args);
     if (includeUntracked) {
@@ -67,14 +65,6 @@ export function startServer(options: ServerOptions): Promise<ServerResult> {
       }
     }
     return raw;
-  }
-
-  function getDiff(): ParsedDiff {
-    if (cachedDiff) {
-      return cachedDiff;
-    }
-    cachedDiff = parseDiff(getFullDiff(diffArgs));
-    return cachedDiff;
   }
 
   const uiDir = join(__dirname, 'ui');
@@ -99,7 +89,7 @@ export function startServer(options: ServerOptions): Promise<ServerResult> {
         sendJson(res, parseDiff(getFullDiff([...diffArgs, '-w'])));
         return;
       }
-      sendJson(res, getDiff());
+      sendJson(res, parseDiff(getFullDiff(diffArgs)));
       return;
     }
 
@@ -121,12 +111,6 @@ export function startServer(options: ServerOptions): Promise<ServerResult> {
         ...info,
         description: description || diffArgs.join(' ') || 'unstaged changes',
       });
-      return;
-    }
-
-    if (pathname === '/api/refresh') {
-      cachedDiff = null;
-      sendJson(res, { ok: true });
       return;
     }
 

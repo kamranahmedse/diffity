@@ -2,13 +2,14 @@ import type { DiffHunk, DiffLine as DiffLineType } from '@diffity/parser';
 import { cn } from '../lib/cn.js';
 import { getLineBg } from '../lib/diff-utils.js';
 import { WordDiff } from './word-diff.js';
-import { HunkHeader } from './hunk-header.js';
+import { HunkHeader, type ExpandControls } from './hunk-header.js';
 import { LineNumberCell } from './line-number-cell.js';
 import type { SyntaxToken } from './diff-line.js';
 
 interface HunkBlockSplitProps {
   hunk: DiffHunk;
   syntaxMap?: Map<string, SyntaxToken[]>;
+  expandControls?: ExpandControls;
 }
 
 interface SplitRow {
@@ -128,12 +129,12 @@ function SplitCell(props: { line: DiffLineType | null; side: 'left' | 'right'; s
 }
 
 export function HunkBlockSplit(props: HunkBlockSplitProps) {
-  const { hunk, syntaxMap } = props;
+  const { hunk, syntaxMap, expandControls } = props;
   const rows = buildSplitRows(hunk.lines);
 
   return (
-    <tbody className="border-t border-border-muted">
-      <HunkHeader hunk={hunk} />
+    <tbody className={expandControls?.wasExpanded && expandControls.remainingLines <= 0 ? '' : 'border-t border-border-muted'}>
+      <HunkHeader hunk={hunk} expandControls={expandControls} />
       {rows.map((row, i) => (
         <tr key={i} className="font-mono text-sm leading-5">
           <SplitCell line={row.left} side="left" syntaxMap={syntaxMap} />
