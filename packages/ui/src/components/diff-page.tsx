@@ -3,6 +3,7 @@ import { useDiff } from '../hooks/use-diff.js';
 import { useInfo } from '../hooks/use-info.js';
 import { useTheme } from '../hooks/use-theme.js';
 import { useKeyboard } from '../hooks/use-keyboard.js';
+import { CommentsProvider } from '../context/comments-context.js';
 import { SummaryBar } from './summary-bar.js';
 import { Toolbar } from './toolbar.js';
 import { DiffView, type DiffViewHandle } from './diff-view.js';
@@ -22,7 +23,7 @@ interface DiffPageProps {
 export function DiffPage(props: DiffPageProps) {
   const { refParam, onGoHome, isReview } = props;
 
-  const [viewMode, setViewMode] = useState<ViewMode>('unified');
+  const [viewMode, setViewMode] = useState<ViewMode>('split');
   const [hideWhitespace, setHideWhitespace] = useState(false);
   const [showHelp, setShowHelp] = useState(false);
   const { theme, toggleTheme } = useTheme();
@@ -193,6 +194,7 @@ export function DiffPage(props: DiffPageProps) {
   }
 
   return (
+    <CommentsProvider>
     <div className="flex flex-col h-screen bg-bg text-text font-sans">
       <SummaryBar
         diff={diff}
@@ -208,6 +210,7 @@ export function DiffPage(props: DiffPageProps) {
         onHideWhitespaceChange={setHideWhitespace}
         theme={theme}
         onToggleTheme={toggleTheme}
+        diff={diff || undefined}
       />
       <div className="flex flex-1 overflow-hidden">
         <Sidebar
@@ -256,5 +259,6 @@ export function DiffPage(props: DiffPageProps) {
       </div>
       {showHelp && <ShortcutModal onClose={() => setShowHelp(false)} />}
     </div>
+    </CommentsProvider>
   );
 }

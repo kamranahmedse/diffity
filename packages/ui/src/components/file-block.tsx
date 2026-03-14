@@ -4,9 +4,16 @@ import { useInView } from 'react-intersection-observer';
 import type { DiffFile, DiffLine as DiffLineType } from '@diffity/parser';
 import type { SyntaxToken } from '../lib/syntax-token.js';
 import type { HighlightedTokens } from '../hooks/use-highlighter.js';
+import type { CommentSide, LineSelection } from '../types/comment.js';
 import { type ViewMode, getFilePath } from '../lib/diff-utils.js';
 import { computeGaps, createContextLines, getExpandRange, type ExpandableGap } from '../lib/context-expansion.js';
 import { fileContentOptions } from '../queries/file.js';
+import { useComments } from '../context/comments-context.js';
+import { useLineSelection } from '../hooks/use-line-selection.js';
+import { useCopy } from '../hooks/use-copy.js';
+import { CopyIcon } from './icons/copy-icon.js';
+import { CheckIcon } from './icons/check-icon.js';
+import { CommentIcon } from './icons/comment-icon.js';
 import { DiffStats } from './diff-stats.js';
 import { Badge } from './ui/badge.js';
 import { IconButton } from './ui/icon-button.js';
@@ -16,6 +23,8 @@ import { ContextRow } from './context-row.js';
 import { ExpandRow } from './expand-row.js';
 
 export const LARGE_DIFF_LINE_THRESHOLD = 200;
+
+const DEFAULT_AUTHOR = { name: 'You', type: 'user' as const };
 
 function getTotalLineCount(file: DiffFile): number {
   let count = 0;
@@ -61,6 +70,47 @@ export function FileBlock(props: FileBlockProps) {
   const queryClient = useQueryClient();
   const fileContentPath = file.oldPath || filePath;
   const [fileLineCount, setFileLineCount] = useState<number | null>(null);
+
+  const { copied: pathCopied, copy: copyPath } = useCopy();
+
+  const {
+    getThreadsForFile, addThread, addReply, resolveThread, unresolveThread, deleteComment, deleteThread,
+    pendingSelection, setPendingSelection,
+  } = useComments();
+
+  const fileThreads = getThreadsForFile(filePath);
+
+  const handleSelectionComplete = useCallback((selection: LineSelection) => {
+    setPendingSelection(selection);
+  }, [setPendingSelection]);
+
+  const { isLineInSelection, handleLineMouseDown, handleLineMouseEnter } = useLineSelection({
+    filePath,
+    onSelectionComplete: handleSelectionComplete,
+  });
+
+  const handleCommentClick = useCallback((line: number, side: CommentSide) => {
+    setPendingSelection({
+      filePath,
+      side,
+      startLine: line,
+      endLine: line,
+    });
+  }, [filePath, setPendingSelection]);
+
+  const handleCancelPending = useCallback(() => {
+    setPendingSelection(null);
+  }, [setPendingSelection]);
+
+  const isLineSelected = useCallback((line: number, side: CommentSide) => {
+    if (isLineInSelection(line, side)) {
+      return true;
+    }
+    if (pendingSelection && pendingSelection.filePath === filePath && pendingSelection.side === side) {
+      return line >= pendingSelection.startLine && line <= pendingSelection.endLine;
+    }
+    return false;
+  }, [isLineInSelection, pendingSelection, filePath]);
 
   const { ref: inViewRef } = useInView({
     threshold: 0.1,
@@ -225,6 +275,8 @@ export function FileBlock(props: FileBlockProps) {
   const bottomGap = gapMap.get('bottom');
   const bottomRemaining = bottomGap ? getGapRemaining(bottomGap).total : 0;
 
+  const filePendingSelection = pendingSelection && pendingSelection.filePath === filePath ? pendingSelection : null;
+
   return (
     <div ref={setRefs} className="border border-border rounded-lg mx-4 my-4 overflow-hidden" id={`file-${encodeURIComponent(filePath)}`}>
       <div className="flex items-center gap-2 px-3 py-2 bg-bg-secondary border-b border-border text-sm sticky top-0 z-10 shadow-sticky">
@@ -246,9 +298,26 @@ export function FileBlock(props: FileBlockProps) {
             filePath
           )}
         </span>
+        <button
+          onClick={() => copyPath(filePath)}
+          className="shrink-0 text-text-muted hover:text-text transition-colors cursor-pointer"
+          title="Copy file path"
+        >
+          {pathCopied ? (
+            <CheckIcon className="w-3.5 h-3.5 text-added" />
+          ) : (
+            <CopyIcon className="w-3.5 h-3.5" />
+          )}
+        </button>
         {file.status !== 'modified' && <StatusBadge status={file.status} />}
         {file.isBinary && <Badge className="bg-bg-tertiary text-text-muted">Binary</Badge>}
         <div className="ml-auto flex items-center gap-3 shrink-0">
+          {fileThreads.length > 0 && (
+            <span className="text-xs text-text-muted flex items-center gap-1">
+              <CommentIcon className="w-3.5 h-3.5" />
+              {fileThreads.length}
+            </span>
+          )}
           <div className="flex items-center gap-1.5">
             <DiffStats additions={file.additions} deletions={file.deletions} />
             <div className="flex gap-px">
@@ -327,6 +396,21 @@ export function FileBlock(props: FileBlockProps) {
                     gapExpansion={betweenExpansion}
                     gapId={betweenGap?.id}
                     highlightLine={highlightLine}
+                    threads={fileThreads}
+                    pendingSelection={filePendingSelection}
+                    currentAuthor={DEFAULT_AUTHOR}
+                    isLineSelected={isLineSelected}
+                    onLineMouseDown={handleLineMouseDown}
+                    onLineMouseEnter={handleLineMouseEnter}
+                    onCommentClick={handleCommentClick}
+                    onAddThread={addThread}
+                    onReply={addReply}
+                    onResolve={resolveThread}
+                    onUnresolve={unresolveThread}
+                    onDeleteComment={deleteComment}
+                    onDeleteThread={deleteThread}
+                    onCancelPending={handleCancelPending}
+                    filePath={filePath}
                   />
                 );
               })}

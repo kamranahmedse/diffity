@@ -1,5 +1,5 @@
 import { createServer, type IncomingMessage, type ServerResponse } from 'node:http';
-import { readFileSync, existsSync } from 'node:fs';
+import { readFileSync, writeFileSync, existsSync } from 'node:fs';
 import { join, extname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { dirname } from 'node:path';
@@ -33,6 +33,8 @@ interface ServerOptions {
   diffArgs: string[];
   description?: string;
   review?: string;
+  commentsFile?: string;
+  stdinComments?: string;
 }
 
 function sendJson(res: ServerResponse, data: unknown) {
@@ -62,8 +64,32 @@ interface ServerResult {
   close: () => void;
 }
 
+function readBody(req: IncomingMessage): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const chunks: Buffer[] = [];
+    req.on('data', (chunk: Buffer) => chunks.push(chunk));
+    req.on('end', () => resolve(Buffer.concat(chunks).toString()));
+    req.on('error', reject);
+  });
+}
+
 export function startServer(options: ServerOptions): Promise<ServerResult> {
-  const { port, diffArgs, description, review } = options;
+  const { port, diffArgs, description, review, commentsFile, stdinComments } = options;
+
+  let threads: unknown[] = [];
+  if (stdinComments) {
+    try {
+      threads = JSON.parse(stdinComments);
+    } catch {
+      console.error('Warning: Could not parse comments from stdin');
+    }
+  } else if (commentsFile && existsSync(commentsFile)) {
+    try {
+      threads = JSON.parse(readFileSync(commentsFile, 'utf-8'));
+    } catch {
+      console.error(`Warning: Could not parse comments file: ${commentsFile}`);
+    }
+  }
 
   const includeUntracked = diffArgs.length === 0;
   function getFullDiff(args: string[]): string {
@@ -79,17 +105,36 @@ export function startServer(options: ServerOptions): Promise<ServerResult> {
 
   const uiDir = join(__dirname, 'ui');
 
-  const server = createServer((req: IncomingMessage, res: ServerResponse) => {
+  const server = createServer(async (req: IncomingMessage, res: ServerResponse) => {
     const url = new URL(req.url || '/', `http://localhost:${port}`);
     const pathname = url.pathname;
 
     res.setHeader('Access-Control-Allow-Origin', '*');
-    res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
+    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
     res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
 
     if (req.method === 'OPTIONS') {
       res.writeHead(204);
       res.end();
+      return;
+    }
+
+    if (pathname === '/api/comments' && req.method === 'GET') {
+      sendJson(res, threads);
+      return;
+    }
+
+    if (pathname === '/api/comments' && req.method === 'POST') {
+      try {
+        const body = await readBody(req);
+        threads = JSON.parse(body);
+        if (commentsFile) {
+          writeFileSync(commentsFile, JSON.stringify(threads, null, 2));
+        }
+        sendJson(res, { ok: true });
+      } catch (err) {
+        sendError(res, 400, `Invalid JSON: ${err}`);
+      }
       return;
     }
 

@@ -18,6 +18,7 @@ program
   .option('--no-open', 'Do not open browser automatically')
   .option('--quiet', 'Minimal terminal output')
   .option('--review <ref>', 'Lock view for code review')
+  .option('--comments <file>', 'Load/save comments from JSON file (use "-" for stdin)')
   .action(async (refs: string[], opts) => {
     if (!isGitRepo()) {
       console.error(pc.red('Error: Not a git repository'));
@@ -64,8 +65,21 @@ program
       urlRef = 'all';
     }
 
+    let commentsFile: string | undefined;
+    let stdinComments: string | undefined;
+
+    if (opts.comments === '-') {
+      const chunks: Buffer[] = [];
+      for await (const chunk of process.stdin) {
+        chunks.push(chunk as Buffer);
+      }
+      stdinComments = Buffer.concat(chunks).toString();
+    } else if (opts.comments) {
+      commentsFile = opts.comments;
+    }
+
     try {
-      const { port: actualPort, close } = await startServer({ port, diffArgs, description, review: reviewRef });
+      const { port: actualPort, close } = await startServer({ port, diffArgs, description, review: reviewRef, commentsFile, stdinComments });
       const url = urlRef
         ? `http://localhost:${actualPort}/?ref=${encodeURIComponent(urlRef)}`
         : `http://localhost:${actualPort}`;

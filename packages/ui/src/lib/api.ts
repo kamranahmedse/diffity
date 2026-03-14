@@ -74,6 +74,22 @@ export async function fetchCommits(skip = 0, count = 10, search?: string): Promi
   return res.json();
 }
 
+export async function fetchComments(): Promise<unknown[]> {
+  const res = await fetch('/api/comments');
+  if (!res.ok) {
+    return [];
+  }
+  return res.json();
+}
+
+export async function saveComments(threads: unknown[]): Promise<void> {
+  await fetch('/api/comments', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(threads),
+  });
+}
+
 export async function fetchFileContent(filePath: string): Promise<string[]> {
   const res = await fetch(`/api/file/${encodeURIComponent(filePath)}`);
   if (!res.ok) {
