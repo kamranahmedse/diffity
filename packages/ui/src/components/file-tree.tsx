@@ -14,11 +14,12 @@ interface FileTreeProps {
   search: string;
   activeFile: string | null;
   reviewedFiles: Set<string>;
+  filesWithComments: Set<string>;
   onFileClick: (path: string) => void;
 }
 
 export function FileTree(props: FileTreeProps) {
-  const { files, search, activeFile, reviewedFiles, onFileClick } = props;
+  const { files, search, activeFile, reviewedFiles, filesWithComments, onFileClick } = props;
 
   const tree = useMemo(() => {
     return sortTree(collapseSingleChildDirs(buildFileTree(files)));
@@ -60,6 +61,7 @@ export function FileTree(props: FileTreeProps) {
           depth={0}
           activeFile={activeFile}
           reviewedFiles={reviewedFiles}
+          filesWithComments={filesWithComments}
           expandedDirs={expandedDirs}
           onToggleDir={handleToggleDir}
           onFileClick={onFileClick}

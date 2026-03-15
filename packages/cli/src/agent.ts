@@ -42,15 +42,21 @@ function resolveThreadId(shortId: string, sessionId: string): Thread {
 
 function formatThreadLine(thread: Thread): string {
   const shortId = thread.id.slice(0, 8);
+  const isGeneral = thread.filePath === '__general__';
+  const statusColor = thread.status === 'open' ? pc.yellow : thread.status === 'resolved' ? pc.green : thread.status === 'dismissed' ? pc.dim : pc.cyan;
+  const statusLabel = statusColor(`[${thread.status}]`);
+  const firstComment = thread.comments[0]?.body || '';
+  const truncated = firstComment.length > 80 ? firstComment.slice(0, 77) + '...' : firstComment;
+
+  if (isGeneral) {
+    return `${statusLabel.padEnd(22)} ${pc.dim(shortId)}  ${pc.bold('General comment')}\n${''.padEnd(15)}${pc.dim('"')}${truncated}${pc.dim('"')}`;
+  }
+
   const lineRange = thread.startLine === thread.endLine
     ? `${thread.startLine}`
     : `${thread.startLine}-${thread.endLine}`;
   const location = `${thread.filePath}:${lineRange}`;
   const sideLabel = thread.side === 'old' ? '(old)' : '(new)';
-  const statusColor = thread.status === 'open' ? pc.yellow : thread.status === 'resolved' ? pc.green : thread.status === 'dismissed' ? pc.dim : pc.cyan;
-  const statusLabel = statusColor(`[${thread.status}]`);
-  const firstComment = thread.comments[0]?.body || '';
-  const truncated = firstComment.length > 80 ? firstComment.slice(0, 77) + '...' : firstComment;
 
   return `${statusLabel.padEnd(22)} ${pc.dim(shortId)}  ${location} ${pc.dim(sideLabel)}\n${''.padEnd(15)}${pc.dim('"')}${truncated}${pc.dim('"')}`;
 }
@@ -64,7 +70,8 @@ Examples:
   $ diffity agent list --status open --json
   $ diffity agent comment --file src/app.ts --line 42 --body "Missing null check"
   $ diffity agent resolve abc123 --summary "Added null check"
-  $ diffity agent reply abc123 --body "Good catch, fixed"`);
+  $ diffity agent reply abc123 --body "Good catch, fixed"
+  $ diffity agent general-comment --body "Overall this looks good, just a few nits"`);
 
   agent
     .command('list')
@@ -158,5 +165,23 @@ Examples:
       const thread = resolveThreadId(id, session.id);
       addReply(thread.id, opts.body, { name: 'Agent', type: 'agent' });
       console.log(pc.green(`Replied to thread ${thread.id.slice(0, 8)}`));
+    });
+
+  agent
+    .command('general-comment')
+    .description('Create a general comment on the entire diff (not tied to a specific file or line)')
+    .requiredOption('--body <text>', 'Comment body')
+    .action((opts) => {
+      const session = requireSession();
+      const thread = createThread(
+        session.id,
+        '__general__',
+        'new',
+        0,
+        0,
+        opts.body,
+        { name: 'Agent', type: 'agent' },
+      );
+      console.log(pc.green(`Created general comment ${thread.id.slice(0, 8)}`));
     });
 }

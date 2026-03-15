@@ -29,6 +29,7 @@ import {
   addReply,
   updateThreadStatus,
   deleteThread,
+  deleteAllThreadsForSession,
   deleteComment,
   type ThreadStatus,
 } from './threads.js';
@@ -73,6 +74,7 @@ function serveStatic(res: ServerResponse, filePath: string) {
   res.writeHead(200, { 'Content-Type': mime });
   res.end(content);
 }
+
 
 function descriptionForRef(ref: string): string {
   switch (ref) {
@@ -355,6 +357,22 @@ export function startServer(options: ServerOptions): Promise<ServerResult> {
       return;
     }
 
+    if (pathname === '/api/threads' && req.method === 'DELETE') {
+      try {
+        const body = JSON.parse(await readBody(req));
+        const { sessionId: sid } = body;
+        if (!sid) {
+          sendError(res, 400, 'Missing sessionId');
+          return;
+        }
+        deleteAllThreadsForSession(sid);
+        sendJson(res, { ok: true });
+      } catch (err) {
+        sendError(res, 500, `Failed to delete all threads: ${err}`);
+      }
+      return;
+    }
+
     if (pathname === '/api/threads' && req.method === 'POST') {
       try {
         const body = JSON.parse(await readBody(req));
@@ -438,24 +456,29 @@ export function startServer(options: ServerOptions): Promise<ServerResult> {
   const closeFn = () => server.close();
 
   return new Promise((resolve, reject) => {
-    server.on('error', (err: NodeJS.ErrnoException) => {
-      if (err.code === 'EADDRINUSE') {
-        server.listen(0, () => {
-          const addr = server.address();
-          if (addr && typeof addr !== 'string') {
-            resolve({ port: addr.port, close: closeFn });
-          }
-        });
+    // When node --watch restarts the process, the old one may still hold the port
+    // briefly. Retry on the same port instead of falling back to a random one.
+    let retries = 0;
+    const maxRetries = 30;
+
+    const onError = (err: NodeJS.ErrnoException) => {
+      if (err.code === 'EADDRINUSE' && retries < maxRetries) {
+        retries++;
+        server.close();
+        setTimeout(() => server.listen(port), 500);
       } else {
         reject(err);
       }
-    });
+    };
 
-    server.listen(port, () => {
+    server.on('error', onError);
+    server.on('listening', () => {
       const addr = server.address();
       if (addr && typeof addr !== 'string') {
         resolve({ port: addr.port, close: closeFn });
       }
     });
+
+    server.listen(port);
   });
 }

@@ -17,6 +17,7 @@ You are reviewing a diff and leaving inline comments using the `{{binary}} agent
 ```
 {{binary}} agent list [--status open|resolved|dismissed] [--json]
 {{binary}} agent comment --file <path> --line <n> [--end-line <n>] [--side new|old] --body "<text>"
+{{binary}} agent general-comment --body "<text>"
 {{binary}} agent resolve <id> [--summary "<text>"]
 {{binary}} agent dismiss <id> [--reason "<text>"]
 {{binary}} agent reply <id> --body "<text>"
@@ -25,6 +26,7 @@ You are reviewing a diff and leaving inline comments using the `{{binary}} agent
 - `--file`, `--line`, `--body` are required for `comment`
 - `--end-line` defaults to `--line` (single-line comment)
 - `--side` defaults to `new`
+- `general-comment` creates a diff-level comment not tied to any file or line
 - `<id>` accepts full UUID or 8-char prefix
 
 ## Prerequisites
@@ -57,5 +59,13 @@ You are reviewing a diff and leaving inline comments using the `{{binary}} agent
    - Use `--side old` for comments on removed code
    - Use `--end-line` when the issue spans multiple lines
    - Be specific and actionable in your comments
-6. After leaving all comments, run `{{binary}} agent list` to confirm they were created.
-7. Tell the user to check the browser — comments will appear within 2 seconds via polling.
+6. After leaving all inline comments, write a general comment that summarizes your overall assessment of the diff. This should cover:
+   - Overall quality verdict (e.g. "Looks good with minor issues" or "Needs significant changes before merging")
+   - Cross-cutting concerns that don't belong on any single line (architecture, naming consistency across files, missing tests, etc.)
+   - A count of findings by severity (e.g. "2 must-fix, 3 suggestions, 1 nit")
+   ```
+   {{binary}} agent general-comment --body "<overall review summary>"
+   ```
+   If there are no inline findings, still leave a general comment with your assessment (e.g. "Clean diff — no issues found").
+7. Run `{{binary}} agent list` to confirm all comments were created.
+8. Tell the user to check the browser — comments will appear within 2 seconds via polling.

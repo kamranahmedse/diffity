@@ -18,6 +18,7 @@ import { useDiffStaleness } from '../hooks/use-diff-staleness';
 import { type ViewMode, getFilePath, getAutoCollapsedPaths, isWorkingTreeRef } from '../lib/diff-utils';
 import { getFileBlocks, getHunkHeaders, scrollToElement } from '../lib/dom-utils';
 import type { LineSelection } from '../types/comment';
+import { isThreadResolved } from '../types/comment';
 
 interface DiffPageProps {
   refParam?: string;
@@ -42,7 +43,6 @@ export function DiffPage(props: DiffPageProps) {
   const diffViewRef = useRef<DiffViewHandle>(null);
   const currentFileIdx = useRef(0);
   const initializedDiffRef = useRef<typeof diff>(null);
-  const scrollTargetRef = useRef<string | null>(null);
 
   const reviewsEnabled = !!info?.capabilities?.reviews;
   const sessionId = info?.sessionId ?? null;
@@ -52,6 +52,16 @@ export function DiffPage(props: DiffPageProps) {
   const { data: serverThreads, isFetched: threadsFetched } = useReviewThreads(reviewsEnabled ? sessionId : null);
   const threads = reviewsEnabled && serverThreads ? serverThreads : [];
   const commentActions = useCommentActions(sessionId, reviewsEnabled);
+
+  const filesWithComments = useMemo(() => {
+    const paths = new Set<string>();
+    for (const thread of threads) {
+      if (!isThreadResolved(thread)) {
+        paths.add(thread.filePath);
+      }
+    }
+    return paths;
+  }, [threads]);
 
   const handleAddThread = useCallback((...args: Parameters<typeof commentActions.addThread>) => {
     commentActions.addThread(...args);
@@ -212,18 +222,15 @@ export function DiffPage(props: DiffPageProps) {
   }, [queryClient, resetStaleness]);
 
   const handleSidebarFileClick = useCallback((path: string) => {
-    scrollTargetRef.current = path;
     setActiveFile(path);
     diffViewRef.current?.scrollToFile(path);
   }, []);
 
+  const handleScrollToThread = useCallback((threadId: string, filePath: string) => {
+    diffViewRef.current?.scrollToThread(threadId, filePath);
+  }, []);
+
   const handleActiveFileFromScroll = useCallback((path: string) => {
-    if (scrollTargetRef.current) {
-      if (path === scrollTargetRef.current) {
-        scrollTargetRef.current = null;
-      }
-      return;
-    }
     setActiveFile(path);
   }, []);
 
@@ -256,7 +263,7 @@ export function DiffPage(props: DiffPageProps) {
         <h2 className="text-xl text-text-secondary">No changes found</h2>
         <p className="text-text-muted">There are no differences to display.</p>
         <div className="mt-4 flex flex-col gap-2 items-center">
-          <p className="text-sm text-text-muted mb-1">Try one of these:</p>
+          <p className="text-sm text-text-muted mb-1">Try one of these</p>
           <code className="inline-block px-3 py-1 bg-bg-secondary border border-border rounded-md font-mono text-sm text-text">
             diffity --staged
           </code>
@@ -289,6 +296,8 @@ export function DiffPage(props: DiffPageProps) {
         diff={diff || undefined}
         diffRef={refParam}
         threads={threads}
+        onDeleteAllComments={commentActions.deleteAllThreads}
+        onScrollToThread={handleScrollToThread}
       />
       {isStale && <StaleDiffBanner onRefresh={handleRefreshDiff} />}
       <div className="flex flex-1 overflow-hidden">
@@ -296,6 +305,7 @@ export function DiffPage(props: DiffPageProps) {
           files={diff?.files || []}
           activeFile={activeFile}
           reviewedFiles={reviewedFiles}
+          filesWithComments={filesWithComments}
           onFileClick={handleSidebarFileClick}
         />
         {diff ? (

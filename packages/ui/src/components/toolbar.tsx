@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import type { ParsedDiff } from '@diffity/parser';
 import { cn } from '../lib/cn';
 import { useCopy } from '../hooks/use-copy';
@@ -7,6 +8,8 @@ import { CopyIcon } from './icons/copy-icon';
 import { CheckIcon } from './icons/check-icon';
 import { ChevronUpIcon } from './icons/chevron-up-icon';
 import { ChevronDownIcon } from './icons/chevron-down-icon';
+import { TrashIcon } from './icons/trash-icon';
+import { ConfirmDialog } from './ui/confirm-dialog';
 import { GENERAL_THREAD_FILE_PATH } from '../types/comment';
 import type { ViewMode } from '../lib/diff-utils';
 import type { CommentThread } from '../types/comment';
@@ -22,6 +25,8 @@ interface ToolbarProps {
   diff?: ParsedDiff;
   diffRef?: string;
   threads: CommentThread[];
+  onDeleteAllComments: () => void;
+  onScrollToThread: (threadId: string, filePath: string) => void;
 }
 
 function extractCodeContext(diff: ParsedDiff | undefined, filePath: string, side: 'old' | 'new', startLine: number, endLine: number): string[] {
@@ -107,9 +112,12 @@ export function Toolbar(props: ToolbarProps) {
     diff,
     diffRef,
     threads,
+    onDeleteAllComments,
+    onScrollToThread,
   } = props;
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const { copied, copy } = useCopy();
-  const { currentIndex, count: unresolvedCount, goToPrevious, goToNext } = useThreadNavigation(threads);
+  const { currentIndex, count: unresolvedCount, goToPrevious, goToNext } = useThreadNavigation(threads, onScrollToThread);
 
   const baseBtn = 'px-3 py-1 border border-border text-sm text-text-secondary transition-colors duration-150 cursor-pointer';
   const activeBtn = 'bg-accent text-white border-accent';
@@ -174,24 +182,45 @@ export function Toolbar(props: ToolbarProps) {
               <ChevronDownIcon className="w-3.5 h-3.5" />
             </button>
           </div>
-          <button
-            onClick={() => copy(formatThreadsForCopy(threads, diff, diffRef))}
-            className={cn(baseBtn, 'rounded-md flex items-center gap-1.5', inactiveBtn)}
-            title="Copy unresolved comments to clipboard"
-          >
-            {copied ? (
-              <>
-                <CheckIcon className="w-3.5 h-3.5 text-added" />
-                Copied
-              </>
-            ) : (
-              <>
-                <CopyIcon className="w-3.5 h-3.5" />
-                Copy comments
-              </>
-            )}
-          </button>
+          <div className="flex items-center">
+            <button
+              onClick={() => copy(formatThreadsForCopy(threads, diff, diffRef))}
+              className={cn(baseBtn, 'rounded-l-md flex items-center gap-1.5', inactiveBtn)}
+              title="Copy unresolved comments to clipboard"
+            >
+              {copied ? (
+                <>
+                  <CheckIcon className="w-3.5 h-3.5 text-added" />
+                  Copied
+                </>
+              ) : (
+                <>
+                  <CopyIcon className="w-3.5 h-3.5" />
+                  Copy comments
+                </>
+              )}
+            </button>
+            <button
+              onClick={() => setShowDeleteConfirm(true)}
+              className={cn(baseBtn, 'rounded-r-md border-l-0 flex items-center self-stretch', inactiveBtn)}
+              title="Delete all comments"
+            >
+              <TrashIcon className="w-3.5 h-3.5" />
+            </button>
+          </div>
         </div>
+      )}
+      {showDeleteConfirm && (
+        <ConfirmDialog
+          title="Delete all comments"
+          message="Are you sure you want to delete all comments? This action cannot be undone."
+          confirmLabel="Delete all"
+          onConfirm={() => {
+            onDeleteAllComments();
+            setShowDeleteConfirm(false);
+          }}
+          onCancel={() => setShowDeleteConfirm(false)}
+        />
       )}
     </div>
   );

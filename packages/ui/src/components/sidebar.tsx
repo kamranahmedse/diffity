@@ -6,11 +6,12 @@ interface SidebarProps {
   files: DiffFile[];
   activeFile: string | null;
   reviewedFiles: Set<string>;
+  filesWithComments: Set<string>;
   onFileClick: (path: string) => void;
 }
 
 export function Sidebar(props: SidebarProps) {
-  const { files, activeFile, reviewedFiles, onFileClick } = props;
+  const { files, activeFile, reviewedFiles, filesWithComments, onFileClick } = props;
   const [search, setSearch] = useState('');
   const [collapsed, setCollapsed] = useState(false);
 
@@ -67,6 +68,7 @@ export function Sidebar(props: SidebarProps) {
         search={search}
         activeFile={activeFile}
         reviewedFiles={reviewedFiles}
+        filesWithComments={filesWithComments}
         onFileClick={onFileClick}
       />
     </aside>

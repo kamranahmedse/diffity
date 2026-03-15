@@ -161,6 +161,17 @@ export async function updateThreadStatus(threadId: string, status: string, summa
   }
 }
 
+export async function deleteAllThreads(sessionId: string): Promise<void> {
+  const res = await fetch('/api/threads', {
+    method: 'DELETE',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ sessionId }),
+  });
+  if (!res.ok) {
+    throw new Error(`HTTP ${res.status}`);
+  }
+}
+
 export async function deleteThread(threadId: string): Promise<void> {
   const res = await fetch(`/api/threads/${threadId}`, {
     method: 'DELETE',

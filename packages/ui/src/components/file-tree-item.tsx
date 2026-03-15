@@ -5,19 +5,21 @@ import { StatusBadge } from './ui/status-badge';
 import { ChevronIcon } from './icons/chevron-icon';
 import { FolderIcon } from './icons/folder-icon';
 import { FileIcon } from './icons/file-icon';
+import { CommentIcon } from './icons/comment-icon';
 
 interface FileTreeItemProps {
   node: TreeNode;
   depth: number;
   activeFile: string | null;
   reviewedFiles: Set<string>;
+  filesWithComments: Set<string>;
   expandedDirs: Set<string>;
   onToggleDir: (path: string) => void;
   onFileClick: (path: string) => void;
 }
 
 export function FileTreeItem(props: FileTreeItemProps) {
-  const { node, depth, activeFile, reviewedFiles, expandedDirs, onToggleDir, onFileClick } = props;
+  const { node, depth, activeFile, reviewedFiles, filesWithComments, expandedDirs, onToggleDir, onFileClick } = props;
   const paddingLeft = depth * 12 + 8;
 
   if (node.type === 'dir') {
@@ -40,6 +42,7 @@ export function FileTreeItem(props: FileTreeItemProps) {
             depth={depth + 1}
             activeFile={activeFile}
             reviewedFiles={reviewedFiles}
+            filesWithComments={filesWithComments}
             expandedDirs={expandedDirs}
             onToggleDir={onToggleDir}
             onFileClick={onFileClick}
@@ -51,6 +54,7 @@ export function FileTreeItem(props: FileTreeItemProps) {
 
   const isActive = activeFile === node.path;
   const isReviewed = reviewedFiles.has(node.path);
+  const hasComments = filesWithComments.has(node.path);
 
   return (
     <button
@@ -69,6 +73,9 @@ export function FileTreeItem(props: FileTreeItemProps) {
       <span className={cn('flex-1 min-w-0 truncate', isReviewed && 'line-through')}>
         {node.name}
       </span>
+      {hasComments && (
+        <CommentIcon className="w-3.5 h-3.5 text-accent shrink-0" />
+      )}
       {isReviewed ? (
         <span className="text-added text-xs shrink-0" title="Viewed">&#10003;</span>
       ) : (

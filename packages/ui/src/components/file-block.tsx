@@ -1,7 +1,6 @@
 import { useState, useMemo, useCallback } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import type { DiffHunk } from '@diffity/parser';
-import { useInView } from 'react-intersection-observer';
 import type { DiffFile, DiffLine as DiffLineType } from '@diffity/parser';
 import type { SyntaxToken } from '../lib/syntax-token';
 import type { HighlightedTokens } from '../hooks/use-highlighter';
@@ -49,7 +48,6 @@ interface FileBlockProps {
   onToggleCollapse: (path: string) => void;
   reviewed: boolean;
   onReviewedChange: (path: string, reviewed: boolean) => void;
-  onVisible?: (path: string) => void;
   highlightLine?: (code: string) => HighlightedTokens[] | null;
   baseRef?: string;
   canRevert?: boolean;
@@ -71,7 +69,7 @@ interface GapExpansion {
 
 export function FileBlock(props: FileBlockProps) {
   const {
-    file, viewMode, collapsed, onToggleCollapse, reviewed, onReviewedChange, onVisible, highlightLine, baseRef, canRevert, onRevert,
+    file, viewMode, collapsed, onToggleCollapse, reviewed, onReviewedChange, highlightLine, baseRef, canRevert, onRevert,
     threads: allThreads, commentsEnabled, commentActions, onAddThread: rawAddThread, pendingSelection, onPendingSelectionChange,
   } = props;
 
@@ -143,11 +141,8 @@ export function FileBlock(props: FileBlockProps) {
 
       if (isInDiff) {
         anchored.push(thread);
-      } else if (!isThreadResolved(thread) && thread.anchorContent) {
-        const currentCode = extractLinesFromDiff(file.hunks, thread.side, thread.startLine, thread.endLine);
-        if (currentCode && currentCode !== thread.anchorContent) {
-          orphaned.push(thread);
-        }
+      } else if (!isThreadResolved(thread)) {
+        orphaned.push(thread);
       }
     }
 
@@ -196,18 +191,6 @@ export function FileBlock(props: FileBlockProps) {
     return false;
   }, [isLineInSelection, pendingSelection, filePath, fileThreads]);
 
-  const { ref: inViewRef } = useInView({
-    threshold: 0.1,
-    onChange: (inView) => {
-      if (inView && onVisible) {
-        onVisible(filePath);
-      }
-    },
-  });
-
-  const setRefs = useCallback((node: HTMLDivElement | null) => {
-    inViewRef(node);
-  }, [inViewRef]);
 
   const syntaxMap = useMemo(() => {
     if (!highlightLine) {
@@ -345,7 +328,7 @@ export function FileBlock(props: FileBlockProps) {
   const filePendingSelection = pendingSelection && pendingSelection.filePath === filePath ? pendingSelection : null;
 
   return (
-    <div ref={setRefs} className="border border-border rounded-lg mx-4 my-4 overflow-hidden" id={`file-${encodeURIComponent(filePath)}`}>
+    <div className="border border-border rounded-lg mx-4 my-4 overflow-hidden" id={`file-${encodeURIComponent(filePath)}`}>
       <div className="flex items-center gap-2 px-3 py-2 bg-bg-secondary border-b border-border text-sm sticky top-0 z-10 shadow-sticky">
         <IconButton
           className="text-[10px] w-5 h-5 shrink-0"
@@ -354,7 +337,10 @@ export function FileBlock(props: FileBlockProps) {
         >
           {collapsed ? '\u25b6' : '\u25bc'}
         </IconButton>
-        <span className="font-mono text-sm truncate">
+        <button
+          className="font-mono text-sm truncate text-left cursor-pointer hover:text-text-link transition-colors"
+          onClick={() => onToggleCollapse(filePath)}
+        >
           {showRename ? (
             <>
               <span className="line-through text-text-muted">{file.oldPath}</span>
@@ -364,7 +350,7 @@ export function FileBlock(props: FileBlockProps) {
           ) : (
             filePath
           )}
-        </span>
+        </button>
         <button
           onClick={() => copyPath(filePath)}
           className="shrink-0 text-text-muted hover:text-text transition-colors cursor-pointer"

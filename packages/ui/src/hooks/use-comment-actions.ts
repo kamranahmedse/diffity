@@ -73,6 +73,15 @@ export function useCommentActions(sessionId: string | null, enabled: boolean) {
     });
   }, [enabled, invalidateThreads]);
 
+  const deleteAllThreads = useCallback(() => {
+    if (!enabled || !sessionId) {
+      return;
+    }
+    api.deleteAllThreads(sessionId).then(() => {
+      invalidateThreads();
+    });
+  }, [enabled, sessionId, invalidateThreads]);
+
   return {
     addThread,
     addReply,
@@ -81,6 +90,7 @@ export function useCommentActions(sessionId: string | null, enabled: boolean) {
     dismissThread,
     deleteComment,
     deleteThread,
+    deleteAllThreads,
   };
 }
 

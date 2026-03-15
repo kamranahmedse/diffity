@@ -200,6 +200,11 @@ export function deleteThread(threadId: string): void {
   db.prepare('DELETE FROM comment_threads WHERE id = ?').run(threadId);
 }
 
+export function deleteAllThreadsForSession(sessionId: string): void {
+  const db = getDb();
+  db.prepare('DELETE FROM comment_threads WHERE session_id = ?').run(sessionId);
+}
+
 export function deleteComment(commentId: string): void {
   const db = getDb();
   const comment = db.prepare('SELECT thread_id FROM comments WHERE id = ?').get(commentId) as { thread_id: string } | undefined;

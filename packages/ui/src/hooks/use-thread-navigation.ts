@@ -1,11 +1,11 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useMemo } from 'react';
 import type { CommentThread } from '../types/comment';
 import { isThreadResolved } from '../types/comment';
 
-export function useThreadNavigation(threads: CommentThread[]) {
+export function useThreadNavigation(threads: CommentThread[], onScrollToThread: (threadId: string, filePath: string) => void) {
   const [currentIndex, setCurrentIndex] = useState(-1);
 
-  const unresolvedThreads = threads.filter(t => !isThreadResolved(t));
+  const unresolvedThreads = useMemo(() => threads.filter(t => !isThreadResolved(t)), [threads]);
   const count = unresolvedThreads.length;
 
   const scrollToThread = useCallback((index: number) => {
@@ -13,12 +13,8 @@ export function useThreadNavigation(threads: CommentThread[]) {
     if (!thread) {
       return;
     }
-
-    const element = document.querySelector(`[data-thread-id="${thread.id}"]`);
-    if (element) {
-      element.scrollIntoView({ behavior: 'smooth', block: 'center' });
-    }
-  }, [unresolvedThreads]);
+    onScrollToThread(thread.id, thread.filePath);
+  }, [unresolvedThreads, onScrollToThread]);
 
   const goToPrevious = useCallback(() => {
     if (count === 0) {

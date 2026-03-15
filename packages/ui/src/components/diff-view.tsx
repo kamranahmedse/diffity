@@ -1,4 +1,4 @@
-import { useMemo, useRef, useImperativeHandle } from 'react';
+import { useMemo, useRef, useState, useCallback, useImperativeHandle, useEffect } from 'react';
 import { useVirtualizer } from '@tanstack/react-virtual';
 import type { ParsedDiff } from '@diffity/parser';
 import { FileBlock, LARGE_DIFF_LINE_THRESHOLD } from './file-block';
@@ -10,6 +10,7 @@ import type { CommentActions } from '../hooks/use-comment-actions';
 
 export interface DiffViewHandle {
   scrollToFile: (path: string) => void;
+  scrollToThread: (threadId: string, filePath: string) => void;
 }
 
 const VIRTUALIZER_OVERSCAN = 3;
@@ -85,14 +86,119 @@ export function DiffView(props: DiffViewProps) {
     overscan: VIRTUALIZER_OVERSCAN,
   });
 
+  const scrollTargetRef = useRef<string | null>(null);
+
+  const [pendingThreadScroll, setPendingThreadScroll] = useState<string | null>(null);
+
   useImperativeHandle(handle, () => ({
     scrollToFile: (path: string) => {
       const index = diff.files.findIndex((f) => getFilePath(f) === path);
       if (index >= 0) {
+        scrollTargetRef.current = path;
         virtualizer.scrollToIndex(index, { align: 'start' });
       }
     },
+    scrollToThread: (threadId: string, filePath: string) => {
+      const element = document.querySelector(`[data-thread-id="${threadId}"]`);
+      if (element) {
+        element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        return;
+      }
+
+      const index = diff.files.findIndex((f) => getFilePath(f) === filePath);
+      if (index >= 0) {
+        scrollTargetRef.current = filePath;
+        virtualizer.scrollToIndex(index, { align: 'start' });
+        setPendingThreadScroll(threadId);
+      }
+    },
   }), [diff.files, virtualizer]);
+
+  useEffect(() => {
+    if (!pendingThreadScroll) {
+      return;
+    }
+
+    const scrollEl = scrollElementRef.current;
+    if (!scrollEl) {
+      return;
+    }
+
+    const threadId = pendingThreadScroll;
+
+    const tryScroll = () => {
+      const element = document.querySelector(`[data-thread-id="${threadId}"]`);
+      if (element) {
+        setPendingThreadScroll(null);
+        element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        return true;
+      }
+      return false;
+    };
+
+    if (tryScroll()) {
+      return;
+    }
+
+    const observer = new MutationObserver(() => {
+      if (tryScroll()) {
+        observer.disconnect();
+      }
+    });
+
+    observer.observe(scrollEl, { childList: true, subtree: true });
+
+    const timeout = setTimeout(() => {
+      setPendingThreadScroll(null);
+      observer.disconnect();
+    }, 2000);
+
+    return () => {
+      observer.disconnect();
+      clearTimeout(timeout);
+    };
+  }, [pendingThreadScroll]);
+
+  const getTopVisibleFile = useCallback((): string | null => {
+    const visibleItems = virtualizer.getVirtualItems();
+    if (visibleItems.length === 0) {
+      return null;
+    }
+
+    const scrollEl = scrollElementRef.current;
+    if (!scrollEl) {
+      return null;
+    }
+
+    const scrollTop = scrollEl.scrollTop;
+    for (const item of visibleItems) {
+      if (item.end > scrollTop) {
+        return getFilePath(diff.files[item.index]);
+      }
+    }
+
+    return getFilePath(diff.files[visibleItems[0].index]);
+  }, [virtualizer, diff.files]);
+
+  const handleScroll = useCallback(() => {
+    if (!onActiveFileChange) {
+      return;
+    }
+
+    const topFile = getTopVisibleFile();
+    if (!topFile) {
+      return;
+    }
+
+    if (scrollTargetRef.current) {
+      if (topFile === scrollTargetRef.current) {
+        scrollTargetRef.current = null;
+      }
+      return;
+    }
+
+    onActiveFileChange(topFile);
+  }, [getTopVisibleFile, onActiveFileChange]);
 
   const items = virtualizer.getVirtualItems();
   const [paddingTop, paddingBottom] = items.length > 0
@@ -110,6 +216,7 @@ export function DiffView(props: DiffViewProps) {
           scrollRef(node);
         }
       }}
+      onScroll={handleScroll}
       className="flex-1 overflow-y-auto pb-12"
     >
       {commentsEnabled && (
@@ -135,7 +242,6 @@ export function DiffView(props: DiffViewProps) {
                 onToggleCollapse={onToggleCollapse}
                 reviewed={reviewedFiles.has(filePath)}
                 onReviewedChange={onReviewedChange}
-                onVisible={onActiveFileChange}
                 highlightLine={highlighters.get(filePath)}
                 baseRef={baseRef}
                 canRevert={canRevert}

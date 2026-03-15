@@ -13,6 +13,7 @@ You are engaging with open review threads as the code author — replying to que
 ```
 {{binary}} agent list [--status open|resolved|dismissed] [--json]
 {{binary}} agent comment --file <path> --line <n> [--end-line <n>] [--side new|old] --body "<text>"
+{{binary}} agent general-comment --body "<text>"
 {{binary}} agent resolve <id> [--summary "<text>"]
 {{binary}} agent dismiss <id> [--reason "<text>"]
 {{binary}} agent reply <id> --body "<text>"
@@ -21,6 +22,7 @@ You are engaging with open review threads as the code author — replying to que
 - `--file`, `--line`, `--body` are required for `comment`
 - `--end-line` defaults to `--line` (single-line comment)
 - `--side` defaults to `new`
+- `general-comment` creates a diff-level comment not tied to any file or line
 - `<id>` accepts full UUID or 8-char prefix
 
 ## Prerequisites
