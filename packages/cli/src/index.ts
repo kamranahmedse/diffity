@@ -2,9 +2,11 @@
 
 import { Command } from 'commander';
 import { rmSync, existsSync } from 'node:fs';
+import { join } from 'node:path';
+import { homedir } from 'node:os';
 import open from 'open';
 import pc from 'picocolors';
-import { isGitRepo, getDiffityDirPath } from '@diffity/git';
+import { isGitRepo } from '@diffity/git';
 import { startServer } from './server.js';
 import { registerAgentCommands } from './agent.js';
 
@@ -116,21 +118,16 @@ Examples:
 
 program
   .command('prune')
-  .description('Remove all diffity data (database, sessions) from this repo')
+  .description('Remove all diffity data (database, sessions) for all repos')
   .action(() => {
-    if (!isGitRepo()) {
-      console.error(pc.red('Error: Not a git repository'));
-      process.exit(1);
-    }
-
-    const dir = getDiffityDirPath();
+    const dir = join(homedir(), '.diffity');
     if (!existsSync(dir)) {
       console.log(pc.dim('Nothing to prune.'));
       return;
     }
 
     rmSync(dir, { recursive: true, force: true });
-    console.log(pc.green('Pruned diffity data for this repo.'));
+    console.log(pc.green('Pruned all diffity data (~/.diffity).'));
   });
 
 registerAgentCommands(program);
