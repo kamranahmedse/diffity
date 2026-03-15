@@ -1,16 +1,20 @@
 import { useState, useEffect } from 'react';
 
-function getRefFromUrl(): string | null {
+function getParams() {
   const params = new URLSearchParams(window.location.search);
-  return params.get('ref');
+  return {
+    ref: params.get('ref'),
+    theme: params.get('theme') as 'light' | 'dark' | null,
+    view: params.get('view') as 'split' | 'unified' | null,
+  };
 }
 
 export function useSearchParams() {
-  const [ref, setRef] = useState<string | null>(getRefFromUrl);
+  const [values, setValues] = useState(getParams);
 
   useEffect(() => {
     const handler = () => {
-      setRef(getRefFromUrl());
+      setValues(getParams());
     };
     window.addEventListener('popstate', handler);
     return () => {
@@ -18,5 +22,5 @@ export function useSearchParams() {
     };
   }, []);
 
-  return { ref };
+  return values;
 }

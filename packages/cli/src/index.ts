@@ -1,9 +1,10 @@
 #!/usr/bin/env node
 
 import { Command } from 'commander';
+import { rmSync, existsSync } from 'node:fs';
 import open from 'open';
 import pc from 'picocolors';
-import { isGitRepo } from '@diffity/git';
+import { isGitRepo, getDiffityDirPath } from '@diffity/git';
 import { startServer } from './server.js';
 import { registerAgentCommands } from './agent.js';
 
@@ -18,6 +19,8 @@ program
   .option('--port <port>', 'Port to use', '5391')
   .option('--no-open', 'Do not open browser automatically')
   .option('--quiet', 'Minimal terminal output')
+  .option('--dark', 'Open in dark mode (default: light)')
+  .option('--unified', 'Open in unified view (default: split)')
   .addHelpText('after', `
 Examples:
   $ diffity                    Working tree changes
@@ -70,7 +73,14 @@ Examples:
 
     try {
       const { port: actualPort, close } = await startServer({ port, diffArgs, description, effectiveRef });
-      const url = `http://localhost:${actualPort}/?ref=${encodeURIComponent(effectiveRef)}`;
+      const urlParams = new URLSearchParams({ ref: effectiveRef });
+      if (opts.dark) {
+        urlParams.set('theme', 'dark');
+      }
+      if (opts.unified) {
+        urlParams.set('view', 'unified');
+      }
+      const url = `http://localhost:${actualPort}/?${urlParams.toString()}`;
 
       if (!opts.quiet) {
         console.log('');
@@ -102,6 +112,25 @@ Examples:
       console.error(pc.red(`Failed to start server: ${err}`));
       process.exit(1);
     }
+  });
+
+program
+  .command('prune')
+  .description('Remove all diffity data (database, sessions) from this repo')
+  .action(() => {
+    if (!isGitRepo()) {
+      console.error(pc.red('Error: Not a git repository'));
+      process.exit(1);
+    }
+
+    const dir = getDiffityDirPath();
+    if (!existsSync(dir)) {
+      console.log(pc.dim('Nothing to prune.'));
+      return;
+    }
+
+    rmSync(dir, { recursive: true, force: true });
+    console.log(pc.green('Pruned diffity data for this repo.'));
   });
 
 registerAgentCommands(program);

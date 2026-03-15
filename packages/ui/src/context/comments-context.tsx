@@ -10,6 +10,7 @@ interface CommentsContextValue {
   addReply: (threadId: string, body: string, author: CommentAuthor) => void;
   resolveThread: (threadId: string) => void;
   unresolveThread: (threadId: string) => void;
+  dismissThread: (threadId: string) => void;
   deleteComment: (threadId: string, commentId: string) => void;
   deleteThread: (threadId: string) => void;
   getThreadsForFile: (filePath: string) => CommentThread[];
@@ -76,6 +77,15 @@ export function CommentsProvider(props: CommentsProviderProps) {
     });
   }, [enabled, invalidateThreads]);
 
+  const dismissThread = useCallback((threadId: string) => {
+    if (!enabled) {
+      return;
+    }
+    api.updateThreadStatus(threadId, 'dismissed').then(() => {
+      invalidateThreads();
+    });
+  }, [enabled, invalidateThreads]);
+
   const deleteComment = useCallback((threadId: string, commentId: string) => {
     if (!enabled) {
       return;
@@ -113,6 +123,7 @@ export function CommentsProvider(props: CommentsProviderProps) {
     addReply,
     resolveThread,
     unresolveThread,
+    dismissThread,
     deleteComment,
     deleteThread,
     getThreadsForFile,
