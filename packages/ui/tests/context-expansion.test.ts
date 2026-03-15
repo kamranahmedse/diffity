@@ -5,7 +5,7 @@ import {
   createContextLines,
   getExpandRange,
   type ExpandableGap,
-} from '../src/lib/context-expansion.js';
+} from '../src/lib/context-expansion';
 
 function makeHunk(oldStart: number, oldCount: number, newStart: number, newCount: number): DiffHunk {
   return {

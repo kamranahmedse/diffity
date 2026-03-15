@@ -1,12 +1,12 @@
 import type { DiffHunk, DiffLine as DiffLineType } from '@diffity/parser';
-import type { HighlightedTokens } from '../hooks/use-highlighter.js';
-import type { ViewMode } from '../lib/diff-utils.js';
-import type { SyntaxToken } from '../lib/syntax-token.js';
-import type { ExpandControls } from './hunk-header.js';
-import type { CommentThread as CommentThreadType, CommentAuthor, CommentSide, LineSelection } from '../types/comment.js';
-import { HunkBlock } from './hunk-block.js';
-import { HunkBlockSplit } from './hunk-block-split.js';
-import { buildExpansionSyntaxMap, renderExpansionRows } from './render-expansion-rows.js';
+import type { HighlightedTokens } from '../hooks/use-highlighter';
+import type { ViewMode } from '../lib/diff-utils';
+import type { SyntaxToken } from '../lib/syntax-token';
+import type { ExpandControls } from './hunk-header';
+import type { CommentThread as CommentThreadType, CommentAuthor, CommentSide, LineSelection } from '../types/comment';
+import { HunkBlock } from './hunk-block';
+import { HunkBlockSplit } from './hunk-block-split';
+import { buildExpansionSyntaxMap, renderExpansionRows } from './render-expansion-rows';
 
 interface GapExpansion {
   fromTop: number;

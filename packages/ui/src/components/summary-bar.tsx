@@ -1,5 +1,5 @@
 import type { ParsedDiff } from '@diffity/parser';
-import { DiffStats } from './diff-stats.js';
+import { DiffStats } from './diff-stats';
 
 interface SummaryBarProps {
   diff: ParsedDiff | null;

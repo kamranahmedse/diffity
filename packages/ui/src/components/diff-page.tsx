@@ -1,19 +1,19 @@
 import { useState, useCallback, useRef, useEffect, useMemo } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
-import { useDiff } from '../hooks/use-diff.js';
-import { useInfo } from '../hooks/use-info.js';
-import { useTheme } from '../hooks/use-theme.js';
-import { useKeyboard } from '../hooks/use-keyboard.js';
-import { CommentsProvider } from '../context/comments-context.js';
-import { SummaryBar } from './summary-bar.js';
-import { Toolbar } from './toolbar.js';
-import { DiffView, type DiffViewHandle } from './diff-view.js';
-import { Sidebar } from './sidebar.js';
-import { ShortcutModal } from './shortcut-modal.js';
-import { CheckCircleIcon } from './icons/check-circle-icon.js';
-import { PageLoader } from './skeleton.js';
-import { type ViewMode, getFilePath, getAutoCollapsedPaths, isWorkingTreeRef } from '../lib/diff-utils.js';
-import { getFileBlocks, getHunkHeaders, scrollToElement } from '../lib/dom-utils.js';
+import { useDiff } from '../hooks/use-diff';
+import { useInfo } from '../hooks/use-info';
+import { useTheme } from '../hooks/use-theme';
+import { useKeyboard } from '../hooks/use-keyboard';
+import { CommentsProvider } from '../context/comments-context';
+import { SummaryBar } from './summary-bar';
+import { Toolbar } from './toolbar';
+import { DiffView, type DiffViewHandle } from './diff-view';
+import { Sidebar } from './sidebar';
+import { ShortcutModal } from './shortcut-modal';
+import { CheckCircleIcon } from './icons/check-circle-icon';
+import { PageLoader } from './skeleton';
+import { type ViewMode, getFilePath, getAutoCollapsedPaths, isWorkingTreeRef } from '../lib/diff-utils';
+import { getFileBlocks, getHunkHeaders, scrollToElement } from '../lib/dom-utils';
 
 interface DiffPageProps {
   refParam?: string;

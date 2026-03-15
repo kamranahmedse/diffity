@@ -3,28 +3,28 @@ import { useQueryClient } from '@tanstack/react-query';
 import type { DiffHunk } from '@diffity/parser';
 import { useInView } from 'react-intersection-observer';
 import type { DiffFile, DiffLine as DiffLineType } from '@diffity/parser';
-import type { SyntaxToken } from '../lib/syntax-token.js';
-import type { HighlightedTokens } from '../hooks/use-highlighter.js';
-import type { CommentSide, LineSelection } from '../types/comment.js';
-import { type ViewMode, getFilePath, buildChangeGroupPatch, extractLinesFromDiff } from '../lib/diff-utils.js';
-import { revertFile as apiRevertFile, revertHunk as apiRevertHunk, applySuggestion as apiApplySuggestion } from '../lib/api.js';
-import { UndoIcon } from './icons/undo-icon.js';
-import { ConfirmDialog } from './ui/confirm-dialog.js';
-import { computeGaps, createContextLines, getExpandRange, type ExpandableGap } from '../lib/context-expansion.js';
-import { fileContentOptions } from '../queries/file.js';
-import { useComments } from '../context/comments-context.js';
-import { useLineSelection } from '../hooks/use-line-selection.js';
-import { useCopy } from '../hooks/use-copy.js';
-import { CopyIcon } from './icons/copy-icon.js';
-import { CheckIcon } from './icons/check-icon.js';
-import { CommentIcon } from './icons/comment-icon.js';
-import { DiffStats } from './diff-stats.js';
-import { Badge } from './ui/badge.js';
-import { IconButton } from './ui/icon-button.js';
-import { StatusBadge } from './ui/status-badge.js';
-import { HunkWithGap } from './hunk-with-gap.js';
-import { buildExpansionSyntaxMap, renderExpansionRows } from './render-expansion-rows.js';
-import { ExpandRow } from './expand-row.js';
+import type { SyntaxToken } from '../lib/syntax-token';
+import type { HighlightedTokens } from '../hooks/use-highlighter';
+import type { CommentSide, LineSelection } from '../types/comment';
+import { type ViewMode, getFilePath, buildChangeGroupPatch, extractLinesFromDiff } from '../lib/diff-utils';
+import { revertFile as apiRevertFile, revertHunk as apiRevertHunk, applySuggestion as apiApplySuggestion } from '../lib/api';
+import { UndoIcon } from './icons/undo-icon';
+import { ConfirmDialog } from './ui/confirm-dialog';
+import { computeGaps, createContextLines, getExpandRange, type ExpandableGap } from '../lib/context-expansion';
+import { fileContentOptions } from '../queries/file';
+import { useComments } from '../context/comments-context';
+import { useLineSelection } from '../hooks/use-line-selection';
+import { useCopy } from '../hooks/use-copy';
+import { CopyIcon } from './icons/copy-icon';
+import { CheckIcon } from './icons/check-icon';
+import { CommentIcon } from './icons/comment-icon';
+import { DiffStats } from './diff-stats';
+import { Badge } from './ui/badge';
+import { IconButton } from './ui/icon-button';
+import { StatusBadge } from './ui/status-badge';
+import { HunkWithGap } from './hunk-with-gap';
+import { buildExpansionSyntaxMap, renderExpansionRows } from './render-expansion-rows';
+import { ExpandRow } from './expand-row';
 
 export const LARGE_DIFF_LINE_THRESHOLD = 200;
 
@@ -110,7 +110,7 @@ export function FileBlock(props: FileBlockProps) {
     pendingSelection, setPendingSelection,
   } = useComments();
 
-  const addThread = useCallback((fp: string, side: import('../types/comment.js').CommentSide, startLine: number, endLine: number, body: string, author: import('../types/comment.js').CommentAuthor) => {
+  const addThread = useCallback((fp: string, side: import('../types/comment').CommentSide, startLine: number, endLine: number, body: string, author: import('../types/comment').CommentAuthor) => {
     const anchorContent = extractLinesFromDiff(file.hunks, side, startLine, endLine);
     rawAddThread(fp, side, startLine, endLine, body, author, anchorContent || undefined);
   }, [rawAddThread, file.hunks]);

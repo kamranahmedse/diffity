@@ -1,12 +1,12 @@
 import { useMemo } from 'react';
 import type { DiffHunk, DiffLine as DiffLineType } from '@diffity/parser';
-import type { SyntaxToken } from '../lib/syntax-token.js';
-import type { CommentThread as CommentThreadType, CommentAuthor, CommentSide, LineSelection, LineRenderProps } from '../types/comment.js';
-import { getChangeGroups } from '../lib/diff-utils.js';
-import { DiffLine } from './diff-line.js';
-import { HunkHeader, type ExpandControls } from './hunk-header.js';
-import { CommentThread } from './comment-thread.js';
-import { CommentFormRow } from './comment-form-row.js';
+import type { SyntaxToken } from '../lib/syntax-token';
+import type { CommentThread as CommentThreadType, CommentAuthor, CommentSide, LineSelection, LineRenderProps } from '../types/comment';
+import { getChangeGroups } from '../lib/diff-utils';
+import { DiffLine } from './diff-line';
+import { HunkHeader, type ExpandControls } from './hunk-header';
+import { CommentThread } from './comment-thread';
+import { CommentFormRow } from './comment-form-row';
 
 interface HunkBlockProps {
   hunk: DiffHunk;

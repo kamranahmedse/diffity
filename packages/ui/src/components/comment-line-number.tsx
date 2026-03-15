@@ -1,5 +1,5 @@
-import { cn } from '../lib/cn.js';
-import { PlusIcon } from './icons/plus-icon.js';
+import { cn } from '../lib/cn';
+import { PlusIcon } from './icons/plus-icon';
 
 interface CommentLineNumberProps {
   lineNumber: number | null;

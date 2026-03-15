@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
-import { commitsOptions } from '../queries/commits.js';
+import { commitsOptions } from '../queries/commits';
 
 export function useCommits() {
   const { data, isLoading, error } = useQuery(commitsOptions());

@@ -1,4 +1,4 @@
-import { Spinner } from './icons/spinner.js';
+import { Spinner } from './icons/spinner';
 
 export function PageLoader() {
   return (

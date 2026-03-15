@@ -2,6 +2,7 @@
   "name": "diffity",
   "version": "0.1.0",
   "private": true,
+  "type": "module",
   "description": "GitHub-style git diff viewer in the browser",
   "workspaces": [
     "packages/cli",
@@ -10,12 +11,24 @@
     "packages/ui"
   ],
   "scripts": {
-    "build": "npm run build -w @diffity/parser && npm run build -w @diffity/git && npm run build -w @diffity/ui && npm run build -w diffity",
+    "build": "tsx scripts/build.ts",
+    "build:skills": "tsx scripts/build-skills.ts",
     "test": "npm run test -w @diffity/parser && npm run test -w @diffity/ui",
-    "dev": "npm run dev -w @diffity/ui",
+    "predev": "tsx scripts/link-dev.ts && npm run build:skills",
+    "dev": "tsx scripts/dev.ts",
     "start": "npm run dev -w diffity"
   },
-  "keywords": ["git", "diff", "viewer", "cli"],
+  "keywords": [
+    "git",
+    "diff",
+    "viewer",
+    "cli"
+  ],
   "author": "",
-  "license": "PolyForm-Shield-1.0.0"
+  "license": "PolyForm-Shield-1.0.0",
+  "devDependencies": {
+    "concurrently": "^9.2.1",
+    "gray-matter": "^4.0.3",
+    "tsx": "^4.21.0"
+  }
 }

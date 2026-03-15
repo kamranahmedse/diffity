@@ -9,7 +9,8 @@
   "types": "./dist/index.d.ts",
   "scripts": {
     "build": "tsc",
-    "dev": "tsx src/index.ts"
+    "dev": "tsx src/index.ts",
+    "dev:watch": "tsc --watch"
   },
   "dependencies": {
     "@diffity/git": "0.1.0",

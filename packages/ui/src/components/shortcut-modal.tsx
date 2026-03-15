@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react';
-import { IconButton } from './ui/icon-button.js';
+import { IconButton } from './ui/icon-button';
 
 interface ShortcutModalProps {
   onClose: () => void;

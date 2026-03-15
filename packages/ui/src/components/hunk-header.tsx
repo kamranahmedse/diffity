@@ -1,8 +1,8 @@
 import type { DiffHunk } from '@diffity/parser';
-import { ArrowUpIcon } from './icons/arrow-up-icon.js';
-import { ArrowDownIcon } from './icons/arrow-down-icon.js';
-import { ChevronUpDownIcon } from './icons/chevron-up-down-icon.js';
-import { Spinner } from './icons/spinner.js';
+import { ArrowUpIcon } from './icons/arrow-up-icon';
+import { ArrowDownIcon } from './icons/arrow-down-icon';
+import { ChevronUpDownIcon } from './icons/chevron-up-down-icon';
+import { Spinner } from './icons/spinner';
 
 export interface ExpandControls {
   position: 'top' | 'between' | 'bottom';

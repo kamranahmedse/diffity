@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
-import { overviewOptions } from '../queries/overview.js';
+import { overviewOptions } from '../queries/overview';
 
 export function useOverview() {
   const { data, isLoading, error } = useQuery(overviewOptions());

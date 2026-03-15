@@ -1,6 +1,6 @@
 import type { DiffLine } from '@diffity/parser';
-import { WordDiff } from '../components/word-diff.js';
-import type { SyntaxToken } from '../lib/syntax-token.js';
+import { WordDiff } from '../components/word-diff';
+import type { SyntaxToken } from '../lib/syntax-token';
 
 export function renderContent(line: DiffLine, syntaxTokens?: SyntaxToken[]) {
   if (line.wordDiff && line.wordDiff.length > 0) {

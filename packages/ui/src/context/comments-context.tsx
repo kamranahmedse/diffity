@@ -1,8 +1,8 @@
 import { createContext, useContext, useState, useCallback } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
-import type { CommentThread, CommentAuthor, CommentSide, LineSelection } from '../types/comment.js';
-import { useReviewThreads } from '../hooks/use-review-threads.js';
-import * as api from '../lib/api.js';
+import type { CommentThread, CommentAuthor, CommentSide, LineSelection } from '../types/comment';
+import { useReviewThreads } from '../hooks/use-review-threads';
+import * as api from '../lib/api';
 
 interface CommentsContextValue {
   threads: CommentThread[];

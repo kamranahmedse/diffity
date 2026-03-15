@@ -1,6 +1,6 @@
-import { ArrowUpIcon } from './icons/arrow-up-icon.js';
-import { ArrowDownIcon } from './icons/arrow-down-icon.js';
-import { Spinner } from './icons/spinner.js';
+import { ArrowUpIcon } from './icons/arrow-up-icon';
+import { ArrowDownIcon } from './icons/arrow-down-icon';
+import { Spinner } from './icons/spinner';
 
 interface ExpandRowProps {
   position: 'top' | 'bottom';
