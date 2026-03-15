@@ -130,7 +130,7 @@ export function FileBlock(props: FileBlockProps) {
     onSelectionComplete: handleSelectionComplete,
   });
 
-  const handleCommentClick = useCallback((line: number, side: CommentSide) => {
+  const handleCommentClickFn = useCallback((line: number, side: CommentSide) => {
     setPendingSelection({
       filePath,
       side,
@@ -138,6 +138,8 @@ export function FileBlock(props: FileBlockProps) {
       endLine: line,
     });
   }, [filePath, setPendingSelection]);
+
+  const handleCommentClick = commentsEnabled ? handleCommentClickFn : undefined;
 
   const handleCancelPending = useCallback(() => {
     setPendingSelection(null);

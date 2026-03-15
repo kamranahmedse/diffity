@@ -137,7 +137,7 @@ function SplitCell(props: {
         lineNumber={lineNum}
         className={bgClass}
         isSelected={isSelected}
-        showCommentButton={lineNum !== null}
+        showCommentButton={!!onCommentClick && lineNum !== null}
         forceShowButton={contentHovered}
         onMouseDown={onMouseDown}
         onMouseEnter={onMouseEnter}
@@ -181,7 +181,7 @@ export function renderSplitRows(
           isSelected={leftNum !== null ? props.isLineSelected?.(leftNum, 'old') : false}
           onMouseDown={leftNum !== null ? () => props.onLineMouseDown?.(leftNum, 'old') : undefined}
           onMouseEnter={leftNum !== null ? () => props.onLineMouseEnter?.(leftNum, 'old') : undefined}
-          onCommentClick={leftNum !== null ? () => props.onCommentClick?.(leftNum, 'old') : undefined}
+          onCommentClick={leftNum !== null && props.onCommentClick ? () => props.onCommentClick!(leftNum, 'old') : undefined}
         />
         <SplitCell
           line={rightLine}
@@ -191,7 +191,7 @@ export function renderSplitRows(
           isSelected={rightNum !== null ? props.isLineSelected?.(rightNum, 'new') : false}
           onMouseDown={rightNum !== null ? () => props.onLineMouseDown?.(rightNum, 'new') : undefined}
           onMouseEnter={rightNum !== null ? () => props.onLineMouseEnter?.(rightNum, 'new') : undefined}
-          onCommentClick={rightNum !== null ? () => props.onCommentClick?.(rightNum, 'new') : undefined}
+          onCommentClick={rightNum !== null && props.onCommentClick ? () => props.onCommentClick!(rightNum, 'new') : undefined}
         />
       </tr>
     );
