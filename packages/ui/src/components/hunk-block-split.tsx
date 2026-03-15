@@ -196,6 +196,7 @@ export function renderSplitRows(
           onMouseDown={leftNum !== null ? () => props.onLineMouseDown?.(leftNum, 'old') : undefined}
           onMouseEnter={leftNum !== null ? () => props.onLineMouseEnter?.(leftNum, 'old') : undefined}
           onCommentClick={leftNum !== null && props.onCommentClick ? () => props.onCommentClick!(leftNum, 'old') : undefined}
+          onUndo={onUndo && !rightLine ? onUndo : undefined}
         />
         <SplitCell
           line={rightLine}
@@ -206,7 +207,7 @@ export function renderSplitRows(
           onMouseDown={rightNum !== null ? () => props.onLineMouseDown?.(rightNum, 'new') : undefined}
           onMouseEnter={rightNum !== null ? () => props.onLineMouseEnter?.(rightNum, 'new') : undefined}
           onCommentClick={rightNum !== null && props.onCommentClick ? () => props.onCommentClick!(rightNum, 'new') : undefined}
-          onUndo={onUndo}
+          onUndo={onUndo && rightLine ? onUndo : undefined}
         />
       </tr>
     );

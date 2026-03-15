@@ -448,6 +448,9 @@ export function FileBlock(props: FileBlockProps) {
                     onCancelPending={handleCancelPending}
                     filePath={filePath}
                     onRevertChange={canRevert ? (h: DiffHunk, startIndex: number, endIndex: number) => setConfirmRevertChange({ hunk: h, startIndex, endIndex }) : undefined}
+                    getOriginalCode={getOriginalCode}
+                    canApply={canRevert}
+                    onApplySuggestion={handleApplySuggestion}
                   />
                 );
               })}

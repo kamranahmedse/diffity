@@ -361,6 +361,39 @@ describe('buildChangeGroupPatch', () => {
     expect(patch).not.toContain('first');
   });
 
+  it('builds a correct patch for delete-only changes', () => {
+    const lines = [
+      makeLine('context', 'keep-before', 1, 1),
+      makeLine('delete', 'removed-a', 2, null),
+      makeLine('delete', 'removed-b', 3, null),
+      makeLine('context', 'keep-after', 4, 2),
+    ];
+    const hunk = makeHunk(lines);
+    const file = makeDiffFile([hunk]);
+    const patch = buildChangeGroupPatch(file, hunk, 1, 2);
+
+    expect(patch).toContain('@@ -1,4 +1,2 @@');
+    expect(patch).toContain(' keep-before');
+    expect(patch).toContain('-removed-a');
+    expect(patch).toContain('-removed-b');
+    expect(patch).toContain(' keep-after');
+    const patchLines = patch.split('\n');
+    const diffLines = patchLines.filter(l => !l.startsWith('---') && !l.startsWith('+++') && !l.startsWith('@@'));
+    expect(diffLines.some(l => l.startsWith('+'))).toBe(false);
+  });
+
+  it('builds a correct patch for delete-only with no surrounding context', () => {
+    const lines = [
+      makeLine('delete', 'only-line', 1, null),
+    ];
+    const hunk = makeHunk(lines, 1, 1);
+    const file = makeDiffFile([hunk]);
+    const patch = buildChangeGroupPatch(file, hunk, 0, 0);
+
+    expect(patch).toContain('@@ -1,1 +1,0 @@');
+    expect(patch).toContain('-only-line');
+  });
+
   it('handles added file paths', () => {
     const lines = [
       makeLine('add', 'new content', null, 1),
