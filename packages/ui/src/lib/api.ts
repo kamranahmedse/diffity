@@ -203,18 +203,6 @@ export async function revertHunk(patch: string): Promise<void> {
   }
 }
 
-export async function applySuggestion(filePath: string, startLine: number, endLine: number, newContent: string): Promise<void> {
-  const res = await fetch('/api/apply-suggestion', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ filePath, startLine, endLine, newContent }),
-  });
-  if (!res.ok) {
-    const json = await res.json().catch(() => ({ error: `HTTP ${res.status}` }));
-    throw new Error(json.error || `HTTP ${res.status}`);
-  }
-}
-
 export async function fetchFileContent(filePath: string, ref?: string): Promise<string[]> {
   const params = new URLSearchParams();
   if (ref) {

@@ -57,14 +57,5 @@ You are reviewing a diff and leaving inline comments using the `{{binary}} agent
    - Use `--side old` for comments on removed code
    - Use `--end-line` when the issue spans multiple lines
    - Be specific and actionable in your comments
-   - Include code suggestions using markdown code blocks when appropriate:
-     ````
-     --body "[suggestion] This could cause a null pointer. Consider:
-     \`\`\`suggestion
-     if (value != null) {
-       process(value);
-     }
-     \`\`\`"
-     ````
 6. After leaving all comments, run `{{binary}} agent list` to confirm they were created.
 7. Tell the user to check the browser — comments will appear within 2 seconds via polling.

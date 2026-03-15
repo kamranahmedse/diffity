@@ -7,7 +7,7 @@ import type { SyntaxToken } from '../lib/syntax-token';
 import type { HighlightedTokens } from '../hooks/use-highlighter';
 import type { CommentSide, LineSelection } from '../types/comment';
 import { type ViewMode, getFilePath, buildChangeGroupPatch, extractLinesFromDiff } from '../lib/diff-utils';
-import { revertFile as apiRevertFile, revertHunk as apiRevertHunk, applySuggestion as apiApplySuggestion } from '../lib/api';
+import { revertFile as apiRevertFile, revertHunk as apiRevertHunk } from '../lib/api';
 import { UndoIcon } from './icons/undo-icon';
 import { ConfirmDialog } from './ui/confirm-dialog';
 import { computeGaps, createContextLines, getExpandRange, type ExpandableGap } from '../lib/context-expansion';
@@ -96,19 +96,15 @@ export function FileBlock(props: FileBlockProps) {
     onRevert?.();
   }, [file, onRevert]);
 
-  const getOriginalCode = useCallback((side: CommentSide, startLine: number, endLine: number) => {
-    return extractLinesFromDiff(file.hunks, side, startLine, endLine);
-  }, [file.hunks]);
-
-  const handleApplySuggestion = useCallback(async (path: string, startLine: number, endLine: number, newContent: string) => {
-    await apiApplySuggestion(path, startLine, endLine, newContent);
-    onRevert?.();
-  }, [onRevert]);
 
   const {
     getThreadsForFile, addThread: rawAddThread, addReply, resolveThread, unresolveThread, deleteComment, deleteThread,
     pendingSelection, setPendingSelection,
   } = useComments();
+
+  const getOriginalCode = useCallback((side: CommentSide, startLine: number, endLine: number) => {
+    return extractLinesFromDiff(file.hunks, side, startLine, endLine);
+  }, [file.hunks]);
 
   const addThread = useCallback((fp: string, side: import('../types/comment').CommentSide, startLine: number, endLine: number, body: string, author: import('../types/comment').CommentAuthor) => {
     const anchorContent = extractLinesFromDiff(file.hunks, side, startLine, endLine);
@@ -454,8 +450,6 @@ export function FileBlock(props: FileBlockProps) {
                     filePath={filePath}
                     onRevertChange={canRevert ? (h: DiffHunk, startIndex: number, endIndex: number) => setConfirmRevertChange({ hunk: h, startIndex, endIndex }) : undefined}
                     getOriginalCode={getOriginalCode}
-                    canApply={canRevert}
-                    onApplySuggestion={handleApplySuggestion}
                   />
                 );
               })}
@@ -472,6 +466,7 @@ export function FileBlock(props: FileBlockProps) {
                   currentAuthor: DEFAULT_AUTHOR, onAddThread: addThread, onReply: addReply,
                   onResolve: resolveThread, onUnresolve: unresolveThread, onDeleteComment: deleteComment,
                   onDeleteThread: deleteThread, onCancelPending: handleCancelPending, filePath,
+                  getOriginalCode,
                 };
                 return (
                   <tbody>

@@ -230,6 +230,7 @@ export function buildChangeGroupPatch(file: DiffFile, hunk: DiffHunk, startIndex
   return patchLines.join('\n') + '\n';
 }
 
+
 export function extractLinesFromDiff(
   hunks: DiffHunk[],
   side: CommentSide,
@@ -240,7 +241,9 @@ export function extractLinesFromDiff(
   for (const hunk of hunks) {
     for (const line of hunk.lines) {
       const lineNum = side === 'old' ? line.oldLineNumber : line.newLineNumber;
-      if (lineNum === null || lineNum < startLine || lineNum > endLine) continue;
+      if (lineNum === null || lineNum < startLine || lineNum > endLine) {
+        continue;
+      }
       if (side === 'old' && (line.type === 'delete' || line.type === 'context')) {
         result.push(line.content);
       } else if (side === 'new' && (line.type === 'add' || line.type === 'context')) {

@@ -20,7 +20,6 @@ import {
   resolveRef,
   revertFile,
   revertHunk,
-  applySuggestion,
   isActionableRef,
 } from '@diffity/git';
 import { findOrCreateSession, getCurrentSession } from './session.js';
@@ -212,22 +211,6 @@ export function startServer(options: ServerOptions): Promise<ServerResult> {
         sendJson(res, { ok: true });
       } catch (err) {
         sendError(res, 500, `Failed to revert hunk: ${err}`);
-      }
-      return;
-    }
-
-    if (pathname === '/api/apply-suggestion' && req.method === 'POST') {
-      try {
-        const body = JSON.parse(await readBody(req));
-        const { filePath: path, startLine, endLine, newContent } = body;
-        if (!path || typeof path !== 'string' || typeof startLine !== 'number' || typeof endLine !== 'number' || typeof newContent !== 'string') {
-          sendError(res, 400, 'Missing or invalid parameters');
-          return;
-        }
-        applySuggestion(path, startLine, endLine, newContent);
-        sendJson(res, { ok: true });
-      } catch (err) {
-        sendError(res, 500, `Failed to apply suggestion: ${err}`);
       }
       return;
     }

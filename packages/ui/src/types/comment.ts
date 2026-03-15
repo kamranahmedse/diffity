@@ -56,6 +56,4 @@ export interface LineRenderProps {
   onDeleteComment?: (threadId: string, commentId: string) => void;
   onDeleteThread?: (threadId: string) => void;
   getOriginalCode?: (side: CommentSide, startLine: number, endLine: number) => string;
-  canApply?: boolean;
-  onApplySuggestion?: (filePath: string, startLine: number, endLine: number, newContent: string) => void;
 }

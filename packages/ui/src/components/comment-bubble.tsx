@@ -1,16 +1,10 @@
-import type { Comment, CommentThread as CommentThreadType } from '../types/comment';
-import { parseSuggestion } from '../lib/parse-suggestion';
+import type { Comment } from '../types/comment';
 import { TrashIcon } from './icons/trash-icon';
-import { SuggestionDiff } from './suggestion-diff';
 import { MarkdownContent } from './markdown-content';
 
 interface CommentBubbleProps {
   comment: Comment;
   onDelete: () => void;
-  thread?: CommentThreadType;
-  originalCode?: string;
-  canApply?: boolean;
-  onApply?: () => void;
 }
 
 function formatRelativeTime(dateStr: string): string {
@@ -57,8 +51,7 @@ function AuthorAvatar(props: { name: string; avatarUrl?: string; type: 'user' | 
 }
 
 export function CommentBubble(props: CommentBubbleProps) {
-  const { comment, onDelete, thread, originalCode, canApply, onApply } = props;
-  const parsed = parseSuggestion(comment.body);
+  const { comment, onDelete } = props;
 
   return (
     <div className="px-3 py-2 border-b border-border last:border-b-0 group">
@@ -78,24 +71,7 @@ export function CommentBubble(props: CommentBubbleProps) {
         </button>
       </div>
       <div className="text-sm text-text pl-7">
-        {parsed ? (
-          <>
-            {parsed.before && <MarkdownContent content={parsed.before} />}
-            {thread && originalCode !== undefined && (
-              <SuggestionDiff
-                originalCode={originalCode}
-                suggestion={parsed.suggestion}
-                filePath={thread.filePath}
-                canApply={canApply}
-                onApply={onApply}
-                thread={thread}
-              />
-            )}
-            {parsed.after && <MarkdownContent content={parsed.after} />}
-          </>
-        ) : (
-          <MarkdownContent content={comment.body} />
-        )}
+        <MarkdownContent content={comment.body} />
       </div>
     </div>
   );

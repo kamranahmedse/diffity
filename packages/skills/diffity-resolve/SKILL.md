@@ -43,9 +43,8 @@ You are reading open review comments and resolving them by making the requested 
 3. For each open thread:
    a. Read the comment body from the JSON output and understand what change is requested.
    b. **Skip** threads that are `[question]` or `[nit]` severity — these don't require code changes. Tell the user you skipped them and why.
-   c. If the comment contains a ` ```suggestion ` block, apply the suggestion **literally** — replace the commented lines with the exact content from the suggestion block. Do not interpret or modify it.
-   d. Otherwise, read the relevant source file to understand the full context around the commented lines, then make the requested code change using the Edit tool.
-   e. After making the change, resolve the thread with a summary:
+   c. Read the relevant source file to understand the full context around the commented lines, then make the requested code change using the Edit tool.
+   d. After making the change, resolve the thread with a summary:
       ```
       {{binary}} agent resolve <thread-id> --summary "Fixed: <brief description of what was changed>"
       ```

@@ -32,8 +32,6 @@ interface HunkBlockProps {
   filePath?: string;
   onRevertChange?: (hunk: DiffHunk, startIndex: number, endIndex: number) => void;
   getOriginalCode?: (side: CommentSide, startLine: number, endLine: number) => string;
-  canApply?: boolean;
-  onApplySuggestion?: (filePath: string, startLine: number, endLine: number, newContent: string) => void;
 }
 
 export function renderLineWithComments(
@@ -81,9 +79,7 @@ export function renderLineWithComments(
           onDeleteThread={props.onDeleteThread!}
           currentAuthor={props.currentAuthor!}
           colSpan={4}
-          originalCode={props.getOriginalCode?.(thread.side, thread.startLine, thread.endLine)}
-          canApply={props.canApply}
-          onApplySuggestion={props.onApplySuggestion}
+          currentCode={props.getOriginalCode?.(thread.side, thread.startLine, thread.endLine)}
         />
       );
     }
@@ -101,7 +97,6 @@ export function renderLineWithComments(
         currentAuthor={props.currentAuthor}
         onSubmit={props.onAddThread}
         onCancel={props.onCancelPending}
-        originalCode={props.getOriginalCode?.(props.pendingSelection.side, props.pendingSelection.startLine, props.pendingSelection.endLine)}
       />
     );
   }
@@ -115,14 +110,14 @@ export function HunkBlock(props: HunkBlockProps) {
     threads, pendingSelection, currentAuthor, isLineSelected,
     onLineMouseDown, onLineMouseEnter, onCommentClick,
     onAddThread, onReply, onResolve, onUnresolve, onDeleteComment, onDeleteThread,
-    onCancelPending, filePath, onRevertChange, getOriginalCode, canApply, onApplySuggestion,
+    onCancelPending, filePath, onRevertChange, getOriginalCode,
   } = props;
 
   const commentProps = {
     isLineSelected, onLineMouseDown, onLineMouseEnter, onCommentClick,
     threads, pendingSelection, currentAuthor,
     onAddThread, onReply, onResolve, onUnresolve, onDeleteComment, onDeleteThread,
-    onCancelPending, filePath, getOriginalCode, canApply, onApplySuggestion,
+    onCancelPending, filePath, getOriginalCode,
   };
 
   const changeGroupEnds = useMemo(() => {
