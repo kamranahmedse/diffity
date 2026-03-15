@@ -23,6 +23,8 @@ import { Badge } from './ui/badge';
 import { IconButton } from './ui/icon-button';
 import { StatusBadge } from './ui/status-badge';
 import { HunkWithGap } from './hunk-with-gap';
+import { OrphanedThreads } from './orphaned-threads';
+import { ThreadBadge } from './ui/thread-badge';
 import { buildExpansionSyntaxMap, renderExpansionRows } from './render-expansion-rows';
 import { ExpandRow } from './expand-row';
 
@@ -98,7 +100,7 @@ export function FileBlock(props: FileBlockProps) {
 
 
   const {
-    getThreadsForFile, addThread: rawAddThread, addReply, resolveThread, unresolveThread, deleteComment, deleteThread,
+    getThreadsForFile, addThread: rawAddThread, addReply, resolveThread, unresolveThread, dismissThread, deleteComment, deleteThread,
     pendingSelection, setPendingSelection,
   } = useComments();
 
@@ -112,7 +114,33 @@ export function FileBlock(props: FileBlockProps) {
   }, [rawAddThread, file.hunks]);
 
   const commentsEnabled = useComments().enabled;
-  const fileThreads = getThreadsForFile(filePath);
+  const allFileThreads = getThreadsForFile(filePath);
+
+  const { anchoredThreads: fileThreads, orphanedThreads } = useMemo(() => {
+    const diffLineNumbers = new Set<string>();
+    for (const hunk of file.hunks) {
+      for (const line of hunk.lines) {
+        if (line.oldLineNumber !== null) {
+          diffLineNumbers.add(`old:${line.oldLineNumber}`);
+        }
+        if (line.newLineNumber !== null) {
+          diffLineNumbers.add(`new:${line.newLineNumber}`);
+        }
+      }
+    }
+
+    const anchored: typeof allFileThreads = [];
+    const orphaned: typeof allFileThreads = [];
+    for (const thread of allFileThreads) {
+      if (diffLineNumbers.has(`${thread.side}:${thread.endLine}`)) {
+        anchored.push(thread);
+      } else {
+        orphaned.push(thread);
+      }
+    }
+
+    return { anchoredThreads: anchored, orphanedThreads: orphaned };
+  }, [allFileThreads, file.hunks]);
 
   const handleSelectionComplete = useCallback((selection: LineSelection) => {
     if (!commentsEnabled) {
@@ -349,10 +377,15 @@ export function FileBlock(props: FileBlockProps) {
               Undo
             </button>
           )}
-          {fileThreads.length > 0 && (
+          {allFileThreads.length > 0 && (
             <span className="text-xs text-text-muted flex items-center gap-1">
               <CommentIcon className="w-3.5 h-3.5" />
-              {fileThreads.length}
+              {allFileThreads.length}
+              {orphanedThreads.length > 0 && (
+                <ThreadBadge variant="outdated" size="sm">
+                  {orphanedThreads.length} outdated
+                </ThreadBadge>
+              )}
             </span>
           )}
           <div className="flex items-center gap-1.5">
@@ -401,6 +434,12 @@ export function FileBlock(props: FileBlockProps) {
               </button>
             </div>
           ) : (
+            <>
+            <OrphanedThreads
+              threads={orphanedThreads}
+              onDeleteComment={deleteComment}
+              onDeleteThread={deleteThread}
+            />
             <table className="w-full border-collapse table-fixed">
               {viewMode === 'split' ? (
                 <colgroup>
@@ -484,6 +523,7 @@ export function FileBlock(props: FileBlockProps) {
                 );
               })()}
             </table>
+            </>
           )}
         </div>
       )}

@@ -19,15 +19,17 @@ import { getFileBlocks, getHunkHeaders, scrollToElement } from '../lib/dom-utils
 
 interface DiffPageProps {
   refParam?: string;
+  initialTheme?: 'light' | 'dark' | null;
+  initialViewMode?: 'split' | 'unified' | null;
 }
 
 export function DiffPage(props: DiffPageProps) {
-  const { refParam } = props;
+  const { refParam, initialTheme, initialViewMode } = props;
 
-  const [viewMode, setViewMode] = useState<ViewMode>('split');
+  const [viewMode, setViewMode] = useState<ViewMode>(initialViewMode || 'split');
   const [hideWhitespace, setHideWhitespace] = useState(false);
   const [showHelp, setShowHelp] = useState(false);
-  const { theme, toggleTheme } = useTheme();
+  const { theme, toggleTheme } = useTheme(initialTheme);
   const { data: diff, loading: diffLoading, error } = useDiff(hideWhitespace, refParam);
   const { data: info, loading: infoLoading } = useInfo(refParam);
   const [activeFile, setActiveFile] = useState<string | null>(null);

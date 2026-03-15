@@ -6,6 +6,7 @@ import { CommentForm } from './comment-form';
 import { CommentBubble } from './comment-bubble';
 import { TrashIcon } from './icons/trash-icon';
 import { CommentIcon } from './icons/comment-icon';
+import { ThreadBadge } from './ui/thread-badge';
 
 interface CommentThreadProps {
   thread: CommentThreadType;
@@ -26,11 +27,11 @@ function StatusBadge(props: { status: string }) {
 
   switch (status) {
     case 'acknowledged':
-      return <span className="px-1.5 py-0.5 rounded-full bg-yellow-500/20 text-yellow-600 dark:text-yellow-400 text-[10px] font-medium">Acknowledged</span>;
+      return <ThreadBadge variant="acknowledged" />;
     case 'resolved':
-      return <span className="px-1.5 py-0.5 rounded-full bg-added/20 text-added text-[10px] font-medium">Resolved</span>;
+      return <ThreadBadge variant="resolved" />;
     case 'dismissed':
-      return <span className="px-1.5 py-0.5 rounded-full bg-text-muted/20 text-text-muted text-[10px] font-medium line-through">Dismissed</span>;
+      return <ThreadBadge variant="dismissed" />;
     default:
       return null;
   }
@@ -54,7 +55,7 @@ export function CommentThread(props: CommentThreadProps) {
           <span>{thread.comments.length} comment{thread.comments.length !== 1 ? 's' : ''}</span>
           <StatusBadge status={thread.status} />
           {isOutdated && (
-            <span className="px-1.5 py-0.5 rounded-full bg-orange-500/20 text-orange-600 dark:text-orange-400 text-[10px] font-medium">Outdated</span>
+            <ThreadBadge variant="outdated" />
           )}
         </button>
       </td>
@@ -89,7 +90,7 @@ export function CommentThread(props: CommentThreadProps) {
             <span className="text-[11px] text-text-muted font-mono">{lineLabel}</span>
             <StatusBadge status={thread.status} />
             {isOutdated && (
-              <span className="px-1.5 py-0.5 rounded-full bg-orange-500/20 text-orange-600 dark:text-orange-400 text-[10px] font-medium">Outdated</span>
+              <ThreadBadge variant="outdated" />
             )}
           </div>
           <div className="flex items-center gap-1">
