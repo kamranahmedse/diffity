@@ -1,5 +1,5 @@
 import { createServer, type IncomingMessage, type ServerResponse } from 'node:http';
-import { readFileSync, writeFileSync, existsSync } from 'node:fs';
+import { readFileSync, existsSync } from 'node:fs';
 import { join, extname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { dirname } from 'node:path';
@@ -19,7 +19,18 @@ import {
   revertFile,
   revertHunk,
   applySuggestion,
+  isActionableRef,
 } from '@diffity/git';
+import { findOrCreateSession, getCurrentSession } from './session.js';
+import {
+  createThread,
+  getThreadsForSession,
+  addReply,
+  updateThreadStatus,
+  deleteThread,
+  deleteComment,
+  type ThreadStatus,
+} from './threads.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
@@ -37,9 +48,7 @@ interface ServerOptions {
   port: number;
   diffArgs: string[];
   description?: string;
-  review?: string;
-  commentsFile?: string;
-  stdinComments?: string;
+  effectiveRef?: string;
 }
 
 function sendJson(res: ServerResponse, data: unknown) {
@@ -122,21 +131,13 @@ function readBody(req: IncomingMessage): Promise<string> {
 }
 
 export function startServer(options: ServerOptions): Promise<ServerResult> {
-  const { port, diffArgs, description, review, commentsFile, stdinComments } = options;
+  const { port, diffArgs, description, effectiveRef } = options;
 
-  let threads: unknown[] = [];
-  if (stdinComments) {
-    try {
-      threads = JSON.parse(stdinComments);
-    } catch {
-      console.error('Warning: Could not parse comments from stdin');
-    }
-  } else if (commentsFile && existsSync(commentsFile)) {
-    try {
-      threads = JSON.parse(readFileSync(commentsFile, 'utf-8'));
-    } catch {
-      console.error(`Warning: Could not parse comments file: ${commentsFile}`);
-    }
+  let sessionId: string | null = null;
+  const reviewsEnabled = isActionableRef(effectiveRef);
+  if (reviewsEnabled && effectiveRef) {
+    const session = findOrCreateSession(effectiveRef);
+    sessionId = session.id;
   }
 
   const includeUntracked = diffArgs.length === 0;
@@ -172,31 +173,12 @@ export function startServer(options: ServerOptions): Promise<ServerResult> {
     const pathname = url.pathname;
 
     res.setHeader('Access-Control-Allow-Origin', '*');
-    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PATCH, DELETE, OPTIONS');
     res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
 
     if (req.method === 'OPTIONS') {
       res.writeHead(204);
       res.end();
-      return;
-    }
-
-    if (pathname === '/api/comments' && req.method === 'GET') {
-      sendJson(res, threads);
-      return;
-    }
-
-    if (pathname === '/api/comments' && req.method === 'POST') {
-      try {
-        const body = await readBody(req);
-        threads = JSON.parse(body);
-        if (commentsFile) {
-          writeFileSync(commentsFile, JSON.stringify(threads, null, 2));
-        }
-        sendJson(res, { ok: true });
-      } catch (err) {
-        sendError(res, 400, `Invalid JSON: ${err}`);
-      }
       return;
     }
 
@@ -329,8 +311,102 @@ export function startServer(options: ServerOptions): Promise<ServerResult> {
       sendJson(res, {
         ...info,
         description: refDescription,
-        review: review || null,
+        capabilities: { reviews: reviewsEnabled },
+        sessionId,
       });
+      return;
+    }
+
+    // --- Review API endpoints ---
+
+    if (pathname === '/api/sessions/current' && req.method === 'GET') {
+      const session = getCurrentSession();
+      sendJson(res, session);
+      return;
+    }
+
+    if (pathname === '/api/threads' && req.method === 'GET') {
+      const sid = url.searchParams.get('session');
+      if (!sid) {
+        sendError(res, 400, 'Missing session parameter');
+        return;
+      }
+      const status = url.searchParams.get('status') as ThreadStatus | null;
+      const threads = getThreadsForSession(sid, status || undefined);
+      sendJson(res, threads);
+      return;
+    }
+
+    if (pathname === '/api/threads' && req.method === 'POST') {
+      try {
+        const body = JSON.parse(await readBody(req));
+        const { sessionId: sid, filePath, side, startLine, endLine, body: commentBody, author, anchorContent } = body;
+        if (!sid || !filePath || !side || typeof startLine !== 'number' || typeof endLine !== 'number' || !commentBody || !author) {
+          sendError(res, 400, 'Missing required fields');
+          return;
+        }
+        const thread = createThread(sid, filePath, side, startLine, endLine, commentBody, author, anchorContent);
+        sendJson(res, thread);
+      } catch (err) {
+        sendError(res, 500, `Failed to create thread: ${err}`);
+      }
+      return;
+    }
+
+    const threadReplyMatch = pathname.match(/^\/api\/threads\/([^/]+)\/reply$/);
+    if (threadReplyMatch && req.method === 'POST') {
+      try {
+        const body = JSON.parse(await readBody(req));
+        const { body: commentBody, author } = body;
+        if (!commentBody || !author) {
+          sendError(res, 400, 'Missing body or author');
+          return;
+        }
+        const comment = addReply(threadReplyMatch[1], commentBody, author);
+        sendJson(res, comment);
+      } catch (err) {
+        sendError(res, 500, `Failed to add reply: ${err}`);
+      }
+      return;
+    }
+
+    const threadStatusMatch = pathname.match(/^\/api\/threads\/([^/]+)\/status$/);
+    if (threadStatusMatch && req.method === 'PATCH') {
+      try {
+        const body = JSON.parse(await readBody(req));
+        const { status, summary } = body;
+        if (!status) {
+          sendError(res, 400, 'Missing status');
+          return;
+        }
+        const summaryAuthor = summary ? { name: 'System', type: 'user' as const } : undefined;
+        updateThreadStatus(threadStatusMatch[1], status, summary, summaryAuthor);
+        sendJson(res, { ok: true });
+      } catch (err) {
+        sendError(res, 500, `Failed to update thread status: ${err}`);
+      }
+      return;
+    }
+
+    const threadDeleteMatch = pathname.match(/^\/api\/threads\/([^/]+)$/);
+    if (threadDeleteMatch && req.method === 'DELETE') {
+      try {
+        deleteThread(threadDeleteMatch[1]);
+        sendJson(res, { ok: true });
+      } catch (err) {
+        sendError(res, 500, `Failed to delete thread: ${err}`);
+      }
+      return;
+    }
+
+    const commentDeleteMatch = pathname.match(/^\/api\/comments\/([^/]+)$/);
+    if (commentDeleteMatch && req.method === 'DELETE') {
+      try {
+        deleteComment(commentDeleteMatch[1]);
+        sendJson(res, { ok: true });
+      } catch (err) {
+        sendError(res, 500, `Failed to delete comment: ${err}`);
+      }
       return;
     }
 

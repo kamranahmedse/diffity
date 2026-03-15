@@ -13,6 +13,8 @@ export interface Comment {
 
 export type CommentSide = 'old' | 'new';
 
+export type ThreadStatus = 'open' | 'acknowledged' | 'resolved' | 'dismissed';
+
 export interface CommentThread {
   id: string;
   filePath: string;
@@ -20,7 +22,14 @@ export interface CommentThread {
   startLine: number;
   endLine: number;
   comments: Comment[];
-  isResolved: boolean;
+  status: ThreadStatus;
+  anchorContent?: string;
+  updatedAt?: string;
+  sessionId?: string;
+}
+
+export function isThreadResolved(thread: CommentThread): boolean {
+  return thread.status === 'resolved' || thread.status === 'dismissed';
 }
 
 export interface LineSelection {

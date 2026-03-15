@@ -17,12 +17,10 @@ import { getFileBlocks, getHunkHeaders, scrollToElement } from '../lib/dom-utils
 
 interface DiffPageProps {
   refParam?: string;
-  onGoHome?: () => void;
-  isReview: boolean;
 }
 
 export function DiffPage(props: DiffPageProps) {
-  const { refParam, onGoHome, isReview } = props;
+  const { refParam } = props;
 
   const [viewMode, setViewMode] = useState<ViewMode>('split');
   const [hideWhitespace, setHideWhitespace] = useState(false);
@@ -38,6 +36,9 @@ export function DiffPage(props: DiffPageProps) {
   const currentFileIdx = useRef(0);
   const initializedDiffRef = useRef<typeof diff>(null);
   const scrollTargetRef = useRef<string | null>(null);
+
+  const reviewsEnabled = !!info?.capabilities?.reviews;
+  const sessionId = info?.sessionId ?? null;
 
   useEffect(() => {
     if (!diff || diff === initializedDiffRef.current) {
@@ -243,14 +244,13 @@ export function DiffPage(props: DiffPageProps) {
   }
 
   return (
-    <CommentsProvider>
+    <CommentsProvider sessionId={sessionId} enabled={reviewsEnabled}>
     <div className="flex flex-col h-screen bg-bg text-text font-sans">
       <SummaryBar
         diff={diff}
         repoName={info?.name || null}
         branch={info?.branch || null}
         description={info?.description || null}
-        onGoHome={!isReview ? onGoHome : undefined}
       />
       <Toolbar
         viewMode={viewMode}

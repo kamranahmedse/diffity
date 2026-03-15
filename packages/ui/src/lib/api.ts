@@ -1,11 +1,13 @@
 import type { ParsedDiff } from '@diffity/parser';
+import type { CommentThread, CommentAuthor, CommentSide, Comment } from '../types/comment.js';
 
 export interface RepoInfo {
   name: string;
   branch: string;
   root: string;
   description: string;
-  review: string | null;
+  capabilities?: { reviews: boolean };
+  sessionId?: string | null;
 }
 
 export interface Commit {
@@ -80,20 +82,86 @@ export async function fetchCommits(skip = 0, count = 10, search?: string): Promi
   return res.json();
 }
 
-export async function fetchComments(): Promise<unknown[]> {
-  const res = await fetch('/api/comments');
+export async function fetchSession(): Promise<{ id: string; ref: string; headHash: string } | null> {
+  const res = await fetch('/api/sessions/current');
+  if (!res.ok) {
+    return null;
+  }
+  return res.json();
+}
+
+export async function fetchThreads(sessionId: string, status?: string): Promise<CommentThread[]> {
+  const params = new URLSearchParams({ session: sessionId });
+  if (status) {
+    params.set('status', status);
+  }
+  const res = await fetch(`/api/threads?${params}`);
   if (!res.ok) {
     return [];
   }
   return res.json();
 }
 
-export async function saveComments(threads: unknown[]): Promise<void> {
-  await fetch('/api/comments', {
+export async function createThread(data: {
+  sessionId: string;
+  filePath: string;
+  side: CommentSide;
+  startLine: number;
+  endLine: number;
+  body: string;
+  author: CommentAuthor;
+  anchorContent?: string;
+}): Promise<CommentThread> {
+  const res = await fetch('/api/threads', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(threads),
+    body: JSON.stringify(data),
   });
+  if (!res.ok) {
+    throw new Error(`HTTP ${res.status}`);
+  }
+  return res.json();
+}
+
+export async function replyToThread(threadId: string, body: string, author: CommentAuthor): Promise<Comment> {
+  const res = await fetch(`/api/threads/${threadId}/reply`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ body, author }),
+  });
+  if (!res.ok) {
+    throw new Error(`HTTP ${res.status}`);
+  }
+  return res.json();
+}
+
+export async function updateThreadStatus(threadId: string, status: string, summary?: string): Promise<void> {
+  const res = await fetch(`/api/threads/${threadId}/status`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ status, summary }),
+  });
+  if (!res.ok) {
+    throw new Error(`HTTP ${res.status}`);
+  }
+}
+
+export async function deleteThread(threadId: string): Promise<void> {
+  const res = await fetch(`/api/threads/${threadId}`, {
+    method: 'DELETE',
+  });
+  if (!res.ok) {
+    throw new Error(`HTTP ${res.status}`);
+  }
+}
+
+export async function deleteComment(commentId: string): Promise<void> {
+  const res = await fetch(`/api/comments/${commentId}`, {
+    method: 'DELETE',
+  });
+  if (!res.ok) {
+    throw new Error(`HTTP ${res.status}`);
+  }
 }
 
 export async function revertFile(filePath: string, isUntracked: boolean): Promise<void> {

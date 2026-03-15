@@ -1,4 +1,6 @@
 import { execSync } from 'node:child_process';
+import { mkdirSync } from 'node:fs';
+import { join } from 'node:path';
 import { exec } from './exec.js';
 import type { RepoInfo } from './types.js';
 
@@ -34,4 +36,20 @@ export function getRepoInfo(): RepoInfo {
     branch: getCurrentBranch(),
     root: getRepoRoot(),
   };
+}
+
+export function getHeadHash(): string {
+  return exec('git rev-parse HEAD');
+}
+
+export function getDiffityDir(): string {
+  const dir = join(getRepoRoot(), '.diffity');
+  mkdirSync(dir, { recursive: true });
+  return dir;
+}
+
+const ACTIONABLE_REFS = new Set(['work', 'staged', 'unstaged', 'working', 'untracked']);
+
+export function isActionableRef(ref?: string): boolean {
+  return !!ref && ACTIONABLE_REFS.has(ref);
 }
