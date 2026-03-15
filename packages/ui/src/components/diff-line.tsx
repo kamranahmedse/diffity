@@ -52,7 +52,7 @@ export function DiffLine(props: DiffLineProps) {
       <CommentLineNumber
         lineNumber={line.oldLineNumber}
         className={cn('border-r border-border-muted', gutterBg)}
-        showCommentButton={line.type === 'delete' && line.oldLineNumber !== null}
+        showCommentButton={!!onCommentClick && line.type === 'delete' && line.oldLineNumber !== null}
         isSelected={isSelected && side === 'old'}
         onMouseDown={line.oldLineNumber !== null ? () => onLineMouseDown?.(line.oldLineNumber!, line.type === 'delete' ? 'old' : 'new') : undefined}
         onMouseEnter={line.oldLineNumber !== null ? () => onLineMouseEnter?.(line.oldLineNumber!, line.type === 'delete' ? 'old' : 'new') : undefined}
@@ -61,7 +61,7 @@ export function DiffLine(props: DiffLineProps) {
       <CommentLineNumber
         lineNumber={line.newLineNumber}
         className={cn('border-r border-border-muted', gutterBg)}
-        showCommentButton={line.type !== 'delete' && line.newLineNumber !== null}
+        showCommentButton={!!onCommentClick && line.type !== 'delete' && line.newLineNumber !== null}
         isSelected={isSelected && side === 'new'}
         onMouseDown={line.newLineNumber !== null ? () => onLineMouseDown?.(line.newLineNumber!, line.type === 'delete' ? 'old' : 'new') : undefined}
         onMouseEnter={line.newLineNumber !== null ? () => onLineMouseEnter?.(line.newLineNumber!, line.type === 'delete' ? 'old' : 'new') : undefined}
