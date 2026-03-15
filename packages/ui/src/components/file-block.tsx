@@ -6,7 +6,7 @@ import type { DiffFile, DiffLine as DiffLineType } from '@diffity/parser';
 import type { SyntaxToken } from '../lib/syntax-token.js';
 import type { HighlightedTokens } from '../hooks/use-highlighter.js';
 import type { CommentSide, LineSelection } from '../types/comment.js';
-import { type ViewMode, getFilePath, buildHunkPatch, extractLinesFromDiff } from '../lib/diff-utils.js';
+import { type ViewMode, getFilePath, buildChangeGroupPatch, extractLinesFromDiff } from '../lib/diff-utils.js';
 import { revertFile as apiRevertFile, revertHunk as apiRevertHunk, applySuggestion as apiApplySuggestion } from '../lib/api.js';
 import { UndoIcon } from './icons/undo-icon.js';
 import { ConfirmDialog } from './ui/confirm-dialog.js';
@@ -80,7 +80,7 @@ export function FileBlock(props: FileBlockProps) {
   const { copied: pathCopied, copy: copyPath } = useCopy();
 
   const [confirmRevertFile, setConfirmRevertFile] = useState(false);
-  const [confirmRevertHunk, setConfirmRevertHunk] = useState<DiffHunk | null>(null);
+  const [confirmRevertChange, setConfirmRevertChange] = useState<{ hunk: DiffHunk; startIndex: number; endIndex: number } | null>(null);
 
   const handleRevertFile = useCallback(async () => {
     setConfirmRevertFile(false);
@@ -89,9 +89,9 @@ export function FileBlock(props: FileBlockProps) {
     onRevert?.();
   }, [file, filePath, onRevert]);
 
-  const handleRevertHunk = useCallback(async (hunk: DiffHunk) => {
-    setConfirmRevertHunk(null);
-    const patch = buildHunkPatch(file, hunk);
+  const handleRevertChange = useCallback(async (info: { hunk: DiffHunk; startIndex: number; endIndex: number }) => {
+    setConfirmRevertChange(null);
+    const patch = buildChangeGroupPatch(file, info.hunk, info.startIndex, info.endIndex);
     await apiRevertHunk(patch);
     onRevert?.();
   }, [file, onRevert]);
@@ -447,7 +447,7 @@ export function FileBlock(props: FileBlockProps) {
                     onDeleteThread={deleteThread}
                     onCancelPending={handleCancelPending}
                     filePath={filePath}
-                    onRevertHunk={canRevert ? (h: DiffHunk) => setConfirmRevertHunk(h) : undefined}
+                    onRevertChange={canRevert ? (h: DiffHunk, startIndex: number, endIndex: number) => setConfirmRevertChange({ hunk: h, startIndex, endIndex }) : undefined}
                   />
                 );
               })}
@@ -492,12 +492,12 @@ export function FileBlock(props: FileBlockProps) {
           onCancel={() => setConfirmRevertFile(false)}
         />
       )}
-      {confirmRevertHunk && (
+      {confirmRevertChange && (
         <ConfirmDialog
           title="Undo change"
           message="This will undo the selected change. This cannot be undone."
-          onConfirm={() => handleRevertHunk(confirmRevertHunk)}
-          onCancel={() => setConfirmRevertHunk(null)}
+          onConfirm={() => handleRevertChange(confirmRevertChange)}
+          onCancel={() => setConfirmRevertChange(null)}
         />
       )}
     </div>

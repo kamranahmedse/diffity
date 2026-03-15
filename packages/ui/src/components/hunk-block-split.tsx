@@ -1,7 +1,7 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import type { DiffHunk, DiffLine as DiffLineType } from '@diffity/parser';
 import { cn } from '../lib/cn.js';
-import { getLineBg } from '../lib/diff-utils.js';
+import { getLineBg, getChangeGroups } from '../lib/diff-utils.js';
 import { renderContent } from '../lib/render-content.js';
 import type { SyntaxToken } from '../lib/syntax-token.js';
 import type { CommentThread as CommentThreadType, CommentAuthor, CommentSide, LineSelection, LineRenderProps } from '../types/comment.js';
@@ -9,6 +9,7 @@ import { HunkHeader, type ExpandControls } from './hunk-header.js';
 import { CommentLineNumber } from './comment-line-number.js';
 import { CommentThread } from './comment-thread.js';
 import { CommentFormRow } from './comment-form-row.js';
+import { UndoIcon } from './icons/undo-icon.js';
 
 interface HunkBlockSplitProps {
   hunk: DiffHunk;
@@ -32,7 +33,7 @@ interface HunkBlockSplitProps {
   onDeleteThread?: (threadId: string) => void;
   onCancelPending?: () => void;
   filePath?: string;
-  onRevertHunk?: (hunk: DiffHunk) => void;
+  onRevertChange?: (hunk: DiffHunk, startIndex: number, endIndex: number) => void;
   getOriginalCode?: (side: CommentSide, startLine: number, endLine: number) => string;
   canApply?: boolean;
   onApplySuggestion?: (filePath: string, startLine: number, endLine: number, newContent: string) => void;
@@ -112,8 +113,9 @@ function SplitCell(props: {
   onMouseDown?: () => void;
   onMouseEnter?: () => void;
   onCommentClick?: () => void;
+  onUndo?: () => void;
 }) {
-  const { line, side, syntaxMap, expanded, isSelected, onMouseDown, onMouseEnter, onCommentClick } = props;
+  const { line, side, syntaxMap, expanded, isSelected, onMouseDown, onMouseEnter, onCommentClick, onUndo } = props;
   const [contentHovered, setContentHovered] = useState(false);
 
   if (!line) {
@@ -144,11 +146,21 @@ function SplitCell(props: {
         onCommentClick={onCommentClick}
       />
       <td
-        className={cn('px-3 whitespace-pre-wrap break-all border-r border-border-muted align-top', isSelected ? 'bg-diff-comment-bg' : contentBgClass)}
+        className={cn('px-3 whitespace-pre-wrap break-all border-r border-border-muted align-top relative', isSelected ? 'bg-diff-comment-bg' : contentBgClass)}
         onMouseEnter={() => setContentHovered(true)}
         onMouseLeave={() => setContentHovered(false)}
       >
         <span className="inline">{renderContent(line, tokens)}</span>
+        {onUndo && (
+          <button
+            onClick={onUndo}
+            className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1 px-2 py-0.5 text-xs rounded bg-deleted/15 text-deleted hover:bg-deleted/25 transition-colors cursor-pointer opacity-0 group-hover/split-row:opacity-100"
+            title="Undo this change"
+          >
+            <UndoIcon className="w-3 h-3" />
+            Undo
+          </button>
+        )}
       </td>
     </>
   );
@@ -160,6 +172,7 @@ export function renderSplitRows(
   syntaxMap: Map<string, SyntaxToken[]> | undefined,
   keyPrefix: string,
   props: LineRenderProps,
+  undoForRow?: Map<number, () => void>,
 ): React.ReactNode[] {
   const splitRows = buildSplitRows(lines);
   const result: React.ReactNode[] = [];
@@ -170,9 +183,10 @@ export function renderSplitRows(
     const rightLine = row.right;
     const leftNum = leftLine?.oldLineNumber ?? null;
     const rightNum = rightLine?.newLineNumber ?? null;
+    const onUndo = undoForRow?.get(i);
 
     result.push(
-      <tr key={`${keyPrefix}-${i}`} className="font-mono text-sm leading-6">
+      <tr key={`${keyPrefix}-${i}`} className="group/split-row font-mono text-sm leading-6">
         <SplitCell
           line={leftLine}
           side="left"
@@ -192,6 +206,7 @@ export function renderSplitRows(
           onMouseDown={rightNum !== null ? () => props.onLineMouseDown?.(rightNum, 'new') : undefined}
           onMouseEnter={rightNum !== null ? () => props.onLineMouseEnter?.(rightNum, 'new') : undefined}
           onCommentClick={rightNum !== null && props.onCommentClick ? () => props.onCommentClick!(rightNum, 'new') : undefined}
+          onUndo={onUndo}
         />
       </tr>
     );
@@ -282,7 +297,7 @@ export function HunkBlockSplit(props: HunkBlockSplitProps) {
     threads, pendingSelection, currentAuthor, isLineSelected,
     onLineMouseDown, onLineMouseEnter, onCommentClick,
     onAddThread, onReply, onResolve, onUnresolve, onDeleteComment, onDeleteThread,
-    onCancelPending, filePath, onRevertHunk, getOriginalCode, canApply, onApplySuggestion,
+    onCancelPending, filePath, onRevertChange, getOriginalCode, canApply, onApplySuggestion,
   } = props;
 
   const commentProps = {
@@ -291,6 +306,41 @@ export function HunkBlockSplit(props: HunkBlockSplitProps) {
     onAddThread, onReply, onResolve, onUnresolve, onDeleteComment, onDeleteThread,
     onCancelPending, filePath, getOriginalCode, canApply, onApplySuggestion,
   };
+
+  const undoForRow = useMemo(() => {
+    if (!onRevertChange) {
+      return undefined;
+    }
+    const groups = getChangeGroups(hunk.lines);
+    const splitRows = buildSplitRows(hunk.lines);
+    const map = new Map<number, () => void>();
+
+    for (const group of groups) {
+      let lastSplitRowIdx = -1;
+      for (let ri = 0; ri < splitRows.length; ri++) {
+        const row = splitRows[ri];
+        const leftIsChange = row.left && row.left.type !== 'context';
+        const rightIsChange = row.right && row.right.type !== 'context';
+        if (leftIsChange || rightIsChange) {
+          const nextRow = splitRows[ri + 1];
+          const nextIsContext = !nextRow || ((!nextRow.left || nextRow.left.type === 'context') && (!nextRow.right || nextRow.right.type === 'context'));
+          if (nextIsContext) {
+            const leftInGroup = row.left && row.left.type !== 'context' && hunk.lines.indexOf(row.left) >= group.startIndex && hunk.lines.indexOf(row.left) <= group.endIndex;
+            const rightInGroup = row.right && row.right.type !== 'context' && hunk.lines.indexOf(row.right) >= group.startIndex && hunk.lines.indexOf(row.right) <= group.endIndex;
+            if (leftInGroup || rightInGroup) {
+              lastSplitRowIdx = ri;
+            }
+          }
+        }
+      }
+      if (lastSplitRowIdx >= 0) {
+        const g = group;
+        map.set(lastSplitRowIdx, () => onRevertChange(hunk, g.startIndex, g.endIndex));
+      }
+    }
+
+    return map;
+  }, [hunk, onRevertChange]);
 
   const rows: React.ReactNode[] = [];
 
@@ -302,11 +352,11 @@ export function HunkBlockSplit(props: HunkBlockSplitProps) {
     rows.push(...renderSplitRows(bottomExpansionLines, true, expansionSyntaxMap, 'bot-exp', commentProps));
   }
 
-  rows.push(...renderSplitRows(hunk.lines, false, syntaxMap, 'hunk', commentProps));
+  rows.push(...renderSplitRows(hunk.lines, false, syntaxMap, 'hunk', commentProps, undoForRow));
 
   return (
     <tbody className={expandControls?.wasExpanded && expandControls.remainingLines <= 0 ? '' : 'border-t border-border-muted'}>
-      <HunkHeader hunk={hunk} expandControls={expandControls} onRevertHunk={onRevertHunk} />
+      <HunkHeader hunk={hunk} expandControls={expandControls} />
       {rows}
     </tbody>
   );

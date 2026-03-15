@@ -1,6 +1,8 @@
+import { useMemo } from 'react';
 import type { DiffHunk, DiffLine as DiffLineType } from '@diffity/parser';
 import type { SyntaxToken } from '../lib/syntax-token.js';
 import type { CommentThread as CommentThreadType, CommentAuthor, CommentSide, LineSelection, LineRenderProps } from '../types/comment.js';
+import { getChangeGroups } from '../lib/diff-utils.js';
 import { DiffLine } from './diff-line.js';
 import { HunkHeader, type ExpandControls } from './hunk-header.js';
 import { CommentThread } from './comment-thread.js';
@@ -28,7 +30,7 @@ interface HunkBlockProps {
   onDeleteThread?: (threadId: string) => void;
   onCancelPending?: () => void;
   filePath?: string;
-  onRevertHunk?: (hunk: DiffHunk) => void;
+  onRevertChange?: (hunk: DiffHunk, startIndex: number, endIndex: number) => void;
   getOriginalCode?: (side: CommentSide, startLine: number, endLine: number) => string;
   canApply?: boolean;
   onApplySuggestion?: (filePath: string, startLine: number, endLine: number, newContent: string) => void;
@@ -40,6 +42,7 @@ export function renderLineWithComments(
   expanded: boolean,
   syntaxMap: Map<string, SyntaxToken[]> | undefined,
   props: LineRenderProps,
+  onUndo?: () => void,
 ): React.ReactNode[] {
   const side: CommentSide = line.type === 'delete' ? 'old' : 'new';
   const activeLine = side === 'old' ? line.oldLineNumber : line.newLineNumber;
@@ -60,6 +63,7 @@ export function renderLineWithComments(
       onLineMouseDown={props.onLineMouseDown}
       onLineMouseEnter={props.onLineMouseEnter}
       onCommentClick={props.onCommentClick}
+      onUndo={onUndo}
     />
   );
 
@@ -111,7 +115,7 @@ export function HunkBlock(props: HunkBlockProps) {
     threads, pendingSelection, currentAuthor, isLineSelected,
     onLineMouseDown, onLineMouseEnter, onCommentClick,
     onAddThread, onReply, onResolve, onUnresolve, onDeleteComment, onDeleteThread,
-    onCancelPending, filePath, onRevertHunk, getOriginalCode, canApply, onApplySuggestion,
+    onCancelPending, filePath, onRevertChange, getOriginalCode, canApply, onApplySuggestion,
   } = props;
 
   const commentProps = {
@@ -120,6 +124,18 @@ export function HunkBlock(props: HunkBlockProps) {
     onAddThread, onReply, onResolve, onUnresolve, onDeleteComment, onDeleteThread,
     onCancelPending, filePath, getOriginalCode, canApply, onApplySuggestion,
   };
+
+  const changeGroupEnds = useMemo(() => {
+    if (!onRevertChange) {
+      return new Map<number, { startIndex: number; endIndex: number }>();
+    }
+    const groups = getChangeGroups(hunk.lines);
+    const map = new Map<number, { startIndex: number; endIndex: number }>();
+    for (const group of groups) {
+      map.set(group.endIndex, group);
+    }
+    return map;
+  }, [hunk.lines, onRevertChange]);
 
   const rows: React.ReactNode[] = [];
 
@@ -136,12 +152,14 @@ export function HunkBlock(props: HunkBlockProps) {
   }
 
   for (let i = 0; i < hunk.lines.length; i++) {
-    rows.push(...renderLineWithComments(hunk.lines[i], i, false, syntaxMap, commentProps));
+    const group = changeGroupEnds.get(i);
+    const onUndo = group ? () => onRevertChange!(hunk, group.startIndex, group.endIndex) : undefined;
+    rows.push(...renderLineWithComments(hunk.lines[i], i, false, syntaxMap, commentProps, onUndo));
   }
 
   return (
     <tbody className={expandControls?.wasExpanded && expandControls.remainingLines <= 0 ? '' : 'border-t border-border-muted'}>
-      <HunkHeader hunk={hunk} expandControls={expandControls} onRevertHunk={onRevertHunk} />
+      <HunkHeader hunk={hunk} expandControls={expandControls} />
       {rows}
     </tbody>
   );

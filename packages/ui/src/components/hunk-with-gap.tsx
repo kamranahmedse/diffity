@@ -39,7 +39,7 @@ interface HunkWithGapProps {
   onDeleteThread?: (threadId: string) => void;
   onCancelPending?: () => void;
   filePath?: string;
-  onRevertHunk?: (hunk: DiffHunk) => void;
+  onRevertChange?: (hunk: DiffHunk, startIndex: number, endIndex: number) => void;
   getOriginalCode?: (side: CommentSide, startLine: number, endLine: number) => string;
   canApply?: boolean;
   onApplySuggestion?: (filePath: string, startLine: number, endLine: number, newContent: string) => void;
@@ -51,7 +51,7 @@ export function HunkWithGap(props: HunkWithGapProps) {
     threads, pendingSelection, currentAuthor, isLineSelected,
     onLineMouseDown, onLineMouseEnter, onCommentClick,
     onAddThread, onReply, onResolve, onUnresolve, onDeleteComment, onDeleteThread,
-    onCancelPending, filePath, onRevertHunk, getOriginalCode, canApply, onApplySuggestion,
+    onCancelPending, filePath, onRevertChange, getOriginalCode, canApply, onApplySuggestion,
   } = props;
 
   const HunkComponent = viewMode === 'split' ? HunkBlockSplit : HunkBlock;
@@ -107,7 +107,7 @@ export function HunkWithGap(props: HunkWithGapProps) {
         onDeleteThread={onDeleteThread}
         onCancelPending={onCancelPending}
         filePath={filePath}
-        onRevertHunk={onRevertHunk}
+        onRevertChange={onRevertChange}
         getOriginalCode={getOriginalCode}
         canApply={canApply}
         onApplySuggestion={onApplySuggestion}

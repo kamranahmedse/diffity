@@ -134,6 +134,102 @@ export function buildHunkPatch(file: DiffFile, hunk: DiffHunk): string {
   return lines.join('\n') + '\n';
 }
 
+export interface ChangeGroup {
+  startIndex: number;
+  endIndex: number;
+}
+
+export function getChangeGroups(lines: { type: string }[]): ChangeGroup[] {
+  const groups: ChangeGroup[] = [];
+  let i = 0;
+  while (i < lines.length) {
+    if (lines[i].type !== 'context') {
+      const start = i;
+      while (i < lines.length && lines[i].type !== 'context') {
+        i++;
+      }
+      groups.push({ startIndex: start, endIndex: i - 1 });
+    } else {
+      i++;
+    }
+  }
+  return groups;
+}
+
+export function buildChangeGroupPatch(file: DiffFile, hunk: DiffHunk, startIndex: number, endIndex: number): string {
+  const CONTEXT = 3;
+  const lines = hunk.lines;
+
+  const contextBefore: typeof lines = [];
+  for (let i = startIndex - 1; i >= Math.max(0, startIndex - CONTEXT); i--) {
+    if (lines[i].type === 'context') {
+      contextBefore.unshift(lines[i]);
+    } else {
+      break;
+    }
+  }
+
+  const changeLines = lines.slice(startIndex, endIndex + 1);
+
+  const contextAfter: typeof lines = [];
+  for (let i = endIndex + 1; i < Math.min(lines.length, endIndex + 1 + CONTEXT); i++) {
+    if (lines[i].type === 'context') {
+      contextAfter.push(lines[i]);
+    } else {
+      break;
+    }
+  }
+
+  const allLines = [...contextBefore, ...changeLines, ...contextAfter];
+
+  let oldStart = 0;
+  let oldCount = 0;
+  let newStart = 0;
+  let newCount = 0;
+
+  for (const line of allLines) {
+    if (line.oldLineNumber !== null && oldStart === 0) {
+      oldStart = line.oldLineNumber;
+    }
+    if (line.newLineNumber !== null && newStart === 0) {
+      newStart = line.newLineNumber;
+    }
+    if (line.type === 'context' || line.type === 'delete') {
+      oldCount++;
+    }
+    if (line.type === 'context' || line.type === 'add') {
+      newCount++;
+    }
+  }
+
+  if (oldStart === 0) {
+    oldStart = hunk.oldStart;
+  }
+  if (newStart === 0) {
+    newStart = hunk.newStart;
+  }
+
+  const oldPath = file.status === 'added' ? '/dev/null' : `a/${file.oldPath}`;
+  const newPath = file.status === 'deleted' ? '/dev/null' : `b/${file.newPath}`;
+  const header = `@@ -${oldStart},${oldCount} +${newStart},${newCount} @@`;
+
+  const patchLines: string[] = [
+    `--- ${oldPath}`,
+    `+++ ${newPath}`,
+    header,
+  ];
+
+  for (const line of allLines) {
+    const prefix = line.type === 'add' ? '+' : line.type === 'delete' ? '-' : ' ';
+    patchLines.push(`${prefix}${line.content}`);
+    if (line.noNewline) {
+      patchLines.push('\\ No newline at end of file');
+    }
+  }
+
+  return patchLines.join('\n') + '\n';
+}
+
 export function extractLinesFromDiff(
   hunks: DiffHunk[],
   side: CommentSide,
