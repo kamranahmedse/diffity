@@ -22,7 +22,12 @@ if (existsSync(linkPath)) {
 }
 
 const script = `#!/usr/bin/env bash
-exec node --watch-path="${watchDir}" "${cliEntry}" --no-open "$@"
+# Only use --watch for the server (no subcommand). One-off commands like "agent list" run and exit.
+if [ $# -eq 0 ] || [ "$1" = "--no-open" ]; then
+  exec node --watch-path="${watchDir}" "${cliEntry}" --no-open "$@"
+else
+  exec node "${cliEntry}" "$@"
+fi
 `;
 
 writeFileSync(linkPath, script);

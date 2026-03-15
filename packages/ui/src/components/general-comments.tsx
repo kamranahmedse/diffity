@@ -23,8 +23,8 @@ export function GeneralComments(props: GeneralCommentsProps) {
   const [showForm, setShowForm] = useState(false);
 
   return (
-    <div className="border border-border rounded-lg mx-4 mt-4 overflow-hidden">
-      <div className="flex items-center gap-2 px-3 py-2 bg-bg-secondary text-sm select-none">
+    <div className={`border rounded-lg mx-4 mt-4 overflow-hidden ${threads.length > 0 ? 'border-accent/40' : 'border-border'}`}>
+      <div className={`flex items-center gap-2 px-3 py-2 text-sm select-none ${threads.length > 0 ? 'bg-accent/5' : 'bg-bg-secondary'}`}>
         <button
           onClick={() => setIsExpanded(!isExpanded)}
           className="text-[10px] w-5 h-5 shrink-0 flex items-center justify-center text-text-muted cursor-pointer"
@@ -38,7 +38,7 @@ export function GeneralComments(props: GeneralCommentsProps) {
           <CommentIcon className="w-3.5 h-3.5 text-text-muted" />
           <span className="text-text-secondary">General comments</span>
           {threads.length > 0 && (
-            <span className="text-xs text-text-muted">({threads.length})</span>
+            <span className="text-xs font-medium bg-accent/15 text-accent px-1.5 py-0.5 rounded-full">{threads.length}</span>
           )}
         </button>
         <div className="flex-1" />

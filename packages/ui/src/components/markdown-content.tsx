@@ -46,6 +46,9 @@ export function MarkdownContent(props: MarkdownContentProps) {
         </blockquote>
       );
     },
+    pre({ children }) {
+      return <div className="mb-1.5 last:mb-0">{children}</div>;
+    },
     code({ className, children }) {
       const match = /language-(\w+)/.exec(className || '');
       const lang = match ? match[1] : null;
@@ -68,7 +71,7 @@ export function MarkdownContent(props: MarkdownContentProps) {
       }
 
       return (
-        <div className="rounded-md border border-border overflow-hidden my-1.5 last:mb-0">
+        <div className="rounded-md border border-border overflow-hidden">
           <div className="bg-bg-secondary px-3 py-1 border-b border-border">
             <span className="text-[10px] text-text-muted font-mono">{lang}</span>
           </div>
