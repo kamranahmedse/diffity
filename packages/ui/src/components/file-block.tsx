@@ -106,15 +106,24 @@ export function FileBlock(props: FileBlockProps) {
   }, [onRevert]);
 
   const {
-    getThreadsForFile, addThread, addReply, resolveThread, unresolveThread, deleteComment, deleteThread,
+    getThreadsForFile, addThread: rawAddThread, addReply, resolveThread, unresolveThread, deleteComment, deleteThread,
     pendingSelection, setPendingSelection,
   } = useComments();
 
+  const addThread = useCallback((fp: string, side: import('../types/comment.js').CommentSide, startLine: number, endLine: number, body: string, author: import('../types/comment.js').CommentAuthor) => {
+    const anchorContent = extractLinesFromDiff(file.hunks, side, startLine, endLine);
+    rawAddThread(fp, side, startLine, endLine, body, author, anchorContent || undefined);
+  }, [rawAddThread, file.hunks]);
+
+  const commentsEnabled = useComments().enabled;
   const fileThreads = getThreadsForFile(filePath);
 
   const handleSelectionComplete = useCallback((selection: LineSelection) => {
+    if (!commentsEnabled) {
+      return;
+    }
     setPendingSelection(selection);
-  }, [setPendingSelection]);
+  }, [setPendingSelection, commentsEnabled]);
 
   const { isLineInSelection, handleLineMouseDown, handleLineMouseEnter } = useLineSelection({
     filePath,

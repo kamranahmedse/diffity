@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 
 function getRefFromUrl(): string | null {
   const params = new URLSearchParams(window.location.search);
@@ -18,19 +18,5 @@ export function useSearchParams() {
     };
   }, []);
 
-  const navigate = useCallback((newRef: string) => {
-    const url = new URL(window.location.href);
-    url.searchParams.set('ref', newRef);
-    history.pushState({}, '', url.toString());
-    setRef(newRef);
-  }, []);
-
-  const goHome = useCallback(() => {
-    const url = new URL(window.location.href);
-    url.searchParams.delete('ref');
-    history.pushState({}, '', url.toString());
-    setRef(null);
-  }, []);
-
-  return { ref, navigate, goHome };
+  return { ref };
 }

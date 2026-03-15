@@ -5,6 +5,7 @@ import open from 'open';
 import pc from 'picocolors';
 import { isGitRepo } from '@diffity/git';
 import { startServer } from './server.js';
+import { registerAgentCommands } from './agent.js';
 
 const program = new Command();
 
@@ -14,11 +15,9 @@ program
   .version('0.1.0')
   .argument('[refs...]', 'Git refs to diff (commit, branch, range)')
   .option('--staged', 'Show staged changes')
-  .option('--port <port>', 'Port to use', '3000')
+  .option('--port <port>', 'Port to use', '5391')
   .option('--no-open', 'Do not open browser automatically')
   .option('--quiet', 'Minimal terminal output')
-  .option('--review <ref>', 'Lock view for code review')
-  .option('--comments <file>', 'Load/save comments from JSON file (use "-" for stdin)')
   .action(async (refs: string[], opts) => {
     if (!isGitRepo()) {
       console.error(pc.red('Error: Not a git repository'));
@@ -49,40 +48,18 @@ program
 
     const port = parseInt(opts.port, 10);
 
-    let reviewRef: string | undefined;
-    if (opts.review) {
-      reviewRef = opts.review;
-    }
-
-    let urlRef: string | undefined;
-    if (reviewRef) {
-      urlRef = reviewRef;
-    } else if (opts.staged) {
-      urlRef = 'staged';
+    let effectiveRef: string;
+    if (opts.staged) {
+      effectiveRef = 'staged';
     } else if (refs.length > 0) {
-      urlRef = refs.length === 2 ? `${refs[0]}..${refs[1]}` : refs[0];
+      effectiveRef = refs.length === 2 ? `${refs[0]}..${refs[1]}` : refs[0];
     } else {
-      urlRef = 'work';
-    }
-
-    let commentsFile: string | undefined;
-    let stdinComments: string | undefined;
-
-    if (opts.comments === '-') {
-      const chunks: Buffer[] = [];
-      for await (const chunk of process.stdin) {
-        chunks.push(chunk as Buffer);
-      }
-      stdinComments = Buffer.concat(chunks).toString();
-    } else if (opts.comments) {
-      commentsFile = opts.comments;
+      effectiveRef = 'work';
     }
 
     try {
-      const { port: actualPort, close } = await startServer({ port, diffArgs, description, review: reviewRef, commentsFile, stdinComments });
-      const url = urlRef
-        ? `http://localhost:${actualPort}/?ref=${encodeURIComponent(urlRef)}`
-        : `http://localhost:${actualPort}`;
+      const { port: actualPort, close } = await startServer({ port, diffArgs, description, effectiveRef });
+      const url = `http://localhost:${actualPort}/?ref=${encodeURIComponent(effectiveRef)}`;
 
       if (!opts.quiet) {
         console.log('');
@@ -115,5 +92,7 @@ program
       process.exit(1);
     }
   });
+
+registerAgentCommands(program);
 
 program.parse();

@@ -75,7 +75,7 @@ export function SuggestionDiff(props: SuggestionDiffProps) {
     <div className="border border-border rounded-md overflow-hidden my-2">
       <div className="bg-bg-secondary px-3 py-1.5 border-b border-border flex items-center justify-between">
         <span className="text-[11px] text-text-muted font-medium">Suggested change</span>
-        {canApply && !thread.isResolved && onApply && (
+        {canApply && thread.status !== 'resolved' && thread.status !== 'dismissed' && onApply && (
           <button
             onClick={onApply}
             className="px-2 py-0.5 text-[11px] font-medium rounded-md bg-added/20 text-added hover:bg-added/30 transition-colors cursor-pointer"

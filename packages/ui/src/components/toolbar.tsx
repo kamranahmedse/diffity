@@ -7,6 +7,7 @@ import { CopyIcon } from './icons/copy-icon.js';
 import { CheckIcon } from './icons/check-icon.js';
 import type { ViewMode } from '../lib/diff-utils.js';
 import type { CommentThread } from '../types/comment.js';
+import { isThreadResolved } from '../types/comment.js';
 
 interface ToolbarProps {
   viewMode: ViewMode;
@@ -44,7 +45,7 @@ function extractCodeContext(diff: ParsedDiff | undefined, filePath: string, side
 }
 
 function formatThreadsForCopy(threads: CommentThread[], diff?: ParsedDiff, diffRef?: string): string {
-  const unresolvedThreads = threads.filter(t => !t.isResolved);
+  const unresolvedThreads = threads.filter(t => !isThreadResolved(t));
   if (unresolvedThreads.length === 0) {
     return '';
   }
@@ -107,7 +108,7 @@ export function Toolbar(props: ToolbarProps) {
   const activeBtn = 'bg-accent text-white border-accent';
   const inactiveBtn = 'bg-bg hover:bg-hover hover:text-text';
 
-  const unresolvedCount = threads.filter(t => !t.isResolved).length;
+  const unresolvedCount = threads.filter(t => !isThreadResolved(t)).length;
 
   return (
     <div className="flex items-center gap-4 px-4 py-2 bg-bg-secondary border-b border-border font-sans text-sm">
