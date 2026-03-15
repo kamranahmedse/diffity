@@ -12,21 +12,11 @@
 # Install dependencies
 npm install
 
-# Create the diffity-dev binary and build skills
-npm run predev
-
-# Add the dev binary to your PATH (add to ~/.zshrc or ~/.bashrc)
-export PATH="/path/to/diffity/.bin:$PATH"
-```
-
-## Running in Development
-
-```bash
 # Start all watchers (run this in the diffity repo)
 npm run dev
 ```
 
-This starts five concurrent processes:
+This automatically creates the `diffity-dev` binary, builds skills, adds `.bin` to your PATH (in `~/.zshrc` or `~/.bashrc`), and starts five concurrent processes:
 
 | Process | What it does |
 |---------|-------------|
@@ -35,6 +25,12 @@ This starts five concurrent processes:
 | **cli** | `tsc --watch` on the CLI package |
 | **ui** | `vite build --watch` on `@diffity/ui` |
 | **skills** | Rebuilds Claude skills on change |
+
+If this is your first time, source your shell profile to pick up the PATH change:
+
+```bash
+source ~/.zshrc  # or ~/.bashrc
+```
 
 Then, in any git repository:
 

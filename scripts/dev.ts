@@ -1,6 +1,17 @@
 #!/usr/bin/env node
 
+import { execSync } from 'child_process';
+import { dirname, resolve } from 'path';
+import { fileURLToPath } from 'url';
 import concurrently from 'concurrently';
+
+const __dirname = dirname(fileURLToPath(import.meta.url));
+const rootDir = resolve(__dirname, '..');
+
+execSync('tsx scripts/link-dev.ts && npm run build:skills', {
+  cwd: rootDir,
+  stdio: 'inherit',
+});
 
 concurrently(
   [

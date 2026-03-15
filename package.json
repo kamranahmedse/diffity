@@ -14,9 +14,8 @@
     "build": "tsx scripts/build.ts",
     "build:skills": "tsx scripts/build-skills.ts",
     "test": "npm run test -w @diffity/parser && npm run test -w @diffity/ui",
-    "predev": "tsx scripts/link-dev.ts && npm run build:skills",
-    "dev": "tsx scripts/dev.ts",
-    "start": "npm run dev -w diffity"
+    "link-dev": "tsx scripts/link-dev.ts",
+    "dev": "tsx scripts/dev.ts"
   },
   "keywords": [
     "git",
