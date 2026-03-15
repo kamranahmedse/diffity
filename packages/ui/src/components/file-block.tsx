@@ -12,7 +12,9 @@ import { revertHunk as apiRevertHunk } from '../lib/api';
 import { ConfirmDialog } from './ui/confirm-dialog';
 import { computeGaps, createContextLines, getExpandRange, type ExpandableGap } from '../lib/context-expansion';
 import { fileContentOptions } from '../queries/file';
-import { useComments } from '../context/comments-context';
+import type { CommentActions } from '../hooks/use-comment-actions';
+import type { CommentThread } from '../types/comment';
+import { GENERAL_THREAD_FILE_PATH } from '../types/comment';
 import { useLineSelection } from '../hooks/use-line-selection';
 import { useCopy } from '../hooks/use-copy';
 import { CopyIcon } from './icons/copy-icon';
@@ -52,6 +54,12 @@ interface FileBlockProps {
   baseRef?: string;
   canRevert?: boolean;
   onRevert?: () => void;
+  threads: CommentThread[];
+  commentsEnabled: boolean;
+  commentActions: CommentActions;
+  onAddThread: CommentActions['addThread'];
+  pendingSelection: LineSelection | null;
+  onPendingSelectionChange: (selection: LineSelection | null) => void;
 }
 
 interface GapExpansion {
@@ -62,7 +70,10 @@ interface GapExpansion {
 }
 
 export function FileBlock(props: FileBlockProps) {
-  const { file, viewMode, collapsed, onToggleCollapse, reviewed, onReviewedChange, onVisible, highlightLine, baseRef, canRevert, onRevert } = props;
+  const {
+    file, viewMode, collapsed, onToggleCollapse, reviewed, onReviewedChange, onVisible, highlightLine, baseRef, canRevert, onRevert,
+    threads: allThreads, commentsEnabled, commentActions, onAddThread: rawAddThread, pendingSelection, onPendingSelectionChange,
+  } = props;
 
   const totalLines = getTotalLineCount(file);
   const isLargeDiff = totalLines >= LARGE_DIFF_LINE_THRESHOLD;
@@ -91,22 +102,20 @@ export function FileBlock(props: FileBlockProps) {
   }, [file, onRevert]);
 
 
-  const {
-    getThreadsForFile, addThread: rawAddThread, addReply, resolveThread, unresolveThread, dismissThread, deleteComment, deleteThread,
-    pendingSelection, setPendingSelection,
-  } = useComments();
+  const { addReply, resolveThread, unresolveThread, dismissThread, deleteComment, deleteThread } = commentActions;
 
   const getOriginalCode = useCallback((side: CommentSide, startLine: number, endLine: number) => {
     return extractLinesFromDiff(file.hunks, side, startLine, endLine);
   }, [file.hunks]);
 
-  const addThread = useCallback((fp: string, side: import('../types/comment').CommentSide, startLine: number, endLine: number, body: string, author: import('../types/comment').CommentAuthor) => {
+  const addThread = useCallback((fp: string, side: CommentSide, startLine: number, endLine: number, body: string, author: import('../types/comment').CommentAuthor) => {
     const anchorContent = extractLinesFromDiff(file.hunks, side, startLine, endLine);
     rawAddThread(fp, side, startLine, endLine, body, author, anchorContent || undefined);
   }, [rawAddThread, file.hunks]);
 
-  const commentsEnabled = useComments().enabled;
-  const allFileThreads = getThreadsForFile(filePath);
+  const allFileThreads = useMemo(() => {
+    return allThreads.filter(t => t.filePath === filePath && t.filePath !== GENERAL_THREAD_FILE_PATH);
+  }, [allThreads, filePath]);
 
   const { anchoredThreads: fileThreads, orphanedThreads } = useMemo(() => {
     const diffLineNumbers = new Set<string>();
@@ -149,8 +158,8 @@ export function FileBlock(props: FileBlockProps) {
     if (!commentsEnabled) {
       return;
     }
-    setPendingSelection(selection);
-  }, [setPendingSelection, commentsEnabled]);
+    onPendingSelectionChange(selection);
+  }, [onPendingSelectionChange, commentsEnabled]);
 
   const { isLineInSelection, handleLineMouseDown, handleLineMouseEnter } = useLineSelection({
     filePath,
@@ -158,19 +167,19 @@ export function FileBlock(props: FileBlockProps) {
   });
 
   const handleCommentClickFn = useCallback((line: number, side: CommentSide) => {
-    setPendingSelection({
+    onPendingSelectionChange({
       filePath,
       side,
       startLine: line,
       endLine: line,
     });
-  }, [filePath, setPendingSelection]);
+  }, [filePath, onPendingSelectionChange]);
 
   const handleCommentClick = commentsEnabled ? handleCommentClickFn : undefined;
 
   const handleCancelPending = useCallback(() => {
-    setPendingSelection(null);
-  }, [setPendingSelection]);
+    onPendingSelectionChange(null);
+  }, [onPendingSelectionChange]);
 
   const isLineSelected = useCallback((line: number, side: CommentSide) => {
     if (isLineInSelection(line, side)) {

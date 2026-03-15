@@ -1,0 +1,174 @@
+import { useState } from 'react';
+import { GENERAL_THREAD_FILE_PATH, isThreadResolved } from '../types/comment';
+import type { CommentAuthor, CommentThread as CommentThreadType } from '../types/comment';
+import type { CommentActions } from '../hooks/use-comment-actions';
+import { CommentBubble } from './comment-bubble';
+import { CommentForm } from './comment-form';
+import { CommentIcon } from './icons/comment-icon';
+import { TrashIcon } from './icons/trash-icon';
+import { ThreadBadge } from './ui/thread-badge';
+
+const DEFAULT_AUTHOR: CommentAuthor = { name: 'You', type: 'user' };
+
+interface GeneralCommentsProps {
+  threads: CommentThreadType[];
+  commentActions: CommentActions;
+}
+
+export function GeneralComments(props: GeneralCommentsProps) {
+  const { threads: allThreads, commentActions } = props;
+
+  const threads = allThreads.filter(t => t.filePath === GENERAL_THREAD_FILE_PATH);
+  const [isExpanded, setIsExpanded] = useState(false);
+  const [showForm, setShowForm] = useState(false);
+
+  return (
+    <div className="border border-border rounded-lg mx-4 mt-4 overflow-hidden">
+      <div className="flex items-center gap-2 px-3 py-2 bg-bg-secondary text-sm select-none">
+        <button
+          onClick={() => setIsExpanded(!isExpanded)}
+          className="text-[10px] w-5 h-5 shrink-0 flex items-center justify-center text-text-muted cursor-pointer"
+        >
+          {isExpanded ? '\u25bc' : '\u25b6'}
+        </button>
+        <button
+          onClick={() => setIsExpanded(!isExpanded)}
+          className="flex items-center gap-2 cursor-pointer"
+        >
+          <CommentIcon className="w-3.5 h-3.5 text-text-muted" />
+          <span className="text-text-secondary">General comments</span>
+          {threads.length > 0 && (
+            <span className="text-xs text-text-muted">({threads.length})</span>
+          )}
+        </button>
+        <div className="flex-1" />
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            setIsExpanded(true);
+            setShowForm(true);
+          }}
+          className="text-xs text-accent hover:text-accent-hover transition-colors cursor-pointer"
+        >
+          Add comment
+        </button>
+      </div>
+      {isExpanded && (
+        <div className="border-t border-border bg-bg">
+          {showForm && (
+            <div className="p-3">
+              <CommentForm
+                onSubmit={(body) => {
+                  commentActions.addThread(GENERAL_THREAD_FILE_PATH, 'new', 0, 0, body, DEFAULT_AUTHOR);
+                  setShowForm(false);
+                }}
+                onCancel={() => setShowForm(false)}
+                placeholder="Leave a general comment..."
+                submitLabel="Comment"
+              />
+            </div>
+          )}
+          {threads.length > 0 ? (
+            <div className="p-3 space-y-3">
+              {threads.map((thread) => (
+                <GeneralThreadCard
+                  key={thread.id}
+                  thread={thread}
+                  onReply={(body) => commentActions.addReply(thread.id, body, DEFAULT_AUTHOR)}
+                  onResolve={() => commentActions.resolveThread(thread.id)}
+                  onUnresolve={() => commentActions.unresolveThread(thread.id)}
+                  onDeleteComment={(commentId) => commentActions.deleteComment(thread.id, commentId)}
+                  onDeleteThread={() => commentActions.deleteThread(thread.id)}
+                />
+              ))}
+            </div>
+          ) : !showForm && (
+            <div className="px-3 py-4 text-center text-xs text-text-muted">
+              No general comments yet
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+interface GeneralThreadCardProps {
+  thread: CommentThreadType;
+  onReply: (body: string) => void;
+  onResolve: () => void;
+  onUnresolve: () => void;
+  onDeleteComment: (commentId: string) => void;
+  onDeleteThread: () => void;
+}
+
+function GeneralThreadCard(props: GeneralThreadCardProps) {
+  const { thread, onReply, onResolve, onUnresolve, onDeleteComment, onDeleteThread } = props;
+  const [showReply, setShowReply] = useState(false);
+  const resolved = isThreadResolved(thread);
+
+  return (
+    <div className="border border-border rounded-lg overflow-hidden">
+      <div className="flex items-center justify-between px-3 py-1.5 bg-bg-secondary border-b border-border">
+        <div className="flex items-center gap-2">
+          {resolved && <ThreadBadge variant="resolved" />}
+        </div>
+        <div className="flex items-center gap-1">
+          {resolved ? (
+            <button
+              onClick={onUnresolve}
+              className="text-[11px] text-text-muted hover:text-text-secondary transition-colors cursor-pointer"
+            >
+              Reopen
+            </button>
+          ) : (
+            <button
+              onClick={onResolve}
+              className="text-[11px] text-text-muted hover:text-text-secondary transition-colors cursor-pointer"
+            >
+              Resolve
+            </button>
+          )}
+          <button
+            onClick={onDeleteThread}
+            className="text-text-muted hover:text-deleted transition-colors cursor-pointer ml-1"
+            title="Delete thread"
+          >
+            <TrashIcon className="w-3.5 h-3.5" />
+          </button>
+        </div>
+      </div>
+      <div>
+        {thread.comments.map((comment) => (
+          <CommentBubble
+            key={comment.id}
+            comment={comment}
+            onDelete={() => onDeleteComment(comment.id)}
+          />
+        ))}
+      </div>
+      {showReply ? (
+        <div className="px-3 py-2 border-t border-border">
+          <CommentForm
+            onSubmit={(body) => {
+              onReply(body);
+              setShowReply(false);
+            }}
+            onCancel={() => setShowReply(false)}
+            placeholder="Reply..."
+            submitLabel="Reply"
+          />
+        </div>
+      ) : (
+        <div className="px-3 py-2 border-t border-border">
+          <button
+            onClick={() => setShowReply(true)}
+            className="text-xs text-accent hover:text-accent-hover transition-colors cursor-pointer"
+          >
+            Reply
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}

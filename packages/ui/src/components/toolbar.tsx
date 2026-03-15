@@ -1,13 +1,13 @@
 import type { ParsedDiff } from '@diffity/parser';
 import { cn } from '../lib/cn';
 import { useCopy } from '../hooks/use-copy';
-import { useComments } from '../context/comments-context';
 import { useThreadNavigation } from '../hooks/use-thread-navigation';
 import { getFilePath } from '../lib/diff-utils';
 import { CopyIcon } from './icons/copy-icon';
 import { CheckIcon } from './icons/check-icon';
 import { ChevronUpIcon } from './icons/chevron-up-icon';
 import { ChevronDownIcon } from './icons/chevron-down-icon';
+import { GENERAL_THREAD_FILE_PATH } from '../types/comment';
 import type { ViewMode } from '../lib/diff-utils';
 import type { CommentThread } from '../types/comment';
 import { isThreadResolved } from '../types/comment';
@@ -21,6 +21,7 @@ interface ToolbarProps {
   onToggleTheme: () => void;
   diff?: ParsedDiff;
   diffRef?: string;
+  threads: CommentThread[];
 }
 
 function extractCodeContext(diff: ParsedDiff | undefined, filePath: string, side: 'old' | 'new', startLine: number, endLine: number): string[] {
@@ -61,12 +62,15 @@ function formatThreadsForCopy(threads: CommentThread[], diff?: ParsedDiff, diffR
   }
 
   for (const thread of unresolvedThreads) {
-    const lineRange = thread.startLine === thread.endLine
-      ? `${thread.startLine}`
-      : `${thread.startLine}-${thread.endLine}`;
-    const sideDesc = thread.side === 'old' ? 'before change' : 'after change';
-
-    parts.push(`## ${thread.filePath}:${lineRange} (${sideDesc})`);
+    if (thread.filePath === GENERAL_THREAD_FILE_PATH) {
+      parts.push('## General comment');
+    } else {
+      const lineRange = thread.startLine === thread.endLine
+        ? `${thread.startLine}`
+        : `${thread.startLine}-${thread.endLine}`;
+      const sideDesc = thread.side === 'old' ? 'before change' : 'after change';
+      parts.push(`## ${thread.filePath}:${lineRange} (${sideDesc})`);
+    }
 
     const codeLines = extractCodeContext(diff, thread.filePath, thread.side, thread.startLine, thread.endLine);
     if (codeLines.length > 0) {
@@ -102,9 +106,8 @@ export function Toolbar(props: ToolbarProps) {
     onToggleTheme,
     diff,
     diffRef,
+    threads,
   } = props;
-
-  const { threads } = useComments();
   const { copied, copy } = useCopy();
   const { currentIndex, count: unresolvedCount, goToPrevious, goToNext } = useThreadNavigation(threads);
 

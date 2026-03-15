@@ -1,3 +1,5 @@
+export const GENERAL_THREAD_FILE_PATH = '__general__';
+
 export interface CommentAuthor {
   name: string;
   avatarUrl?: string;

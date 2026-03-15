@@ -4,7 +4,8 @@ import { useDiff } from '../hooks/use-diff';
 import { useInfo } from '../hooks/use-info';
 import { useTheme } from '../hooks/use-theme';
 import { useKeyboard } from '../hooks/use-keyboard';
-import { CommentsProvider } from '../context/comments-context';
+import { useReviewThreads } from '../hooks/use-review-threads';
+import { useCommentActions } from '../hooks/use-comment-actions';
 import { SummaryBar } from './summary-bar';
 import { Toolbar } from './toolbar';
 import { DiffView, type DiffViewHandle } from './diff-view';
@@ -16,6 +17,7 @@ import { PageLoader } from './skeleton';
 import { useDiffStaleness } from '../hooks/use-diff-staleness';
 import { type ViewMode, getFilePath, getAutoCollapsedPaths, isWorkingTreeRef } from '../lib/diff-utils';
 import { getFileBlocks, getHunkHeaders, scrollToElement } from '../lib/dom-utils';
+import type { LineSelection } from '../types/comment';
 
 interface DiffPageProps {
   refParam?: string;
@@ -35,6 +37,7 @@ export function DiffPage(props: DiffPageProps) {
   const [activeFile, setActiveFile] = useState<string | null>(null);
   const [reviewedFiles, setReviewedFiles] = useState<Set<string>>(new Set());
   const [collapsedFiles, setCollapsedFiles] = useState<Set<string>>(new Set());
+  const [pendingSelection, setPendingSelection] = useState<LineSelection | null>(null);
   const mainRef = useRef<HTMLElement | null>(null);
   const diffViewRef = useRef<DiffViewHandle>(null);
   const currentFileIdx = useRef(0);
@@ -45,6 +48,15 @@ export function DiffPage(props: DiffPageProps) {
   const sessionId = info?.sessionId ?? null;
   const isWorkingTree = isWorkingTreeRef(refParam);
   const { isStale, resetStaleness } = useDiffStaleness(refParam, isWorkingTree);
+
+  const { data: serverThreads, isFetched: threadsFetched } = useReviewThreads(reviewsEnabled ? sessionId : null);
+  const threads = reviewsEnabled && serverThreads ? serverThreads : [];
+  const commentActions = useCommentActions(sessionId, reviewsEnabled);
+
+  const handleAddThread = useCallback((...args: Parameters<typeof commentActions.addThread>) => {
+    commentActions.addThread(...args);
+    setPendingSelection(null);
+  }, [commentActions]);
 
   useEffect(() => {
     if (!diff || diff === initializedDiffRef.current) {
@@ -226,7 +238,12 @@ export function DiffPage(props: DiffPageProps) {
     );
   }
 
-  if ((diffLoading || infoLoading) && !diff) {
+  const threadsLoading = reviewsEnabled && !threadsFetched;
+  if ((diffLoading || infoLoading || threadsLoading) && !diff) {
+    return <PageLoader />;
+  }
+
+  if (!info || threadsLoading) {
     return <PageLoader />;
   }
 
@@ -255,7 +272,6 @@ export function DiffPage(props: DiffPageProps) {
   }
 
   return (
-    <CommentsProvider sessionId={sessionId} enabled={reviewsEnabled}>
     <div className="flex flex-col h-screen bg-bg text-text font-sans">
       <SummaryBar
         diff={diff}
@@ -272,6 +288,7 @@ export function DiffPage(props: DiffPageProps) {
         onToggleTheme={toggleTheme}
         diff={diff || undefined}
         diffRef={refParam}
+        threads={threads}
       />
       {isStale && <StaleDiffBanner onRefresh={handleRefreshDiff} />}
       <div className="flex flex-1 overflow-hidden">
@@ -298,11 +315,16 @@ export function DiffPage(props: DiffPageProps) {
             scrollRef={(node) => {
               mainRef.current = node;
             }}
+            threads={threads}
+            commentsEnabled={reviewsEnabled}
+            commentActions={commentActions}
+            onAddThread={handleAddThread}
+            pendingSelection={pendingSelection}
+            onPendingSelectionChange={setPendingSelection}
           />
         ) : null}
       </div>
       {showHelp && <ShortcutModal onClose={() => setShowHelp(false)} />}
     </div>
-    </CommentsProvider>
   );
 }
