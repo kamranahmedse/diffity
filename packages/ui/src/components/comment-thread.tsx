@@ -1,12 +1,12 @@
 import { useState } from 'react';
-import type { CommentThread as CommentThreadType } from '../types/comment.js';
-import type { CommentAuthor, CommentSide } from '../types/comment.js';
-import { isThreadResolved } from '../types/comment.js';
-import { hasSuggestion, parseSuggestion } from '../lib/parse-suggestion.js';
-import { CommentForm } from './comment-form.js';
-import { CommentBubble } from './comment-bubble.js';
-import { TrashIcon } from './icons/trash-icon.js';
-import { CommentIcon } from './icons/comment-icon.js';
+import type { CommentThread as CommentThreadType } from '../types/comment';
+import type { CommentAuthor, CommentSide } from '../types/comment';
+import { isThreadResolved } from '../types/comment';
+import { hasSuggestion, parseSuggestion } from '../lib/parse-suggestion';
+import { CommentForm } from './comment-form';
+import { CommentBubble } from './comment-bubble';
+import { TrashIcon } from './icons/trash-icon';
+import { CommentIcon } from './icons/comment-icon';
 
 interface CommentThreadProps {
   thread: CommentThreadType;

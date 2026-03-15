@@ -1,13 +1,13 @@
 import type { ParsedDiff } from '@diffity/parser';
-import { cn } from '../lib/cn.js';
-import { useCopy } from '../hooks/use-copy.js';
-import { useComments } from '../context/comments-context.js';
-import { getFilePath } from '../lib/diff-utils.js';
-import { CopyIcon } from './icons/copy-icon.js';
-import { CheckIcon } from './icons/check-icon.js';
-import type { ViewMode } from '../lib/diff-utils.js';
-import type { CommentThread } from '../types/comment.js';
-import { isThreadResolved } from '../types/comment.js';
+import { cn } from '../lib/cn';
+import { useCopy } from '../hooks/use-copy';
+import { useComments } from '../context/comments-context';
+import { getFilePath } from '../lib/diff-utils';
+import { CopyIcon } from './icons/copy-icon';
+import { CheckIcon } from './icons/check-icon';
+import type { ViewMode } from '../lib/diff-utils';
+import type { CommentThread } from '../types/comment';
+import { isThreadResolved } from '../types/comment';
 
 interface ToolbarProps {
   viewMode: ViewMode;

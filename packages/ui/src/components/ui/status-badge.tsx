@@ -1,6 +1,6 @@
-import { cn } from '../../lib/cn.js';
-import { getStatusColor } from '../../lib/diff-utils.js';
-import { Badge } from './badge.js';
+import { cn } from '../../lib/cn';
+import { getStatusColor } from '../../lib/diff-utils';
+import { Badge } from './badge';
 
 interface StatusBadgeProps {
   status: string;

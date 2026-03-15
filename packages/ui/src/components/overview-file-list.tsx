@@ -1,4 +1,4 @@
-import type { OverviewFile } from '../lib/api.js';
+import type { OverviewFile } from '../lib/api';
 
 interface OverviewFileListProps {
   files: OverviewFile[];

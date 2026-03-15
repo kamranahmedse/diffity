@@ -1,5 +1,5 @@
-import type { CommentAuthor, CommentSide } from '../types/comment.js';
-import { CommentForm } from './comment-form.js';
+import type { CommentAuthor, CommentSide } from '../types/comment';
+import { CommentForm } from './comment-form';
 
 interface CommentFormRowProps {
   colSpan: number;

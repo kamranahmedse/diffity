@@ -6,8 +6,8 @@ import {
   sortTree,
   filterTree,
   collectAllDirPaths,
-} from '../lib/file-tree.js';
-import { FileTreeItem } from './file-tree-item.js';
+} from '../lib/file-tree';
+import { FileTreeItem } from './file-tree-item';
 
 interface FileTreeProps {
   files: DiffFile[];

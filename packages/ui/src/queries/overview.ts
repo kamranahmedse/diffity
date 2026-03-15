@@ -1,5 +1,5 @@
 import { queryOptions } from '@tanstack/react-query';
-import { fetchOverview } from '../lib/api.js';
+import { fetchOverview } from '../lib/api';
 
 export function overviewOptions() {
   return queryOptions({

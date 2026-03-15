@@ -1,9 +1,9 @@
 import { useMemo, useRef, useImperativeHandle } from 'react';
 import { useVirtualizer } from '@tanstack/react-virtual';
 import type { ParsedDiff } from '@diffity/parser';
-import { FileBlock, LARGE_DIFF_LINE_THRESHOLD } from './file-block.js';
-import { useHighlighter } from '../hooks/use-highlighter.js';
-import { type ViewMode, getFilePath } from '../lib/diff-utils.js';
+import { FileBlock, LARGE_DIFF_LINE_THRESHOLD } from './file-block';
+import { useHighlighter } from '../hooks/use-highlighter';
+import { type ViewMode, getFilePath } from '../lib/diff-utils';
 
 export interface DiffViewHandle {
   scrollToFile: (path: string) => void;

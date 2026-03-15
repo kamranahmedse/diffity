@@ -1,5 +1,5 @@
 import type { DiffFile } from '@diffity/parser';
-import { getFilePath } from './diff-utils.js';
+import { getFilePath } from './diff-utils';
 
 export interface FileNode {
   type: 'file';

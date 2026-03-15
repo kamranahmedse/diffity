@@ -1,11 +1,11 @@
 import type { DiffLine as DiffLineType } from '@diffity/parser';
-import { cn } from '../lib/cn.js';
-import { getLineBg } from '../lib/diff-utils.js';
-import { renderContent } from '../lib/render-content.js';
-import type { SyntaxToken } from '../lib/syntax-token.js';
-import { CommentLineNumber } from './comment-line-number.js';
-import { UndoIcon } from './icons/undo-icon.js';
-import type { CommentSide } from '../types/comment.js';
+import { cn } from '../lib/cn';
+import { getLineBg } from '../lib/diff-utils';
+import { renderContent } from '../lib/render-content';
+import type { SyntaxToken } from '../lib/syntax-token';
+import { CommentLineNumber } from './comment-line-number';
+import { UndoIcon } from './icons/undo-icon';
+import type { CommentSide } from '../types/comment';
 
 export type { SyntaxToken };
 

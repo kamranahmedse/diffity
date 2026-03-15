@@ -1,5 +1,5 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
-import type { CommentSide, LineSelection } from '../types/comment.js';
+import type { CommentSide, LineSelection } from '../types/comment';
 
 interface UseLineSelectionOptions {
   filePath: string;

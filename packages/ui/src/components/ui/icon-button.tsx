@@ -1,5 +1,5 @@
 import type { ReactNode, ButtonHTMLAttributes } from 'react';
-import { cn } from '../../lib/cn.js';
+import { cn } from '../../lib/cn';
 
 interface IconButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   children: ReactNode;

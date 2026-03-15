@@ -18,6 +18,10 @@ function getStoredTheme(): Theme | null {
   return localStorage.getItem('diffity-theme') as Theme | null;
 }
 
+export function getTheme(): Theme {
+  return document.documentElement.getAttribute('data-theme') === 'dark' ? 'dark' : 'light';
+}
+
 export function useTheme() {
   const [theme, setTheme] = useState<Theme>(
     () => getStoredTheme() || getSystemTheme()

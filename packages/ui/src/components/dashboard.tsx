@@ -1,10 +1,10 @@
-import { useOverview } from '../hooks/use-overview.js';
-import { useCommits } from '../hooks/use-commits.js';
-import { useInfo } from '../hooks/use-info.js';
-import { OverviewFileList } from './overview-file-list.js';
-import { CommitList } from './commit-list.js';
-import { CheckCircleIcon } from './icons/check-circle-icon.js';
-import { PageLoader } from './skeleton.js';
+import { useOverview } from '../hooks/use-overview';
+import { useCommits } from '../hooks/use-commits';
+import { useInfo } from '../hooks/use-info';
+import { OverviewFileList } from './overview-file-list';
+import { CommitList } from './commit-list';
+import { CheckCircleIcon } from './icons/check-circle-icon';
+import { PageLoader } from './skeleton';
 
 interface DashboardProps {
   onNavigate: (ref: string) => void;

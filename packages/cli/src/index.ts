@@ -13,11 +13,22 @@ program
   .name('diffity')
   .description('GitHub-style git diff viewer in the browser')
   .version('0.1.0')
-  .argument('[refs...]', 'Git refs to diff (commit, branch, range)')
-  .option('--staged', 'Show staged changes')
+  .argument('[refs...]', 'Git refs to diff (e.g. HEAD~3, main, main..feature)')
+  .option('--staged', 'Show staged changes (git diff --staged)')
   .option('--port <port>', 'Port to use', '5391')
   .option('--no-open', 'Do not open browser automatically')
   .option('--quiet', 'Minimal terminal output')
+  .addHelpText('after', `
+Examples:
+  $ diffity                    Working tree changes
+  $ diffity --staged           Staged changes
+  $ diffity HEAD~1             Last commit vs working tree
+  $ diffity HEAD~3             Last 3 commits vs working tree
+  $ diffity abc1234            Changes since a specific commit
+  $ diffity main..feature      Compare branches
+  $ diffity main feature       Same as main..feature
+  $ diffity v1.0.0..v2.0.0    Compare tags
+  $ diffity --staged --port 3000  Staged changes on custom port`)
   .action(async (refs: string[], opts) => {
     if (!isGitRepo()) {
       console.error(pc.red('Error: Not a git repository'));

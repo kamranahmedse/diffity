@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import type { DiffFile } from '@diffity/parser';
-import { FileTree } from './file-tree.js';
+import { FileTree } from './file-tree';
 
 interface SidebarProps {
   files: DiffFile[];

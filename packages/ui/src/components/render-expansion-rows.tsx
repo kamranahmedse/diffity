@@ -1,10 +1,10 @@
 import type { DiffLine as DiffLineType } from '@diffity/parser';
-import type { HighlightedTokens } from '../hooks/use-highlighter.js';
-import type { SyntaxToken } from '../lib/syntax-token.js';
-import type { ViewMode } from '../lib/diff-utils.js';
-import type { LineRenderProps } from '../types/comment.js';
-import { renderLineWithComments } from './hunk-block.js';
-import { renderSplitRows } from './hunk-block-split.js';
+import type { HighlightedTokens } from '../hooks/use-highlighter';
+import type { SyntaxToken } from '../lib/syntax-token';
+import type { ViewMode } from '../lib/diff-utils';
+import type { LineRenderProps } from '../types/comment';
+import { renderLineWithComments } from './hunk-block';
+import { renderSplitRows } from './hunk-block-split';
 
 export function buildExpansionSyntaxMap(
   lines: DiffLineType[],

@@ -1,5 +1,5 @@
 import type { DiffLine } from '@diffity/parser';
-import type { SyntaxToken } from '../lib/syntax-token.js';
+import type { SyntaxToken } from '../lib/syntax-token';
 
 interface WordDiffProps {
   line: DiffLine;

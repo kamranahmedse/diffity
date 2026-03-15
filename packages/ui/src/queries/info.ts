@@ -1,5 +1,5 @@
 import { queryOptions } from '@tanstack/react-query';
-import { fetchRepoInfo } from '../lib/api.js';
+import { fetchRepoInfo } from '../lib/api';
 
 export function repoInfoOptions(ref?: string) {
   return queryOptions({

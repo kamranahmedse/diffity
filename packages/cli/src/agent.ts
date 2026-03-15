@@ -58,14 +58,25 @@ function formatThreadLine(thread: Thread): string {
 export function registerAgentCommands(program: Command): void {
   const agent = program
     .command('agent')
-    .description('Agent commands for interacting with review comments');
+    .description('Agent commands for interacting with review comments')
+    .addHelpText('after', `
+Examples:
+  $ diffity agent list --status open --json
+  $ diffity agent comment --file src/app.ts --line 42 --body "Missing null check"
+  $ diffity agent resolve abc123 --summary "Added null check"
+  $ diffity agent reply abc123 --body "Good catch, fixed"`);
 
   agent
     .command('list')
-    .description('List comment threads in the current session')
-    .option('--status <status>', 'Filter by status (open, acknowledged, resolved, dismissed)')
+    .description('List comment threads in the current session (use --json for full details)')
+    .option('--status <status>', 'Filter by status (open, resolved, dismissed)')
     .option('--json', 'Output as JSON')
     .action((opts) => {
+      const validStatuses = ['open', 'acknowledged', 'resolved', 'dismissed'];
+      if (opts.status && !validStatuses.includes(opts.status)) {
+        console.error(pc.red(`Error: Invalid status "${opts.status}". Must be one of: ${validStatuses.join(', ')}`));
+        process.exit(1);
+      }
       const session = requireSession();
       const threads = getThreadsForSession(session.id, opts.status as ThreadStatus | undefined);
 
@@ -87,12 +98,16 @@ export function registerAgentCommands(program: Command): void {
   agent
     .command('comment')
     .description('Create a new comment thread')
-    .requiredOption('--file <path>', 'File path')
-    .requiredOption('--line <n>', 'Start line number', parseInt)
-    .option('--end-line <n>', 'End line number', parseInt)
-    .option('--side <side>', 'Side (new or old)', 'new')
+    .requiredOption('--file <path>', 'File path (relative to repo root)')
+    .requiredOption('--line <n>', 'Line number (1-indexed)', parseInt)
+    .option('--end-line <n>', 'End line for multi-line comments (1-indexed)', parseInt)
+    .option('--side <side>', 'Which side of the diff (new or old)', 'new')
     .requiredOption('--body <text>', 'Comment body')
     .action((opts) => {
+      if (opts.side !== 'new' && opts.side !== 'old') {
+        console.error(pc.red(`Error: Invalid side "${opts.side}". Must be "new" or "old"`));
+        process.exit(1);
+      }
       const session = requireSession();
       const endLine = opts.endLine ?? opts.line;
       const thread = createThread(
@@ -109,9 +124,9 @@ export function registerAgentCommands(program: Command): void {
 
   agent
     .command('resolve')
-    .description('Resolve a comment thread')
-    .argument('<id>', 'Thread ID (or 8-char prefix)')
-    .option('--summary <text>', 'Summary comment')
+    .description('Resolve a thread (marks as fixed)')
+    .argument('<thread-id>', 'Thread ID (or 8-char prefix)')
+    .option('--summary <text>', 'What was done to resolve it')
     .action((id: string, opts) => {
       const session = requireSession();
       const thread = resolveThreadId(id, session.id);
@@ -122,9 +137,9 @@ export function registerAgentCommands(program: Command): void {
 
   agent
     .command('dismiss')
-    .description('Dismiss a comment thread')
-    .argument('<id>', 'Thread ID (or 8-char prefix)')
-    .option('--reason <text>', 'Reason for dismissal')
+    .description('Dismiss a thread (marks as won\'t fix)')
+    .argument('<thread-id>', 'Thread ID (or 8-char prefix)')
+    .option('--reason <text>', 'Why the thread is being dismissed')
     .action((id: string, opts) => {
       const session = requireSession();
       const thread = resolveThreadId(id, session.id);
@@ -136,7 +151,7 @@ export function registerAgentCommands(program: Command): void {
   agent
     .command('reply')
     .description('Reply to a comment thread')
-    .argument('<id>', 'Thread ID (or 8-char prefix)')
+    .argument('<thread-id>', 'Thread ID (or 8-char prefix)')
     .requiredOption('--body <text>', 'Reply body')
     .action((id: string, opts) => {
       const session = requireSession();

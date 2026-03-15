@@ -1,8 +1,12 @@
-import type { CommentThread } from '../types/comment.js';
+import { useMemo } from 'react';
+import type { CommentThread } from '../types/comment';
+import { useHighlighter } from '../hooks/use-highlighter';
+import { getTheme } from '../hooks/use-theme';
 
 interface SuggestionDiffProps {
   originalCode: string;
   suggestion: string;
+  filePath: string;
   canApply?: boolean;
   onApply?: () => void;
   thread: CommentThread;
@@ -13,26 +17,18 @@ function diffLines(original: string, suggested: string): { type: 'context' | 'de
   const newLines = suggested.split('\n');
   const result: { type: 'context' | 'delete' | 'add'; content: string }[] = [];
 
-  // Simple line-by-line diff
   const maxLen = Math.max(oldLines.length, newLines.length);
   let oi = 0;
   let ni = 0;
 
-  // Use a basic approach: match identical lines, show deletions/additions for differences
   while (oi < oldLines.length || ni < newLines.length) {
     if (oi < oldLines.length && ni < newLines.length && oldLines[oi] === newLines[ni]) {
       result.push({ type: 'context', content: oldLines[oi] });
       oi++;
       ni++;
     } else {
-      // Collect consecutive changed lines
-      const oldStart = oi;
-      const newStart = ni;
-
-      // Look ahead for the next matching line
       let found = false;
       for (let ahead = 1; ahead <= maxLen && !found; ahead++) {
-        // Check if old[oi+ahead] matches new[ni]
         if (oi + ahead < oldLines.length && ni < newLines.length && oldLines[oi + ahead] === newLines[ni]) {
           for (let k = oi; k < oi + ahead; k++) {
             result.push({ type: 'delete', content: oldLines[k] });
@@ -40,7 +36,6 @@ function diffLines(original: string, suggested: string): { type: 'context' | 'de
           oi = oi + ahead;
           found = true;
         }
-        // Check if new[ni+ahead] matches old[oi]
         if (!found && ni + ahead < newLines.length && oi < oldLines.length && newLines[ni + ahead] === oldLines[oi]) {
           for (let k = ni; k < ni + ahead; k++) {
             result.push({ type: 'add', content: newLines[k] });
@@ -51,7 +46,6 @@ function diffLines(original: string, suggested: string): { type: 'context' | 'de
       }
 
       if (!found) {
-        // No match found, consume one from each
         if (oi < oldLines.length) {
           result.push({ type: 'delete', content: oldLines[oi] });
           oi++;
@@ -68,8 +62,23 @@ function diffLines(original: string, suggested: string): { type: 'context' | 'de
 }
 
 export function SuggestionDiff(props: SuggestionDiffProps) {
-  const { originalCode, suggestion, canApply, onApply, thread } = props;
+  const { originalCode, suggestion, filePath, canApply, onApply, thread } = props;
+  const { highlight, ready } = useHighlighter();
   const lines = diffLines(originalCode, suggestion);
+
+  const syntaxMap = useMemo(() => {
+    if (!ready) {
+      return null;
+    }
+
+    const allCode = lines.map((l) => l.content).join('\n');
+    const result = highlight(allCode, filePath, getTheme());
+    if (!result) {
+      return null;
+    }
+
+    return result.map((line) => line.tokens);
+  }, [lines, filePath, highlight, ready]);
 
   return (
     <div className="border border-border rounded-md overflow-hidden my-2">
@@ -98,10 +107,20 @@ export function SuggestionDiff(props: SuggestionDiffProps) {
               ? 'text-added'
               : 'text-text-muted';
 
+          const tokens = syntaxMap ? syntaxMap[i] : null;
+
           return (
             <div key={i} className={`px-3 ${bgClass}`}>
               <span className={`select-none mr-2 ${prefixColor}`}>{prefix}</span>
-              <span className="text-text">{line.content}</span>
+              {tokens ? (
+                tokens.map((token, j) => (
+                  <span key={j} style={token.color ? { color: token.color } : undefined}>
+                    {token.text}
+                  </span>
+                ))
+              ) : (
+                <span className="text-text">{line.content}</span>
+              )}
             </div>
           );
         })}

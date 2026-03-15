@@ -1,5 +1,5 @@
 import { useState, useCallback, useRef } from 'react';
-import { type Commit, fetchCommits } from '../lib/api.js';
+import { type Commit, fetchCommits } from '../lib/api';
 
 interface CommitListProps {
   initialCommits: Commit[];

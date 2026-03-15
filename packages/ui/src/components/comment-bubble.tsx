@@ -1,7 +1,8 @@
-import type { Comment, CommentThread as CommentThreadType } from '../types/comment.js';
-import { parseSuggestion } from '../lib/parse-suggestion.js';
-import { TrashIcon } from './icons/trash-icon.js';
-import { SuggestionDiff } from './suggestion-diff.js';
+import type { Comment, CommentThread as CommentThreadType } from '../types/comment';
+import { parseSuggestion } from '../lib/parse-suggestion';
+import { TrashIcon } from './icons/trash-icon';
+import { SuggestionDiff } from './suggestion-diff';
+import { MarkdownContent } from './markdown-content';
 
 interface CommentBubbleProps {
   comment: Comment;
@@ -79,20 +80,21 @@ export function CommentBubble(props: CommentBubbleProps) {
       <div className="text-sm text-text pl-7">
         {parsed ? (
           <>
-            {parsed.before && <p className="whitespace-pre-wrap mb-1">{parsed.before}</p>}
+            {parsed.before && <MarkdownContent content={parsed.before} />}
             {thread && originalCode !== undefined && (
               <SuggestionDiff
                 originalCode={originalCode}
                 suggestion={parsed.suggestion}
+                filePath={thread.filePath}
                 canApply={canApply}
                 onApply={onApply}
                 thread={thread}
               />
             )}
-            {parsed.after && <p className="whitespace-pre-wrap mt-1">{parsed.after}</p>}
+            {parsed.after && <MarkdownContent content={parsed.after} />}
           </>
         ) : (
-          <span className="whitespace-pre-wrap">{comment.body}</span>
+          <MarkdownContent content={comment.body} />
         )}
       </div>
     </div>

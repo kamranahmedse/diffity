@@ -1,10 +1,10 @@
-import type { TreeNode } from '../lib/file-tree.js';
-import { cn } from '../lib/cn.js';
-import { DiffStats } from './diff-stats.js';
-import { StatusBadge } from './ui/status-badge.js';
-import { ChevronIcon } from './icons/chevron-icon.js';
-import { FolderIcon } from './icons/folder-icon.js';
-import { FileIcon } from './icons/file-icon.js';
+import type { TreeNode } from '../lib/file-tree';
+import { cn } from '../lib/cn';
+import { DiffStats } from './diff-stats';
+import { StatusBadge } from './ui/status-badge';
+import { ChevronIcon } from './icons/chevron-icon';
+import { FolderIcon } from './icons/folder-icon';
+import { FileIcon } from './icons/file-icon';
 
 interface FileTreeItemProps {
   node: TreeNode;

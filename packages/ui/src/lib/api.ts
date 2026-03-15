@@ -1,5 +1,5 @@
 import type { ParsedDiff } from '@diffity/parser';
-import type { CommentThread, CommentAuthor, CommentSide, Comment } from '../types/comment.js';
+import type { CommentThread, CommentAuthor, CommentSide, Comment } from '../types/comment';
 
 export interface RepoInfo {
   name: string;

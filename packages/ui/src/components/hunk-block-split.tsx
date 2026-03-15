@@ -1,15 +1,15 @@
 import { useState, useMemo } from 'react';
 import type { DiffHunk, DiffLine as DiffLineType } from '@diffity/parser';
-import { cn } from '../lib/cn.js';
-import { getLineBg, getChangeGroups } from '../lib/diff-utils.js';
-import { renderContent } from '../lib/render-content.js';
-import type { SyntaxToken } from '../lib/syntax-token.js';
-import type { CommentThread as CommentThreadType, CommentAuthor, CommentSide, LineSelection, LineRenderProps } from '../types/comment.js';
-import { HunkHeader, type ExpandControls } from './hunk-header.js';
-import { CommentLineNumber } from './comment-line-number.js';
-import { CommentThread } from './comment-thread.js';
-import { CommentFormRow } from './comment-form-row.js';
-import { UndoIcon } from './icons/undo-icon.js';
+import { cn } from '../lib/cn';
+import { getLineBg, getChangeGroups } from '../lib/diff-utils';
+import { renderContent } from '../lib/render-content';
+import type { SyntaxToken } from '../lib/syntax-token';
+import type { CommentThread as CommentThreadType, CommentAuthor, CommentSide, LineSelection, LineRenderProps } from '../types/comment';
+import { HunkHeader, type ExpandControls } from './hunk-header';
+import { CommentLineNumber } from './comment-line-number';
+import { CommentThread } from './comment-thread';
+import { CommentFormRow } from './comment-form-row';
+import { UndoIcon } from './icons/undo-icon';
 
 interface HunkBlockSplitProps {
   hunk: DiffHunk;
