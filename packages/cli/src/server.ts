@@ -1,4 +1,5 @@
 import { createServer, type IncomingMessage, type ServerResponse } from 'node:http';
+import { createHash } from 'node:crypto';
 import { readFileSync, existsSync } from 'node:fs';
 import { join, extname } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -6,6 +7,7 @@ import { dirname } from 'node:path';
 import { parseDiff, type ParsedDiff } from '@diffity/parser';
 import {
   getDiff,
+  getDiffStat,
   getUntrackedFiles,
   getUntrackedDiff,
   getRepoInfo,
@@ -266,6 +268,39 @@ export function startServer(options: ServerOptions): Promise<ServerResult> {
       } catch (err) {
         sendError(res, 500, `Failed to get commits: ${err}`);
       }
+      return;
+    }
+
+    if (pathname === '/api/diff-fingerprint') {
+      const ref = url.searchParams.get('ref');
+      let stat: string;
+      if (ref) {
+        switch (ref) {
+          case 'work':
+          case 'working':
+            stat = getDiffStat(['HEAD']) + '\n' + getUntrackedFiles().join('\n');
+            break;
+          case 'staged':
+            stat = getDiffStat(['--staged']);
+            break;
+          case 'unstaged':
+            stat = getDiffStat([]);
+            break;
+          case 'untracked':
+            stat = getUntrackedFiles().join('\n');
+            break;
+          default:
+            stat = getDiffStat([ref]);
+            break;
+        }
+      } else {
+        stat = getDiffStat(diffArgs);
+        if (includeUntracked) {
+          stat += '\n' + getUntrackedFiles().join('\n');
+        }
+      }
+      const hash = createHash('sha1').update(stat).digest('hex').slice(0, 12);
+      sendJson(res, { fingerprint: hash });
       return;
     }
 

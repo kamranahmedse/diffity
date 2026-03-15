@@ -14,6 +14,16 @@ You are starting the diffity diff viewer so the user can see their changes in th
 2. Determine which mode to start in:
    - If the user said "staged" or there are staged changes they want to review: `{{binary}} --staged`
    - Otherwise default to: `{{binary}}`
-3. Start diffity in the background: run `{{binary}} --quiet &` (or `{{binary}} --staged --quiet &`). Use `--quiet` to reduce noise. The browser will open automatically. The session is auto-created on startup.
-4. Wait briefly (1-2 seconds) for the server to start, then verify `.diffity/current-session` exists.
-5. Tell the user the server is running.
+3. Start the server using the Bash tool with `run_in_background: true`:
+   - Command: `{{binary}}` (or `{{binary}} --staged`)
+   - Do NOT use `&` or `--quiet` — let the Bash tool handle backgrounding
+   - The browser will open automatically and the session is auto-created on startup
+4. Wait 2 seconds, then verify the session exists by checking that `.diffity/current-session` file is present.
+5. Tell the user diffity is running and show them what they can do next. Keep it short — don't show session IDs, hashes, or other internals. Example:
+
+   > Diffity is running — check your browser.
+   >
+   > Here's what you can do:
+   > - **{{slash}}review** — get a code review on your changes
+   > - **{{slash}}self-review** — quick pre-push sanity check
+   > - **{{slash}}summarize** — generate a PR summary

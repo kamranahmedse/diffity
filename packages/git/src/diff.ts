@@ -79,6 +79,15 @@ export function applySuggestion(filePath: string, startLine: number, endLine: nu
   writeFileSync(filePath, lines.join('\n'));
 }
 
+export function getDiffStat(args: string[] = []): string {
+  const cmd = ['git', 'diff', '--stat', ...args].join(' ');
+  try {
+    return execLarge(cmd);
+  } catch {
+    return '';
+  }
+}
+
 export function getMergeBase(a: string, b: string): string {
   return exec(`git merge-base ${a} ${b}`);
 }

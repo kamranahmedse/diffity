@@ -12,50 +12,50 @@ interface SuggestionDiffProps {
   thread: CommentThread;
 }
 
+function lcs(a: string[], b: string[]): number[][] {
+  const m = a.length;
+  const n = b.length;
+  const dp: number[][] = Array.from({ length: m + 1 }, () => Array(n + 1).fill(0));
+
+  for (let i = 1; i <= m; i++) {
+    for (let j = 1; j <= n; j++) {
+      if (a[i - 1] === b[j - 1]) {
+        dp[i][j] = dp[i - 1][j - 1] + 1;
+      } else {
+        dp[i][j] = Math.max(dp[i - 1][j], dp[i][j - 1]);
+      }
+    }
+  }
+
+  return dp;
+}
+
 function diffLines(original: string, suggested: string): { type: 'context' | 'delete' | 'add'; content: string }[] {
   const oldLines = original.split('\n');
   const newLines = suggested.split('\n');
+  const dp = lcs(oldLines, newLines);
   const result: { type: 'context' | 'delete' | 'add'; content: string }[] = [];
 
-  const maxLen = Math.max(oldLines.length, newLines.length);
-  let oi = 0;
-  let ni = 0;
+  let i = oldLines.length;
+  let j = newLines.length;
 
-  while (oi < oldLines.length || ni < newLines.length) {
-    if (oi < oldLines.length && ni < newLines.length && oldLines[oi] === newLines[ni]) {
-      result.push({ type: 'context', content: oldLines[oi] });
-      oi++;
-      ni++;
+  const reversed: typeof result = [];
+  while (i > 0 || j > 0) {
+    if (i > 0 && j > 0 && oldLines[i - 1] === newLines[j - 1]) {
+      reversed.push({ type: 'context', content: oldLines[i - 1] });
+      i--;
+      j--;
+    } else if (j > 0 && (i === 0 || dp[i][j - 1] >= dp[i - 1][j])) {
+      reversed.push({ type: 'add', content: newLines[j - 1] });
+      j--;
     } else {
-      let found = false;
-      for (let ahead = 1; ahead <= maxLen && !found; ahead++) {
-        if (oi + ahead < oldLines.length && ni < newLines.length && oldLines[oi + ahead] === newLines[ni]) {
-          for (let k = oi; k < oi + ahead; k++) {
-            result.push({ type: 'delete', content: oldLines[k] });
-          }
-          oi = oi + ahead;
-          found = true;
-        }
-        if (!found && ni + ahead < newLines.length && oi < oldLines.length && newLines[ni + ahead] === oldLines[oi]) {
-          for (let k = ni; k < ni + ahead; k++) {
-            result.push({ type: 'add', content: newLines[k] });
-          }
-          ni = ni + ahead;
-          found = true;
-        }
-      }
-
-      if (!found) {
-        if (oi < oldLines.length) {
-          result.push({ type: 'delete', content: oldLines[oi] });
-          oi++;
-        }
-        if (ni < newLines.length) {
-          result.push({ type: 'add', content: newLines[ni] });
-          ni++;
-        }
-      }
+      reversed.push({ type: 'delete', content: oldLines[i - 1] });
+      i--;
     }
+  }
+
+  for (let k = reversed.length - 1; k >= 0; k--) {
+    result.push(reversed[k]);
   }
 
   return result;

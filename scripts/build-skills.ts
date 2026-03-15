@@ -31,6 +31,6 @@ for (const transformer of transformers) {
 
 cleanDir(localClaudeSkillsDir);
 for (const skill of skills) {
-  claudeCode(skill, rootDir, { binary: 'diffity-dev', namePrefix: 'diffity-dev' });
+  claudeCode(skill, rootDir, { binary: 'diffity-dev', namePrefix: 'diffity-dev', slashPrefix: '/diffity-dev-' });
 }
 console.log(`Synced ${skills.length} dev skills to .claude/skills/`);

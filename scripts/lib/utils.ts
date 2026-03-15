@@ -17,6 +17,7 @@ export interface Skill {
 export interface TransformOptions {
   binary: string;
   namePrefix?: string;
+  slashPrefix?: string;
 }
 
 export function readSkills(sourceDir: string): Skill[] {
@@ -41,8 +42,11 @@ export function readSkills(sourceDir: string): Skill[] {
   return skills;
 }
 
-export function renderSkill(skill: Skill, { binary, namePrefix }: TransformOptions): string {
-  const body = skill.content.replaceAll('{{binary}}', binary);
+export function renderSkill(skill: Skill, { binary, namePrefix, slashPrefix }: TransformOptions): string {
+  const slash = slashPrefix ?? '/diffity-';
+  const body = skill.content
+    .replaceAll('{{binary}}', binary)
+    .replaceAll('{{slash}}', slash);
   const data = { ...skill.data };
   if (namePrefix) {
     data.name = data.name.replace('diffity-', `${namePrefix}-`);

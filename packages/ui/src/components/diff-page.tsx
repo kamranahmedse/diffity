@@ -10,8 +10,10 @@ import { Toolbar } from './toolbar';
 import { DiffView, type DiffViewHandle } from './diff-view';
 import { Sidebar } from './sidebar';
 import { ShortcutModal } from './shortcut-modal';
+import { StaleDiffBanner } from './stale-diff-banner';
 import { CheckCircleIcon } from './icons/check-circle-icon';
 import { PageLoader } from './skeleton';
+import { useDiffStaleness } from '../hooks/use-diff-staleness';
 import { type ViewMode, getFilePath, getAutoCollapsedPaths, isWorkingTreeRef } from '../lib/diff-utils';
 import { getFileBlocks, getHunkHeaders, scrollToElement } from '../lib/dom-utils';
 
@@ -39,6 +41,8 @@ export function DiffPage(props: DiffPageProps) {
 
   const reviewsEnabled = !!info?.capabilities?.reviews;
   const sessionId = info?.sessionId ?? null;
+  const isWorkingTree = isWorkingTreeRef(refParam);
+  const { isStale, resetStaleness } = useDiffStaleness(refParam, isWorkingTree);
 
   useEffect(() => {
     if (!diff || diff === initializedDiffRef.current) {
@@ -188,6 +192,11 @@ export function DiffPage(props: DiffPageProps) {
     queryClient.invalidateQueries({ queryKey: ['diff'] });
   }, [queryClient]);
 
+  const handleRefreshDiff = useCallback(() => {
+    queryClient.invalidateQueries({ queryKey: ['diff'] });
+    resetStaleness();
+  }, [queryClient, resetStaleness]);
+
   const handleSidebarFileClick = useCallback((path: string) => {
     scrollTargetRef.current = path;
     setActiveFile(path);
@@ -262,6 +271,7 @@ export function DiffPage(props: DiffPageProps) {
         diff={diff || undefined}
         diffRef={refParam}
       />
+      {isStale && <StaleDiffBanner onRefresh={handleRefreshDiff} />}
       <div className="flex flex-1 overflow-hidden">
         <Sidebar
           files={diff?.files || []}

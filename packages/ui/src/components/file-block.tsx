@@ -152,8 +152,13 @@ export function FileBlock(props: FileBlockProps) {
     if (pendingSelection && pendingSelection.filePath === filePath && pendingSelection.side === side) {
       return line >= pendingSelection.startLine && line <= pendingSelection.endLine;
     }
+    for (const thread of fileThreads) {
+      if (thread.side === side && line >= thread.startLine && line <= thread.endLine && thread.status === 'open') {
+        return true;
+      }
+    }
     return false;
-  }, [isLineInSelection, pendingSelection, filePath]);
+  }, [isLineInSelection, pendingSelection, filePath, fileThreads]);
 
   const { ref: inViewRef } = useInView({
     threshold: 0.1,
