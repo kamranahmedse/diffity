@@ -63,7 +63,7 @@ export function CommentThread(props: CommentThreadProps) {
 
     if (viewMode === 'split') {
       return (
-        <tr>
+        <tr data-thread-id={thread.id}>
           {side === 'old' ? (
             <>{collapsedContent}<td colSpan={colSpan}></td></>
           ) : (
@@ -73,7 +73,7 @@ export function CommentThread(props: CommentThreadProps) {
       );
     }
 
-    return <tr>{collapsedContent}</tr>;
+    return <tr data-thread-id={thread.id}>{collapsedContent}</tr>;
   }
 
   const lineLabel = thread.startLine === thread.endLine
@@ -164,7 +164,7 @@ export function CommentThread(props: CommentThreadProps) {
 
   if (viewMode === 'split') {
     return (
-      <tr>
+      <tr data-thread-id={thread.id}>
         {side === 'old' ? (
           <>{threadContent}<td colSpan={colSpan}></td></>
         ) : (
@@ -174,5 +174,5 @@ export function CommentThread(props: CommentThreadProps) {
     );
   }
 
-  return <tr>{threadContent}</tr>;
+  return <tr data-thread-id={thread.id}>{threadContent}</tr>;
 }

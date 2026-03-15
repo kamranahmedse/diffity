@@ -2,9 +2,12 @@ import type { ParsedDiff } from '@diffity/parser';
 import { cn } from '../lib/cn';
 import { useCopy } from '../hooks/use-copy';
 import { useComments } from '../context/comments-context';
+import { useThreadNavigation } from '../hooks/use-thread-navigation';
 import { getFilePath } from '../lib/diff-utils';
 import { CopyIcon } from './icons/copy-icon';
 import { CheckIcon } from './icons/check-icon';
+import { ChevronUpIcon } from './icons/chevron-up-icon';
+import { ChevronDownIcon } from './icons/chevron-down-icon';
 import type { ViewMode } from '../lib/diff-utils';
 import type { CommentThread } from '../types/comment';
 import { isThreadResolved } from '../types/comment';
@@ -103,12 +106,11 @@ export function Toolbar(props: ToolbarProps) {
 
   const { threads } = useComments();
   const { copied, copy } = useCopy();
+  const { currentIndex, count: unresolvedCount, goToPrevious, goToNext } = useThreadNavigation(threads);
 
   const baseBtn = 'px-3 py-1 border border-border text-sm text-text-secondary transition-colors duration-150 cursor-pointer';
   const activeBtn = 'bg-accent text-white border-accent';
   const inactiveBtn = 'bg-bg hover:bg-hover hover:text-text';
-
-  const unresolvedCount = threads.filter(t => !isThreadResolved(t)).length;
 
   return (
     <div className="flex items-center gap-4 px-4 py-2 bg-bg-secondary border-b border-border font-sans text-sm">
@@ -150,9 +152,25 @@ export function Toolbar(props: ToolbarProps) {
       </div>
       {unresolvedCount > 0 && (
         <div className="flex items-center gap-2 ml-auto">
-          <span className="text-xs text-text-muted">
-            {unresolvedCount} comment{unresolvedCount !== 1 ? 's' : ''}
-          </span>
+          <div className="flex items-center border border-border rounded-md overflow-hidden">
+            <span className="text-xs text-text-muted px-2.5 py-1">
+              {currentIndex >= 0 ? `${currentIndex + 1}/${unresolvedCount}` : unresolvedCount} comment{unresolvedCount !== 1 ? 's' : ''}
+            </span>
+            <button
+              onClick={goToPrevious}
+              className="px-1.5 py-1 border-l border-border text-text-secondary hover:bg-hover hover:text-text transition-colors cursor-pointer"
+              title="Previous comment"
+            >
+              <ChevronUpIcon className="w-3.5 h-3.5" />
+            </button>
+            <button
+              onClick={goToNext}
+              className="px-1.5 py-1 border-l border-border text-text-secondary hover:bg-hover hover:text-text transition-colors cursor-pointer"
+              title="Next comment"
+            >
+              <ChevronDownIcon className="w-3.5 h-3.5" />
+            </button>
+          </div>
           <button
             onClick={() => copy(formatThreadsForCopy(threads, diff, diffRef))}
             className={cn(baseBtn, 'rounded-md flex items-center gap-1.5', inactiveBtn)}

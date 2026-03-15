@@ -5,10 +5,10 @@ import { useInView } from 'react-intersection-observer';
 import type { DiffFile, DiffLine as DiffLineType } from '@diffity/parser';
 import type { SyntaxToken } from '../lib/syntax-token';
 import type { HighlightedTokens } from '../hooks/use-highlighter';
+import { isThreadResolved } from '../types/comment';
 import type { CommentSide, LineSelection } from '../types/comment';
 import { type ViewMode, getFilePath, buildChangeGroupPatch, extractLinesFromDiff } from '../lib/diff-utils';
-import { revertFile as apiRevertFile, revertHunk as apiRevertHunk } from '../lib/api';
-import { UndoIcon } from './icons/undo-icon';
+import { revertHunk as apiRevertHunk } from '../lib/api';
 import { ConfirmDialog } from './ui/confirm-dialog';
 import { computeGaps, createContextLines, getExpandRange, type ExpandableGap } from '../lib/context-expansion';
 import { fileContentOptions } from '../queries/file';
@@ -81,15 +81,7 @@ export function FileBlock(props: FileBlockProps) {
 
   const { copied: pathCopied, copy: copyPath } = useCopy();
 
-  const [confirmRevertFile, setConfirmRevertFile] = useState(false);
   const [confirmRevertChange, setConfirmRevertChange] = useState<{ hunk: DiffHunk; startIndex: number; endIndex: number } | null>(null);
-
-  const handleRevertFile = useCallback(async () => {
-    setConfirmRevertFile(false);
-    const isUntracked = file.status === 'added' && file.oldPath === '/dev/null';
-    await apiRevertFile(filePath, isUntracked);
-    onRevert?.();
-  }, [file, filePath, onRevert]);
 
   const handleRevertChange = useCallback(async (info: { hunk: DiffHunk; startIndex: number; endIndex: number }) => {
     setConfirmRevertChange(null);
@@ -132,10 +124,21 @@ export function FileBlock(props: FileBlockProps) {
     const anchored: typeof allFileThreads = [];
     const orphaned: typeof allFileThreads = [];
     for (const thread of allFileThreads) {
-      if (diffLineNumbers.has(`${thread.side}:${thread.endLine}`)) {
+      let isInDiff = false;
+      for (let line = thread.startLine; line <= thread.endLine; line++) {
+        if (diffLineNumbers.has(`${thread.side}:${line}`)) {
+          isInDiff = true;
+          break;
+        }
+      }
+
+      if (isInDiff) {
         anchored.push(thread);
-      } else {
-        orphaned.push(thread);
+      } else if (!isThreadResolved(thread) && thread.anchorContent) {
+        const currentCode = extractLinesFromDiff(file.hunks, thread.side, thread.startLine, thread.endLine);
+        if (currentCode && currentCode !== thread.anchorContent) {
+          orphaned.push(thread);
+        }
       }
     }
 
@@ -367,20 +370,10 @@ export function FileBlock(props: FileBlockProps) {
         {file.status !== 'modified' && <StatusBadge status={file.status} />}
         {file.isBinary && <Badge className="bg-bg-tertiary text-text-muted">Binary</Badge>}
         <div className="ml-auto flex items-center gap-3 shrink-0">
-          {canRevert && (
-            <button
-              onClick={(e) => { e.stopPropagation(); setConfirmRevertFile(true); }}
-              className="flex items-center gap-1 text-xs text-text-muted hover:text-deleted transition-colors cursor-pointer"
-              title="Undo all changes in this file"
-            >
-              <UndoIcon className="w-3 h-3" />
-              Undo
-            </button>
-          )}
-          {allFileThreads.length > 0 && (
+          {(fileThreads.length + orphanedThreads.length) > 0 && (
             <span className="text-xs text-text-muted flex items-center gap-1">
               <CommentIcon className="w-3.5 h-3.5" />
-              {allFileThreads.length}
+              {fileThreads.length + orphanedThreads.length}
               {orphanedThreads.length > 0 && (
                 <ThreadBadge variant="outdated" size="sm">
                   {orphanedThreads.length} outdated
@@ -526,14 +519,6 @@ export function FileBlock(props: FileBlockProps) {
             </>
           )}
         </div>
-      )}
-      {confirmRevertFile && (
-        <ConfirmDialog
-          title="Undo file changes"
-          message={`This will discard all changes to "${filePath}". This cannot be undone.`}
-          onConfirm={handleRevertFile}
-          onCancel={() => setConfirmRevertFile(false)}
-        />
       )}
       {confirmRevertChange && (
         <ConfirmDialog
