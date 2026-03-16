@@ -32,7 +32,7 @@ You are reading open review comments and resolving them by making the requested 
 ## Prerequisites
 
 1. Check that `{{binary}}` is available: run `which {{binary}}`. If not found, {{install_hint}}.
-2. Check that a review session exists: run `cat .diffity/current-session`. If the file doesn't exist or is stale, tell the user to start diffity first.
+2. Check that a review session exists: run `{{binary}} agent list`. If this fails with "No active review session", tell the user to start diffity first (e.g. `{{binary}}` or **{{slash}}start**).
 
 ## Instructions
 

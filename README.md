@@ -59,14 +59,34 @@ The review uses severity tags so you know what matters:
 
 You can focus the review on what you care about: `/diffity-review security` or `/diffity-review performance`
 
+## Multiple projects
+
+Diffity supports running multiple projects simultaneously. Each gets its own port automatically:
+
+```bash
+# Terminal 1 — starts on :5391
+cd ~/projects/app && diffity
+
+# Terminal 2 — starts on :5392
+cd ~/projects/api && diffity
+```
+
+If you run `diffity` in a repo that already has a running instance, it opens the existing one instead of starting a new server. Use `--new` to kill the existing instance and start fresh.
+
+```bash
+diffity list               # show all running instances
+diffity list --json        # machine-readable output
+```
+
 ## Options
 
 ```
---port <port>   Custom port (default: 5391)
+--port <port>   Custom port (default: auto-assigned from 5391)
 --no-open       Don't open browser
 --dark          Dark mode
 --unified       Unified view (default: split)
 --quiet         Minimal terminal output
+--new           Stop existing instance and start fresh
 ```
 
 ## License

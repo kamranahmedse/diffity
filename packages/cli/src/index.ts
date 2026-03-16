@@ -3,12 +3,14 @@ import { execSync } from 'node:child_process';
 import { rmSync, existsSync } from 'node:fs';
 import { join } from 'node:path';
 import { homedir } from 'node:os';
+import { createHash } from 'node:crypto';
 import { createRequire } from 'node:module';
 import open from 'open';
 import pc from 'picocolors';
-import { isGitRepo, isValidGitRef } from '@diffity/git';
+import { isGitRepo, isValidGitRef, getRepoRoot, getRepoName } from '@diffity/git';
 import { startServer } from './server.js';
 import { registerAgentCommands } from './agent.js';
+import { findInstanceForRepo, findAvailablePort, readRegistry, deregisterInstance } from './registry.js';
 
 const require = createRequire(import.meta.url);
 const pkg = require('../package.json');
@@ -20,11 +22,12 @@ program
   .description('GitHub-style git diff viewer in the browser')
   .version(pkg.version)
   .argument('[refs...]', 'Git refs to diff (e.g. HEAD~3, main, main..feature)')
-  .option('--port <port>', 'Port to use', '5391')
+  .option('--port <port>', 'Port to use (default: auto-assigned from 5391)', '5391')
   .option('--no-open', 'Do not open browser automatically')
   .option('--quiet', 'Minimal terminal output')
   .option('--dark', 'Open in dark mode (default: light)')
   .option('--unified', 'Open in unified view (default: split)')
+  .option('--new', 'Stop existing instance and start fresh')
   .addHelpText('after', `
 Examples:
   $ diffity                    Working tree changes
@@ -74,8 +77,6 @@ Examples:
       description = 'Unstaged changes';
     }
 
-    const port = parseInt(opts.port, 10);
-
     let effectiveRef: string;
     if (refs.length > 0) {
       effectiveRef = refs.length === 2 ? `${refs[0]}..${refs[1]}` : refs[0];
@@ -83,8 +84,58 @@ Examples:
       effectiveRef = 'work';
     }
 
+    const repoRoot = getRepoRoot();
+    const repoHash = createHash('sha256').update(repoRoot).digest('hex').slice(0, 12);
+    const repoName = getRepoName();
+
+    const existing = findInstanceForRepo(repoHash);
+    if (existing) {
+      if (opts.new) {
+        try {
+          process.kill(existing.pid, 'SIGTERM');
+        } catch {}
+        deregisterInstance(existing.pid);
+        if (!opts.quiet) {
+          console.log(pc.dim(`  Stopped existing instance (pid ${existing.pid})`));
+        }
+      } else {
+        const urlParams = new URLSearchParams({ ref: effectiveRef });
+        if (opts.dark) {
+          urlParams.set('theme', 'dark');
+        }
+        if (opts.unified) {
+          urlParams.set('view', 'unified');
+        }
+        const url = `http://localhost:${existing.port}/?${urlParams.toString()}`;
+
+        if (!opts.quiet) {
+          console.log('');
+          console.log(pc.bold('  diffity'));
+          console.log(`  ${pc.dim('Already running for this repo')}`);
+          console.log('');
+          console.log(`  ${pc.green('→')} ${pc.cyan(url)}`);
+          console.log('');
+        }
+
+        if (opts.open !== false) {
+          await open(url);
+        }
+        return;
+      }
+    }
+
+    const explicitPort = program.getOptionValueSource('port') === 'cli';
+    const port = explicitPort ? parseInt(opts.port, 10) : findAvailablePort();
+
     try {
-      const { port: actualPort, close } = await startServer({ port, diffArgs, description, effectiveRef });
+      const { port: actualPort, close } = await startServer({
+        port,
+        portIsExplicit: explicitPort,
+        diffArgs,
+        description,
+        effectiveRef,
+        registryInfo: { repoRoot, repoHash, repoName },
+      });
       const urlParams = new URLSearchParams({ ref: effectiveRef });
       if (opts.dark) {
         urlParams.set('theme', 'dark');
@@ -108,11 +159,13 @@ Examples:
         if (!opts.quiet) {
           console.log(pc.dim('\n  Shutting down...'));
         }
+        deregisterInstance(process.pid);
         close();
         process.exit(0);
       });
 
       process.on('SIGTERM', () => {
+        deregisterInstance(process.pid);
         close();
         process.exit(0);
       });
@@ -127,6 +180,55 @@ Examples:
   });
 
 program
+  .command('list')
+  .description('List all running diffity instances')
+  .option('--json', 'Output as JSON')
+  .action((opts) => {
+    const entries = readRegistry();
+
+    if (opts.json) {
+      console.log(JSON.stringify(entries, null, 2));
+      return;
+    }
+
+    if (entries.length === 0) {
+      console.log(pc.dim('No running diffity instances.'));
+      return;
+    }
+
+    console.log('');
+    console.log(
+      `  ${pc.dim('PORT')}   ${pc.dim('PID'.padEnd(8))}${pc.dim('REPO'.padEnd(22))}${pc.dim('REF'.padEnd(22))}${pc.dim('STARTED')}`,
+    );
+
+    for (const entry of entries) {
+      const ago = getTimeAgo(entry.startedAt);
+      console.log(
+        `  ${String(entry.port).padEnd(7)}${String(entry.pid).padEnd(8)}${entry.repoName.slice(0, 20).padEnd(22)}${entry.ref.slice(0, 20).padEnd(22)}${pc.dim(ago)}`,
+      );
+    }
+    console.log('');
+  });
+
+function getTimeAgo(isoDate: string): string {
+  const diff = Date.now() - new Date(isoDate).getTime();
+  const seconds = Math.floor(diff / 1000);
+  if (seconds < 60) {
+    return 'just now';
+  }
+  const minutes = Math.floor(seconds / 60);
+  if (minutes < 60) {
+    return `${minutes}m ago`;
+  }
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) {
+    return `${hours}h ago`;
+  }
+  const days = Math.floor(hours / 24);
+  return `${days}d ago`;
+}
+
+program
   .command('prune')
   .description('Remove all diffity data (database, sessions) for all repos')
   .action(() => {
@@ -134,6 +236,16 @@ program
     if (!existsSync(dir)) {
       console.log(pc.dim('Nothing to prune.'));
       return;
+    }
+
+    const running = readRegistry();
+    for (const entry of running) {
+      try {
+        process.kill(entry.pid, 'SIGTERM');
+      } catch {}
+    }
+    if (running.length > 0) {
+      console.log(pc.dim(`  Stopped ${running.length} running instance${running.length > 1 ? 's' : ''}.`));
     }
 
     rmSync(dir, { recursive: true, force: true });

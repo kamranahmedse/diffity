@@ -24,6 +24,7 @@ import {
 } from '@diffity/git';
 import { findOrCreateSession } from './session.js';
 import { handleReviewRoute } from './review-routes.js';
+import { registerInstance, deregisterInstance, type RegistryEntry } from './registry.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
@@ -39,9 +40,15 @@ const MIME_TYPES: Record<string, string> = {
 
 interface ServerOptions {
   port: number;
+  portIsExplicit?: boolean;
   diffArgs: string[];
   description?: string;
   effectiveRef?: string;
+  registryInfo?: {
+    repoRoot: string;
+    repoHash: string;
+    repoName: string;
+  };
 }
 
 function sendJson(res: ServerResponse, data: unknown) {
@@ -125,7 +132,7 @@ function readBody(req: IncomingMessage): Promise<string> {
 }
 
 export function startServer(options: ServerOptions): Promise<ServerResult> {
-  const { port, diffArgs, description, effectiveRef } = options;
+  const { port, portIsExplicit, diffArgs, description, effectiveRef, registryInfo } = options;
 
   let sessionId: string | null = null;
   const reviewsEnabled = isActionableRef(effectiveRef);
@@ -339,19 +346,24 @@ export function startServer(options: ServerOptions): Promise<ServerResult> {
     serveStatic(res, filePath);
   });
 
-  const closeFn = () => server.close();
+  const closeFn = () => {
+    deregisterInstance(process.pid);
+    server.close();
+  };
 
   return new Promise((resolve, reject) => {
-    // When node --watch restarts the process, the old one may still hold the port
-    // briefly. Retry on the same port instead of falling back to a random one.
+    let currentPort = port;
     let retries = 0;
-    const maxRetries = 30;
+    const maxRetries = portIsExplicit ? 0 : 10;
 
     const onError = (err: NodeJS.ErrnoException) => {
       if (err.code === 'EADDRINUSE' && retries < maxRetries) {
         retries++;
         server.close();
-        setTimeout(() => server.listen(port), 500);
+        currentPort++;
+        setTimeout(() => server.listen(currentPort), 200);
+      } else if (err.code === 'EADDRINUSE' && portIsExplicit) {
+        reject(new Error(`Port ${port} is already in use`));
       } else {
         reject(err);
       }
@@ -361,10 +373,22 @@ export function startServer(options: ServerOptions): Promise<ServerResult> {
     server.on('listening', () => {
       const addr = server.address();
       if (addr && typeof addr !== 'string') {
+        if (registryInfo) {
+          registerInstance({
+            pid: process.pid,
+            port: addr.port,
+            repoRoot: registryInfo.repoRoot,
+            repoHash: registryInfo.repoHash,
+            repoName: registryInfo.repoName,
+            ref: effectiveRef || 'work',
+            description: description || 'Unstaged changes',
+            startedAt: new Date().toISOString(),
+          });
+        }
         resolve({ port: addr.port, close: closeFn });
       }
     });
 
-    server.listen(port);
+    server.listen(currentPort);
   });
 }

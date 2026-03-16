@@ -32,7 +32,7 @@ diffity agent reply <id> --body "<text>"
 ## Prerequisites
 
 1. Check that `diffity` is available: run `which diffity`. If not found, install it with `npm install -g diffity`.
-2. Check that a review session exists: run `cat .diffity/current-session`. If the file doesn't exist or is stale, tell the user to start diffity first (e.g. `diffity`).
+2. Check that a review session exists: run `diffity agent list`. If this fails with "No active review session", tell the user to start diffity first (e.g. `diffity` or **/diffity-start**).
 
 ## Instructions
 
