@@ -9,7 +9,7 @@
   "scripts": {
     "build": "node build.js",
     "dev": "tsx src/index.ts",
-    "dev:watch": "tsc --watch"
+    "dev:watch": "node build.js --watch"
   },
   "dependencies": {
     "better-sqlite3": "^12.8.0",

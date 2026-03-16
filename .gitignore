@@ -9,3 +9,4 @@ dist/
 *.local
 .bin/
 .claude/skills/
+packages/cli/README.md
