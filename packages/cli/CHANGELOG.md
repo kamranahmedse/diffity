@@ -1,5 +1,11 @@
 # diffity
 
+## 0.1.3
+
+### Patch Changes
+
+- It now handles invalid refs and gracefully exits with help instead of fatal errors.
+
 ## 0.1.2
 
 ### Patch Changes
