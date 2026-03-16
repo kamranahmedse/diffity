@@ -1,7 +1,8 @@
 #!/usr/bin/env node
 
 import { execSync } from 'child_process';
-import { dirname, resolve } from 'path';
+import { dirname, resolve, join } from 'path';
+import { rmSync } from 'fs';
 import { fileURLToPath } from 'url';
 import concurrently from 'concurrently';
 
@@ -11,6 +12,24 @@ const rootDir = resolve(__dirname, '..');
 execSync('tsx scripts/link-dev.ts && npm run build:skills', {
   cwd: rootDir,
   stdio: 'inherit',
+});
+
+const localClaudeSkillsDir = join(rootDir, '.claude', 'skills');
+
+function cleanupDevSkills() {
+  try {
+    rmSync(localClaudeSkillsDir, { recursive: true, force: true });
+    console.log('Cleaned up dev skills');
+  } catch {}
+}
+
+process.on('SIGINT', () => {
+  cleanupDevSkills();
+  process.exit(0);
+});
+process.on('SIGTERM', () => {
+  cleanupDevSkills();
+  process.exit(0);
 });
 
 concurrently(
@@ -29,4 +48,6 @@ concurrently(
   {
     prefixColors: ['blue', 'green', 'yellow', 'magenta', 'cyan'],
   }
-);
+).result.finally(() => {
+  cleanupDevSkills();
+});

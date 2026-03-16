@@ -20,6 +20,6 @@ You are starting the diffity diff viewer so the user can see their changes in th
 
    > Diffity is running — check your browser.
    >
-   > Here's what you can do:
-   > - **{{slash}}review** — get a code review on your changes
-   > - **{{slash}}resolve** — fix issues from review comments
+   > When you're ready:
+   > - Leave comments on the diff in your browser, then run **{{slash}}resolve** to fix them
+   > - Or run **{{slash}}review** to get an AI code review

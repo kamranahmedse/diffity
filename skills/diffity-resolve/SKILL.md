@@ -44,9 +44,17 @@ diffity agent reply <id> --body "<text>"
 2. If there are no open threads, tell the user there's nothing to resolve.
 3. For each open thread:
    a. **Skip** general comments (filePath `__general__`) — these are summaries, not actionable code changes.
-   b. **Skip** threads tagged `[question]` or `[nit]` — these don't require code changes. Tell the user you skipped them and why.
-   c. Read the comment body from the JSON output and understand what change is requested.
-   d. Read the relevant source file to understand the full context around the commented lines, then make the requested code change using the Edit tool.
+   b. **Skip** threads where the comment body starts with an explicit `[question]` or `[nit]` tag prefix — these don't require code changes. Tell the user you skipped them and why.
+      - **Important:** Only skip if the comment body literally begins with `[question]` or `[nit]`. Do NOT skip comments just because they are phrased as a question (e.g. "should we add X?" or "can we rename this?"). Comments phrased as questions without explicit tags are suggestions — treat them as actionable requests.
+   c. Read the comment body from the JSON output and understand what change is requested. Interpret the intent:
+      - If the comment suggests a code change, make the change.
+      - If the comment suggests adding documentation, add or update the relevant docs.
+      - If the comment asks a question that implies an action (e.g. "should we add X?"), treat it as a request to do that action.
+      - If the comment is genuinely unclear and you cannot determine what action to take, reply asking for clarification instead of silently skipping:
+        ```
+        diffity agent reply <thread-id> --body "Could you clarify what change you'd like here?"
+        ```
+   d. Read the relevant source file to understand the full context around the commented lines, then make the requested change using the Edit tool.
    e. After making the change, resolve the thread with a summary:
       ```
       diffity agent resolve <thread-id> --summary "Fixed: <brief description of what was changed>"
