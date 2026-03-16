@@ -1,6 +1,7 @@
 {
-  "name": "diffity",
+  "name": "@diffity",
   "version": "0.1.0",
+  "private": true,
   "type": "module",
   "description": "GitHub-style git diff viewer in the browser",
   "workspaces": [
@@ -14,7 +15,10 @@
     "build:skills": "tsx scripts/build-skills.ts",
     "test": "npm run test -w @diffity/parser && npm run test -w @diffity/ui",
     "link-dev": "tsx scripts/link-dev.ts",
-    "dev": "tsx scripts/dev.ts"
+    "dev": "tsx scripts/dev.ts",
+    "changeset": "changeset",
+    "version": "changeset version",
+    "release": "npm run build && changeset publish"
   },
   "keywords": [
     "git",
@@ -25,6 +29,7 @@
   "author": "",
   "license": "MIT",
   "devDependencies": {
+    "@changesets/cli": "^2.30.0",
     "concurrently": "^9.2.1",
     "gray-matter": "^4.0.3",
     "tsx": "^4.21.0"
