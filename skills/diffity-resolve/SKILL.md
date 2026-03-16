@@ -15,12 +15,12 @@ You are reading open review comments and resolving them by making the requested 
 ## CLI Reference
 
 ```
-{{binary}} agent list [--status open|resolved|dismissed] [--json]
-{{binary}} agent comment --file <path> --line <n> [--end-line <n>] [--side new|old] --body "<text>"
-{{binary}} agent general-comment --body "<text>"
-{{binary}} agent resolve <id> [--summary "<text>"]
-{{binary}} agent dismiss <id> [--reason "<text>"]
-{{binary}} agent reply <id> --body "<text>"
+diffity agent list [--status open|resolved|dismissed] [--json]
+diffity agent comment --file <path> --line <n> [--end-line <n>] [--side new|old] --body "<text>"
+diffity agent general-comment --body "<text>"
+diffity agent resolve <id> [--summary "<text>"]
+diffity agent dismiss <id> [--reason "<text>"]
+diffity agent reply <id> --body "<text>"
 ```
 
 - `--file`, `--line`, `--body` are required for `comment`
@@ -31,14 +31,14 @@ You are reading open review comments and resolving them by making the requested 
 
 ## Prerequisites
 
-1. Check that `{{binary}}` is available: run `which {{binary}}`. If not found, {{install_hint}}.
+1. Check that `diffity` is available: run `which diffity`. If not found, install it with `npm install -g diffity`.
 2. Check that a review session exists: run `cat .diffity/current-session`. If the file doesn't exist or is stale, tell the user to start diffity first.
 
 ## Instructions
 
 1. List open comment threads with full details:
    ```
-   {{binary}} agent list --status open --json
+   diffity agent list --status open --json
    ```
    If a `thread-id` argument was provided, filter to just that thread. The JSON output includes the full comment body, file path, line numbers, and side for each thread.
 2. If there are no open threads, tell the user there's nothing to resolve.
@@ -49,7 +49,7 @@ You are reading open review comments and resolving them by making the requested 
    d. Read the relevant source file to understand the full context around the commented lines, then make the requested code change using the Edit tool.
    e. After making the change, resolve the thread with a summary:
       ```
-      {{binary}} agent resolve <thread-id> --summary "Fixed: <brief description of what was changed>"
+      diffity agent resolve <thread-id> --summary "Fixed: <brief description of what was changed>"
       ```
-4. After resolving all applicable threads, run `{{binary}} agent list` to confirm status.
+4. After resolving all applicable threads, run `diffity agent list` to confirm status.
 5. Tell the user to check the browser — resolved status will appear within 2 seconds via polling.

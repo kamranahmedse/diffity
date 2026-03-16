@@ -22,17 +22,8 @@ import {
   revertHunk,
   isActionableRef,
 } from '@diffity/git';
-import { findOrCreateSession, getCurrentSession } from './session.js';
-import {
-  createThread,
-  getThreadsForSession,
-  addReply,
-  updateThreadStatus,
-  deleteThread,
-  deleteAllThreadsForSession,
-  deleteComment,
-  type ThreadStatus,
-} from './threads.js';
+import { findOrCreateSession } from './session.js';
+import { handleReviewRoute } from './review-routes.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
@@ -228,7 +219,7 @@ export function startServer(options: ServerOptions): Promise<ServerResult> {
           fileMap.set(f, 'staged');
         }
         for (const f of unstaged) {
-          fileMap.set(f, fileMap.has(f) ? 'modified' : 'modified');
+          fileMap.set(f, 'modified');
         }
         for (const f of untracked) {
           fileMap.set(f, 'added');
@@ -337,112 +328,7 @@ export function startServer(options: ServerOptions): Promise<ServerResult> {
       return;
     }
 
-    // --- Review API endpoints ---
-
-    if (pathname === '/api/sessions/current' && req.method === 'GET') {
-      const session = getCurrentSession();
-      sendJson(res, session);
-      return;
-    }
-
-    if (pathname === '/api/threads' && req.method === 'GET') {
-      const sid = url.searchParams.get('session');
-      if (!sid) {
-        sendError(res, 400, 'Missing session parameter');
-        return;
-      }
-      const status = url.searchParams.get('status') as ThreadStatus | null;
-      const threads = getThreadsForSession(sid, status || undefined);
-      sendJson(res, threads);
-      return;
-    }
-
-    if (pathname === '/api/threads' && req.method === 'DELETE') {
-      try {
-        const body = JSON.parse(await readBody(req));
-        const { sessionId: sid } = body;
-        if (!sid) {
-          sendError(res, 400, 'Missing sessionId');
-          return;
-        }
-        deleteAllThreadsForSession(sid);
-        sendJson(res, { ok: true });
-      } catch (err) {
-        sendError(res, 500, `Failed to delete all threads: ${err}`);
-      }
-      return;
-    }
-
-    if (pathname === '/api/threads' && req.method === 'POST') {
-      try {
-        const body = JSON.parse(await readBody(req));
-        const { sessionId: sid, filePath, side, startLine, endLine, body: commentBody, author, anchorContent } = body;
-        if (!sid || !filePath || !side || typeof startLine !== 'number' || typeof endLine !== 'number' || !commentBody || !author) {
-          sendError(res, 400, 'Missing required fields');
-          return;
-        }
-        const thread = createThread(sid, filePath, side, startLine, endLine, commentBody, author, anchorContent);
-        sendJson(res, thread);
-      } catch (err) {
-        sendError(res, 500, `Failed to create thread: ${err}`);
-      }
-      return;
-    }
-
-    const threadReplyMatch = pathname.match(/^\/api\/threads\/([^/]+)\/reply$/);
-    if (threadReplyMatch && req.method === 'POST') {
-      try {
-        const body = JSON.parse(await readBody(req));
-        const { body: commentBody, author } = body;
-        if (!commentBody || !author) {
-          sendError(res, 400, 'Missing body or author');
-          return;
-        }
-        const comment = addReply(threadReplyMatch[1], commentBody, author);
-        sendJson(res, comment);
-      } catch (err) {
-        sendError(res, 500, `Failed to add reply: ${err}`);
-      }
-      return;
-    }
-
-    const threadStatusMatch = pathname.match(/^\/api\/threads\/([^/]+)\/status$/);
-    if (threadStatusMatch && req.method === 'PATCH') {
-      try {
-        const body = JSON.parse(await readBody(req));
-        const { status, summary } = body;
-        if (!status) {
-          sendError(res, 400, 'Missing status');
-          return;
-        }
-        const summaryAuthor = summary ? { name: 'System', type: 'user' as const } : undefined;
-        updateThreadStatus(threadStatusMatch[1], status, summary, summaryAuthor);
-        sendJson(res, { ok: true });
-      } catch (err) {
-        sendError(res, 500, `Failed to update thread status: ${err}`);
-      }
-      return;
-    }
-
-    const threadDeleteMatch = pathname.match(/^\/api\/threads\/([^/]+)$/);
-    if (threadDeleteMatch && req.method === 'DELETE') {
-      try {
-        deleteThread(threadDeleteMatch[1]);
-        sendJson(res, { ok: true });
-      } catch (err) {
-        sendError(res, 500, `Failed to delete thread: ${err}`);
-      }
-      return;
-    }
-
-    const commentDeleteMatch = pathname.match(/^\/api\/comments\/([^/]+)$/);
-    if (commentDeleteMatch && req.method === 'DELETE') {
-      try {
-        deleteComment(commentDeleteMatch[1]);
-        sendJson(res, { ok: true });
-      } catch (err) {
-        sendError(res, 500, `Failed to delete comment: ${err}`);
-      }
+    if (handleReviewRoute(req, res, pathname, url)) {
       return;
     }
 

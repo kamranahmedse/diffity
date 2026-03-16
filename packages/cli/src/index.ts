@@ -1,21 +1,26 @@
 #!/usr/bin/env node
 
 import { Command } from 'commander';
+import { execSync } from 'node:child_process';
 import { rmSync, existsSync } from 'node:fs';
 import { join } from 'node:path';
 import { homedir } from 'node:os';
+import { createRequire } from 'node:module';
 import open from 'open';
 import pc from 'picocolors';
 import { isGitRepo } from '@diffity/git';
 import { startServer } from './server.js';
 import { registerAgentCommands } from './agent.js';
 
+const require = createRequire(import.meta.url);
+const pkg = require('../package.json');
+
 const program = new Command();
 
 program
   .name('diffity')
   .description('GitHub-style git diff viewer in the browser')
-  .version('0.1.0')
+  .version(pkg.version)
   .argument('[refs...]', 'Git refs to diff (e.g. HEAD~3, main, main..feature)')
   .option('--staged', 'Show staged changes (git diff --staged)')
   .option('--port <port>', 'Port to use', '5391')
@@ -128,6 +133,72 @@ program
 
     rmSync(dir, { recursive: true, force: true });
     console.log(pc.green('Pruned all diffity data (~/.diffity).'));
+  });
+
+program
+  .command('update')
+  .description('Update diffity to the latest version')
+  .action(() => {
+    try {
+      const registry = execSync('npm view diffity version', { encoding: 'utf-8', stdio: ['pipe', 'pipe', 'pipe'] }).trim();
+      if (registry === pkg.version) {
+        console.log(pc.green(`Already on the latest version (${pkg.version}).`));
+        return;
+      }
+      console.log(`${pc.dim(`Current: ${pkg.version}`)} → ${pc.bold(registry)}`);
+      console.log(pc.dim('Updating...'));
+      execSync('npm install -g diffity@latest', { stdio: 'inherit' });
+      console.log(pc.green(`Updated to ${registry}.`));
+    } catch {
+      console.error(pc.red('Failed to update. Try running: npm install -g diffity@latest'));
+      process.exit(1);
+    }
+  });
+
+program
+  .command('doctor')
+  .description('Check that diffity can run correctly')
+  .action(() => {
+    let ok = true;
+
+    process.stdout.write('  git          ');
+    try {
+      const gitVersion = execSync('git --version', { encoding: 'utf-8', stdio: ['pipe', 'pipe', 'pipe'] }).trim();
+      console.log(pc.green(`✓ ${gitVersion}`));
+    } catch {
+      console.log(pc.red('✗ git not found'));
+      ok = false;
+    }
+
+    process.stdout.write('  git repo     ');
+    if (isGitRepo()) {
+      console.log(pc.green('✓ inside a git repository'));
+    } else {
+      console.log(pc.yellow('- not inside a git repository'));
+    }
+
+    process.stdout.write('  node         ');
+    console.log(pc.green(`✓ ${process.version}`));
+
+    process.stdout.write('  sqlite       ');
+    try {
+      require('better-sqlite3');
+      console.log(pc.green('✓ better-sqlite3 loaded'));
+    } catch {
+      console.log(pc.red('✗ better-sqlite3 failed to load (native module issue)'));
+      ok = false;
+    }
+
+    process.stdout.write('  version      ');
+    console.log(pc.green(`✓ diffity ${pkg.version}`));
+
+    console.log('');
+    if (ok) {
+      console.log(pc.green('  All checks passed.'));
+    } else {
+      console.log(pc.red('  Some checks failed. Fix the issues above and try again.'));
+      process.exit(1);
+    }
   });
 
 registerAgentCommands(program);

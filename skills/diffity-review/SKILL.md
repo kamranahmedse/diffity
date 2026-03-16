@@ -6,7 +6,7 @@ user-invokable: true
 
 # Diffity Review Skill
 
-You are reviewing a diff and leaving inline comments using the `{{binary}} agent` CLI.
+You are reviewing a diff and leaving inline comments using the `diffity agent` CLI.
 
 ## Arguments
 
@@ -15,12 +15,12 @@ You are reviewing a diff and leaving inline comments using the `{{binary}} agent
 ## CLI Reference
 
 ```
-{{binary}} agent list [--status open|resolved|dismissed] [--json]
-{{binary}} agent comment --file <path> --line <n> [--end-line <n>] [--side new|old] --body "<text>"
-{{binary}} agent general-comment --body "<text>"
-{{binary}} agent resolve <id> [--summary "<text>"]
-{{binary}} agent dismiss <id> [--reason "<text>"]
-{{binary}} agent reply <id> --body "<text>"
+diffity agent list [--status open|resolved|dismissed] [--json]
+diffity agent comment --file <path> --line <n> [--end-line <n>] [--side new|old] --body "<text>"
+diffity agent general-comment --body "<text>"
+diffity agent resolve <id> [--summary "<text>"]
+diffity agent dismiss <id> [--reason "<text>"]
+diffity agent reply <id> --body "<text>"
 ```
 
 - `--file`, `--line`, `--body` are required for `comment`
@@ -31,8 +31,8 @@ You are reviewing a diff and leaving inline comments using the `{{binary}} agent
 
 ## Prerequisites
 
-1. Check that `{{binary}}` is available: run `which {{binary}}`. If not found, {{install_hint}}.
-2. Check that a review session exists: run `cat .diffity/current-session`. If the file doesn't exist or is stale, tell the user to start diffity first (e.g. `{{binary}}` or `{{binary}} --staged`).
+1. Check that `diffity` is available: run `which diffity`. If not found, install it with `npm install -g diffity`.
+2. Check that a review session exists: run `cat .diffity/current-session`. If the file doesn't exist or is stale, tell the user to start diffity first (e.g. `diffity` or `diffity --staged`).
 
 ## Instructions
 
@@ -56,7 +56,7 @@ You are reviewing a diff and leaving inline comments using the `{{binary}} agent
    - `[question]` — Something unclear that needs clarification from the author.
 8. For each finding, leave a comment using:
    ```
-   {{binary}} agent comment --file <path> --line <n> [--end-line <n>] [--side new] --body "<comment>"
+   diffity agent comment --file <path> --line <n> [--end-line <n>] [--side new] --body "<comment>"
    ```
    - Use `--side new` (default) for comments on added/modified code
    - Use `--side old` for comments on removed code
@@ -67,8 +67,8 @@ You are reviewing a diff and leaving inline comments using the `{{binary}} agent
    - Cross-cutting concerns that don't belong on any single line (architecture, naming consistency across files, missing tests, etc.)
    - A count of findings by severity (e.g. "2 must-fix, 3 suggestions, 1 nit")
    ```
-   {{binary}} agent general-comment --body "<overall review summary>"
+   diffity agent general-comment --body "<overall review summary>"
    ```
    If there are no inline findings, still leave a general comment with your assessment (e.g. "Clean diff — no issues found").
-10. Run `{{binary}} agent list` to confirm all comments were created.
+10. Run `diffity agent list` to confirm all comments were created.
 11. Tell the user to check the browser — comments will appear within 2 seconds via polling.

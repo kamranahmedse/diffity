@@ -76,12 +76,28 @@ function rowToComment(row: CommentRow): ThreadComment {
   };
 }
 
-function getCommentsForThread(threadId: string): ThreadComment[] {
+function getCommentsForThreads(threadIds: string[]): Map<string, ThreadComment[]> {
+  if (threadIds.length === 0) {
+    return new Map();
+  }
   const db = getDb();
+  const placeholders = threadIds.map(() => '?').join(', ');
   const rows = db.prepare(
-    'SELECT * FROM comments WHERE thread_id = ? ORDER BY created_at ASC'
-  ).all(threadId) as CommentRow[];
-  return rows.map(rowToComment);
+    `SELECT * FROM comments WHERE thread_id IN (${placeholders}) ORDER BY created_at ASC`
+  ).all(...threadIds) as CommentRow[];
+
+  const map = new Map<string, ThreadComment[]>();
+  for (const row of rows) {
+    const comments = map.get(row.thread_id) ?? [];
+    comments.push(rowToComment(row));
+    map.set(row.thread_id, comments);
+  }
+  return map;
+}
+
+function getCommentsForThread(threadId: string): ThreadComment[] {
+  const map = getCommentsForThreads([threadId]);
+  return map.get(threadId) ?? [];
 }
 
 export function createThread(
@@ -140,7 +156,8 @@ export function getThreadsForSession(sessionId: string, status?: ThreadStatus): 
     ).all(sessionId) as ThreadRow[];
   }
 
-  return rows.map(row => rowToThread(row, getCommentsForThread(row.id)));
+  const commentsByThread = getCommentsForThreads(rows.map(r => r.id));
+  return rows.map(row => rowToThread(row, commentsByThread.get(row.id) ?? []));
 }
 
 export function getThread(idOrPrefix: string): Thread | null {

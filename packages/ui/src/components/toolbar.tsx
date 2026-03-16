@@ -9,6 +9,8 @@ import { CheckIcon } from './icons/check-icon';
 import { ChevronUpIcon } from './icons/chevron-up-icon';
 import { ChevronDownIcon } from './icons/chevron-down-icon';
 import { TrashIcon } from './icons/trash-icon';
+import { UnifiedViewIcon } from './icons/unified-view-icon';
+import { SplitViewIcon } from './icons/split-view-icon';
 import { ConfirmDialog } from './ui/confirm-dialog';
 import { GENERAL_THREAD_FILE_PATH } from '../types/comment';
 import type { ViewMode } from '../lib/diff-utils';
@@ -125,19 +127,21 @@ export function Toolbar(props: ToolbarProps) {
 
   return (
     <div className="flex items-center gap-4 px-4 py-2 bg-bg-secondary border-b border-border font-sans text-sm">
-      <div className="flex items-center gap-px">
+      <div className="flex items-center">
         <button
-          className={cn(baseBtn, 'rounded-l-md', viewMode === 'unified' ? activeBtn : inactiveBtn)}
+          className={cn(baseBtn, 'rounded-l-md border-r-0 flex items-center gap-1.5', viewMode === 'unified' ? activeBtn : inactiveBtn)}
           onClick={() => onViewModeChange('unified')}
           title="Unified view (u)"
         >
+          <UnifiedViewIcon className="w-4 h-4" />
           Unified
         </button>
         <button
-          className={cn(baseBtn, 'rounded-r-md border-l-0', viewMode === 'split' ? activeBtn : inactiveBtn)}
+          className={cn(baseBtn, 'rounded-r-md border-l-0 flex items-center gap-1.5', viewMode === 'split' ? activeBtn : inactiveBtn)}
           onClick={() => onViewModeChange('split')}
           title="Split view (s)"
         >
+          <SplitViewIcon className="w-4 h-4" />
           Split
         </button>
       </div>

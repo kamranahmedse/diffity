@@ -18,6 +18,7 @@ export interface TransformOptions {
   binary: string;
   namePrefix?: string;
   slashPrefix?: string;
+  installHint?: string;
 }
 
 export function readSkills(sourceDir: string): Skill[] {
@@ -42,11 +43,13 @@ export function readSkills(sourceDir: string): Skill[] {
   return skills;
 }
 
-export function renderSkill(skill: Skill, { binary, namePrefix, slashPrefix }: TransformOptions): string {
+export function renderSkill(skill: Skill, { binary, namePrefix, slashPrefix, installHint }: TransformOptions): string {
   const slash = slashPrefix ?? '/diffity-';
+  const hint = installHint ?? 'install it with `npm install -g diffity`';
   const body = skill.content
     .replaceAll('{{binary}}', binary)
-    .replaceAll('{{slash}}', slash);
+    .replaceAll('{{slash}}', slash)
+    .replaceAll('{{install_hint}}', hint);
   const data = { ...skill.data };
   if (namePrefix) {
     data.name = data.name.replace('diffity-', `${namePrefix}-`);
