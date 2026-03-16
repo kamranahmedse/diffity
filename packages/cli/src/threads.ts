@@ -13,7 +13,7 @@ export interface ThreadComment {
   createdAt: string;
 }
 
-export type ThreadStatus = 'open' | 'acknowledged' | 'resolved' | 'dismissed';
+export type ThreadStatus = 'open' | 'resolved' | 'dismissed';
 
 export interface Thread {
   id: string;

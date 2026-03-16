@@ -43,10 +43,11 @@ You are reading open review comments and resolving them by making the requested 
    If a `thread-id` argument was provided, filter to just that thread. The JSON output includes the full comment body, file path, line numbers, and side for each thread.
 2. If there are no open threads, tell the user there's nothing to resolve.
 3. For each open thread:
-   a. Read the comment body from the JSON output and understand what change is requested.
-   b. **Skip** threads that are `[question]` or `[nit]` severity — these don't require code changes. Tell the user you skipped them and why.
-   c. Read the relevant source file to understand the full context around the commented lines, then make the requested code change using the Edit tool.
-   d. After making the change, resolve the thread with a summary:
+   a. **Skip** general comments (filePath `__general__`) — these are summaries, not actionable code changes.
+   b. **Skip** threads tagged `[question]` or `[nit]` — these don't require code changes. Tell the user you skipped them and why.
+   c. Read the comment body from the JSON output and understand what change is requested.
+   d. Read the relevant source file to understand the full context around the commented lines, then make the requested code change using the Edit tool.
+   e. After making the change, resolve the thread with a summary:
       ```
       {{binary}} agent resolve <thread-id> --summary "Fixed: <brief description of what was changed>"
       ```

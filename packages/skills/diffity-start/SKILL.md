@@ -25,5 +25,4 @@ You are starting the diffity diff viewer so the user can see their changes in th
    >
    > Here's what you can do:
    > - **{{slash}}review** — get a code review on your changes
-   > - **{{slash}}self-review** — quick pre-push sanity check
-   > - **{{slash}}summarize** — generate a PR summary
+   > - **{{slash}}resolve** — fix issues from review comments

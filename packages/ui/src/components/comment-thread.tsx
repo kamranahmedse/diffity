@@ -26,8 +26,6 @@ function StatusBadge(props: { status: string }) {
   const { status } = props;
 
   switch (status) {
-    case 'acknowledged':
-      return <ThreadBadge variant="acknowledged" />;
     case 'resolved':
       return <ThreadBadge variant="resolved" />;
     case 'dismissed':

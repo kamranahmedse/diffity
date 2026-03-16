@@ -1,6 +1,6 @@
 import { cn } from '../../lib/cn';
 
-type ThreadBadgeVariant = 'acknowledged' | 'resolved' | 'dismissed' | 'outdated';
+type ThreadBadgeVariant = 'resolved' | 'dismissed' | 'outdated';
 
 interface ThreadBadgeProps {
   variant: ThreadBadgeVariant;
@@ -9,14 +9,12 @@ interface ThreadBadgeProps {
 }
 
 const variantStyles: Record<ThreadBadgeVariant, string> = {
-  acknowledged: 'bg-yellow-500/20 text-yellow-600 dark:text-yellow-400',
   resolved: 'bg-added/20 text-added',
   dismissed: 'bg-text-muted/20 text-text-muted line-through',
   outdated: 'bg-orange-100 text-orange-800 dark:bg-orange-900/50 dark:text-orange-200',
 };
 
 const defaultLabels: Record<ThreadBadgeVariant, string> = {
-  acknowledged: 'Acknowledged',
   resolved: 'Resolved',
   dismissed: 'Dismissed',
   outdated: 'Outdated',

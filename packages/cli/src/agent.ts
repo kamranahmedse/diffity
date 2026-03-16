@@ -79,7 +79,7 @@ Examples:
     .option('--status <status>', 'Filter by status (open, resolved, dismissed)')
     .option('--json', 'Output as JSON')
     .action((opts) => {
-      const validStatuses = ['open', 'acknowledged', 'resolved', 'dismissed'];
+      const validStatuses = ['open', 'resolved', 'dismissed'];
       if (opts.status && !validStatuses.includes(opts.status)) {
         console.error(pc.red(`Error: Invalid status "${opts.status}". Must be one of: ${validStatuses.join(', ')}`));
         process.exit(1);
