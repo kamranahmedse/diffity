@@ -1,4 +1,4 @@
-import { execSync } from 'node:child_process';
+import { execFileSync, execSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
 import { mkdirSync } from 'node:fs';
 import { join } from 'node:path';
@@ -54,6 +54,25 @@ export function getDiffityDir(): string {
   const dir = getDiffityDirPath();
   mkdirSync(dir, { recursive: true });
   return dir;
+}
+
+export function isValidGitRef(ref: string): boolean {
+  if (ref.includes('...')) {
+    const parts = ref.split('...');
+    return parts.every((p) => isValidGitRef(p));
+  }
+
+  if (ref.includes('..')) {
+    const parts = ref.split('..');
+    return parts.every((p) => isValidGitRef(p));
+  }
+
+  try {
+    execFileSync('git', ['rev-parse', '--verify', ref], { stdio: 'pipe' });
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 const ACTIONABLE_REFS = new Set(['work', 'staged', 'unstaged', 'working', 'untracked']);

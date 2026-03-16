@@ -6,7 +6,7 @@ import { homedir } from 'node:os';
 import { createRequire } from 'node:module';
 import open from 'open';
 import pc from 'picocolors';
-import { isGitRepo } from '@diffity/git';
+import { isGitRepo, isValidGitRef } from '@diffity/git';
 import { startServer } from './server.js';
 import { registerAgentCommands } from './agent.js';
 
@@ -38,6 +38,21 @@ Examples:
     if (!isGitRepo()) {
       console.error(pc.red('Error: Not a git repository'));
       process.exit(1);
+    }
+
+    for (const ref of refs) {
+      if (!isValidGitRef(ref)) {
+        console.error(pc.red(`Error: '${ref}' is not a valid git reference.`));
+        console.log('');
+        console.log('Usage:');
+        console.log(`  ${pc.cyan('diffity')}                    Working tree changes`);
+        console.log(`  ${pc.cyan('diffity HEAD~1')}             Last commit vs working tree`);
+        console.log(`  ${pc.cyan('diffity main..feature')}      Compare branches`);
+        console.log(`  ${pc.cyan('diffity main feature')}       Same as main..feature`);
+        console.log('');
+        console.log(`Run ${pc.cyan('diffity --help')} for more options.`);
+        process.exit(1);
+      }
     }
 
     const diffArgs: string[] = [];
