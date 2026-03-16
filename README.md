@@ -1,10 +1,14 @@
-<img src="./packages/ui/public/brand.svg" width="100" />
+<img src="./packages/ui/public/brand.svg" width="80" />
 
-[Diffity](https://diffity.com) is an agent-agnostic, GitHub-style diff viewer and code review tool. It works with Claude Code, Cursor, Codex, and any AI coding agent.
+# diffity
+
+[Diffity](https://diffity.com) is an agent-agnostic, GitHub-style diff viewer and code review tool.
 
 ```bash
 npm install -g diffity
 ```
+
+It works with Claude Code, Cursor, Codex, and any AI coding agent.
 
 ## See your diffs
 
@@ -15,7 +19,7 @@ diffity                    # working tree changes
 diffity HEAD~1             # last commit
 diffity HEAD~3             # last 3 commits
 diffity main..feature      # compare branches
-diffity v1.0.0..v2.0.0    # compare tags
+diffity v1.0.0..v2.0.0     # compare tags
 ```
 
 For the working tree, you can leave comments, copy them into your agent with a button and ask it to resolve them. Alternatively, use the skills below to avoid this manual step and let your agent auto-solve them.
@@ -31,9 +35,17 @@ npx skills add kamranahmedse/diffity
 Then use the slash commands:
 
 ```
-/diffity-start          # open the diff viewer
-/diffity-review         # AI reviews your diff and leaves inline comments
-/diffity-resolve        # AI fixes the flagged issues and marks them resolved
+# use this skill to open the browser with diff viewer
+# you can review the code yourself and leave comments
+/diffity-start
+
+# once done, you can come back to the agent and use the
+# below skill to ask agent to resolve your comments.
+/diffity-resolve
+
+# you can use this to have AI review your uncommitted
+# changes and leave comments in the diff viewer
+/diffity-review
 ```
 
 The review uses severity tags so you know what matters:
