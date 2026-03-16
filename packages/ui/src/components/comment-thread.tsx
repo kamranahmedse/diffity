@@ -61,7 +61,7 @@ export function CommentThread(props: CommentThreadProps) {
       <td colSpan={colSpan} className='px-4 py-2 border-l border-border'>
         <button
           onClick={() => setIsCollapsed(false)}
-          className='flex items-center gap-2 text-xs text-text-muted hover:text-text-secondary transition-colors cursor-pointer'
+          className='thread-card flex items-center gap-2 text-xs text-text-muted hover:text-text-secondary transition-colors cursor-pointer rounded'
         >
           <CommentIcon className='w-4 h-4' />
           <span>
@@ -109,7 +109,7 @@ export function CommentThread(props: CommentThreadProps) {
         'border-l border-border': side === 'new' && viewMode === 'split',
       })}
     >
-      <div className='border border-border rounded-lg overflow-hidden max-w-[700px]'>
+      <div className='thread-card border border-border rounded-lg overflow-hidden max-w-[700px]'>
         <div className='flex items-center justify-between px-3 py-1.5 bg-bg-secondary border-b border-border'>
           <div className='flex items-center gap-2'>
             <span className='text-[11px] text-text-muted font-mono'>

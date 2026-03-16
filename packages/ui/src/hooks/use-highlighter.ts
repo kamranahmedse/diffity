@@ -6,10 +6,11 @@ const LANG_MAP: Record<string, BundledLanguage> = {
   tsx: 'tsx',
   js: 'javascript',
   jsx: 'jsx',
-  json: 'javascript',
+  json: 'json',
   css: 'css',
   html: 'html',
   md: 'markdown',
+  mdx: 'mdx',
   py: 'python',
   rb: 'ruby',
   rs: 'rust',
@@ -18,23 +19,29 @@ const LANG_MAP: Record<string, BundledLanguage> = {
   sh: 'bash',
   bash: 'bash',
   zsh: 'bash',
+  fish: 'fish',
+  ps1: 'powershell',
   yml: 'yaml',
   yaml: 'yaml',
   xml: 'xml',
   svg: 'xml',
   sql: 'sql',
   graphql: 'graphql',
+  gql: 'graphql',
   dockerfile: 'dockerfile',
   toml: 'toml',
   ini: 'ini',
   lua: 'lua',
   c: 'c',
   cpp: 'cpp',
+  cc: 'cpp',
+  cxx: 'cpp',
   h: 'c',
   hpp: 'cpp',
   cs: 'csharp',
   swift: 'swift',
   kt: 'kotlin',
+  kts: 'kotlin',
   scala: 'scala',
   vue: 'vue',
   svelte: 'svelte',
@@ -42,21 +49,90 @@ const LANG_MAP: Record<string, BundledLanguage> = {
   r: 'r',
   scss: 'scss',
   less: 'less',
+  sass: 'sass',
+  styl: 'stylus',
+  dart: 'dart',
+  ex: 'elixir',
+  exs: 'elixir',
+  erl: 'erlang',
+  hs: 'haskell',
+  clj: 'clojure',
+  cljs: 'clojure',
+  pl: 'perl',
+  pm: 'perl',
+  zig: 'zig',
+  nim: 'nim',
+  ml: 'ocaml',
+  mli: 'ocaml',
+  fs: 'fsharp',
+  fsx: 'fsharp',
+  groovy: 'groovy',
+  gradle: 'groovy',
+  tf: 'hcl',
+  hcl: 'hcl',
+  proto: 'protobuf',
+  prisma: 'prisma',
+  astro: 'astro',
+  m: 'objective-c',
+  mm: 'objective-cpp',
+  tex: 'latex',
+  latex: 'latex',
+  diff: 'diff',
+  patch: 'diff',
+  nginx: 'nginx',
+  conf: 'ini',
+  cfg: 'ini',
+  env: 'dotenv',
+  bat: 'bat',
+  cmd: 'bat',
+  asm: 'asm',
+  s: 'asm',
+  jsonc: 'jsonc',
+  json5: 'json5',
+  csv: 'csv',
+  tsv: 'csv',
+  wasm: 'wasm',
+  ejs: 'html',
+  hbs: 'handlebars',
+  pug: 'pug',
+  jade: 'pug',
+  rst: 'rst',
+  jl: 'julia',
+  v: 'v',
+  sol: 'solidity',
+  glsl: 'glsl',
+  hlsl: 'hlsl',
+  wgsl: 'wgsl',
+};
+
+const FILENAME_MAP: Record<string, BundledLanguage> = {
+  dockerfile: 'dockerfile',
+  makefile: 'makefile',
+  cmakelists: 'cmake',
+  gemfile: 'ruby',
+  rakefile: 'ruby',
+  justfile: 'just',
+  vagrantfile: 'ruby',
 };
 
 function getLang(filePath: string): BundledLanguage | null {
   const ext = filePath.split('.').pop()?.toLowerCase() || '';
   const fileName = filePath.split('/').pop()?.toLowerCase() || '';
 
-  if (fileName === 'dockerfile') {
-    return 'dockerfile';
-  }
-  if (fileName === 'makefile') {
-    return 'makefile';
+  const fileNameMatch = FILENAME_MAP[fileName];
+  if (fileNameMatch) {
+    return fileNameMatch;
   }
 
   return LANG_MAP[ext] || null;
 }
+
+const ALL_LANGS: BundledLanguage[] = [
+  ...new Set([
+    ...Object.values(LANG_MAP),
+    ...Object.values(FILENAME_MAP),
+  ]),
+];
 
 let highlighterPromise: Promise<Highlighter> | null = null;
 
@@ -64,8 +140,7 @@ function getHighlighter(): Promise<Highlighter> {
   if (!highlighterPromise) {
     highlighterPromise = createHighlighter({
       themes: ['github-light', 'github-dark'],
-      langs: ['typescript', 'tsx', 'javascript', 'jsx', 'json', 'css', 'html',
-        'markdown', 'python', 'bash', 'yaml'],
+      langs: ALL_LANGS,
     });
   }
   return highlighterPromise;
@@ -95,10 +170,6 @@ export function useHighlighter() {
     const shikiTheme = theme === 'dark' ? 'github-dark' : 'github-light';
 
     try {
-      if (!highlighter.getLoadedLanguages().includes(lang)) {
-        return null;
-      }
-
       const result = highlighter.codeToTokens(code, {
         lang,
         theme: shikiTheme,

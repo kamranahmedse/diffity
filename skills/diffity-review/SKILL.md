@@ -40,13 +40,12 @@ diffity agent reply <id> --body "<text>"
 2. For each changed file, read the **entire file** (not just the diff hunks) to understand the full context. This prevents false positives from missing surrounding code.
 3. Analyze the code changes thoroughly. If a `focus` argument was provided, concentrate on that area. Otherwise look for:
    - Bugs, logic errors, off-by-one errors
-   - Security issues (injection, XSS, auth bypass etc)
+   - Security issues (injection, XSS, auth bypass)
    - Performance problems
    - Missing error handling at system boundaries
    - Race conditions
    - API contract violations
    - Unclear or misleading naming
-   - In consistent coding style or formatting
 4. **Only comment on code that was changed in the diff.** Do not flag pre-existing issues in unchanged code — this is a review of the diff, not an audit of the entire file. The only exception is if a change in the diff introduces a bug in combination with existing code.
 5. **Prioritize signal over volume.** A clean diff should get a clean review. Do not manufacture findings to appear thorough. If a diff with 5 changed lines only has 1 real issue, leave 1 comment.
 6. **Do not repeat the same issue across files.** If the same pattern appears in multiple places, leave one inline comment on the first occurrence and mention it in the general summary instead of commenting on every instance.

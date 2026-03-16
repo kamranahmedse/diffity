@@ -1,20 +1,17 @@
 {
   "name": "diffity",
   "version": "0.1.0",
+  "description": "GitHub-style git diff viewer in the browser",
   "type": "module",
   "bin": {
     "diffity": "./dist/index.js"
   },
-  "main": "./dist/index.js",
-  "types": "./dist/index.d.ts",
   "scripts": {
-    "build": "tsc",
+    "build": "node build.js",
     "dev": "tsx src/index.ts",
     "dev:watch": "tsc --watch"
   },
   "dependencies": {
-    "@diffity/git": "0.1.0",
-    "@diffity/parser": "0.1.0",
     "better-sqlite3": "^12.8.0",
     "commander": "latest",
     "open": "latest",
@@ -23,9 +20,31 @@
   "files": [
     "dist"
   ],
+  "keywords": [
+    "git",
+    "diff",
+    "viewer",
+    "cli",
+    "code-review",
+    "github"
+  ],
+  "author": "Kamran Ahmed <kamranahmed.se@gmail.com> (https://kamranahmed.se)",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/kamranahmedse/diffity.git"
+  },
+  "homepage": "https://diffity.com",
+  "bugs": {
+    "url": "https://github.com/kamranahmedse/diffity/issues"
+  },
+  "engines": {
+    "node": ">=18"
+  },
   "devDependencies": {
     "@types/better-sqlite3": "^7.6.13",
     "@types/node": "^25.5.0",
+    "esbuild": "^0.27.0",
     "tsx": "^4.21.0",
     "typescript": "^5.9.3"
   }

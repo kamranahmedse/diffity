@@ -180,29 +180,31 @@ export function Toolbar(props: ToolbarProps) {
       </div>
       {unresolvedCount > 0 && (
         <div className="flex items-center gap-2 ml-auto">
-          <div className="flex items-center border border-border rounded-md overflow-hidden">
-            <span className="text-xs text-text-muted px-2 py-1">
-              {currentIndex >= 0 ? `${currentIndex + 1}/${unresolvedCount}` : unresolvedCount}
+          <div className="flex items-stretch border border-border rounded-md overflow-hidden bg-bg">
+            <span className="flex items-center text-xs text-text-muted px-2 py-1">
+              {currentIndex >= 0
+                ? `${currentIndex + 1} of ${unresolvedCount} ${unresolvedCount === 1 ? 'comment' : 'comments'}`
+                : `${unresolvedCount} ${unresolvedCount === 1 ? 'comment' : 'comments'}`}
             </span>
             <button
               onClick={goToPrevious}
-              className="px-1 py-1 border-l border-border text-text-muted hover:bg-hover hover:text-text transition-colors cursor-pointer"
+              className="flex items-center px-1.5 border-l border-border text-text-muted hover:bg-hover hover:text-text transition-colors cursor-pointer"
               title="Previous comment"
             >
-              <ChevronUpIcon className="w-3 h-3" />
+              <ChevronUpIcon className="w-3.5 h-3.5" />
             </button>
             <button
               onClick={goToNext}
-              className="px-1 py-1 border-l border-border text-text-muted hover:bg-hover hover:text-text transition-colors cursor-pointer"
+              className="flex items-center px-1.5 border-l border-border text-text-muted hover:bg-hover hover:text-text transition-colors cursor-pointer"
               title="Next comment"
             >
-              <ChevronDownIcon className="w-3 h-3" />
+              <ChevronDownIcon className="w-3.5 h-3.5" />
             </button>
           </div>
-          <div className="flex items-center border border-border rounded-md overflow-hidden">
+          <div className="flex items-stretch border border-border rounded-md overflow-hidden">
             <button
               onClick={() => copy(formatThreadsForCopy(threads, diff, diffRef))}
-              className={cn(baseBtn, 'flex items-center gap-1.5', inactiveBtn)}
+              className="flex items-center gap-1.5 px-2.5 py-1 text-xs bg-bg text-text-secondary hover:bg-hover hover:text-text transition-colors cursor-pointer"
               title="Copy unresolved comments to clipboard"
             >
               {copied ? (
@@ -213,16 +215,16 @@ export function Toolbar(props: ToolbarProps) {
               ) : (
                 <>
                   <CopyIcon className="w-3 h-3" />
-                  Copy
+                  Copy Comments
                 </>
               )}
             </button>
             <button
               onClick={() => setShowDeleteConfirm(true)}
-              className={cn(baseBtn, 'flex items-center border-l border-border', inactiveBtn)}
+              className="flex items-center px-2 border-l border-border bg-bg text-text-muted hover:bg-hover hover:text-red-500 transition-colors cursor-pointer"
               title="Delete all comments"
             >
-              <TrashIcon className="w-3 h-3" />
+              <TrashIcon className="w-3.5 h-3.5" />
             </button>
           </div>
         </div>

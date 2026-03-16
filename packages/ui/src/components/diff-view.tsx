@@ -8,6 +8,12 @@ import { type ViewMode, getFilePath } from '../lib/diff-utils';
 import type { CommentThread, LineSelection } from '../types/comment';
 import type { CommentActions } from '../hooks/use-comment-actions';
 
+function flashThreadElement(element: Element) {
+  element.classList.remove('flash-thread');
+  void (element as HTMLElement).offsetWidth;
+  element.classList.add('flash-thread');
+}
+
 export interface DiffViewHandle {
   scrollToFile: (path: string) => void;
   scrollToThread: (threadId: string, filePath: string) => void;
@@ -103,7 +109,8 @@ export function DiffView(props: DiffViewProps) {
     scrollToThread: (threadId: string, filePath: string) => {
       const element = document.querySelector(`[data-thread-id="${threadId}"]`);
       if (element) {
-        element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        element.scrollIntoView({ behavior: 'instant', block: 'center' });
+        flashThreadElement(element);
         return;
       }
 
@@ -132,7 +139,8 @@ export function DiffView(props: DiffViewProps) {
       const element = document.querySelector(`[data-thread-id="${threadId}"]`);
       if (element) {
         setPendingThreadScroll(null);
-        element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        element.scrollIntoView({ behavior: 'instant', block: 'center' });
+        flashThreadElement(element);
         return true;
       }
       return false;

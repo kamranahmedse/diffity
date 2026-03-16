@@ -1,5 +1,3 @@
-#!/usr/bin/env node
-
 import { Command } from 'commander';
 import { execSync } from 'node:child_process';
 import { rmSync, existsSync } from 'node:fs';

@@ -152,6 +152,19 @@ dialog {
   animation: flash-highlight-border 1.5s ease-out forwards;
 }
 
+@keyframes flash-thread {
+  0% {
+    background-color: var(--color-diff-comment-bg);
+  }
+  100% {
+    background-color: transparent;
+  }
+}
+
+.flash-thread .thread-card {
+  animation: flash-thread 1.5s ease-out forwards;
+}
+
 .diff-empty-cell {
   background:
     repeating-linear-gradient(

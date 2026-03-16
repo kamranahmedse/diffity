@@ -18,5 +18,6 @@ export default defineConfig({
   build: {
     outDir: '../cli/dist/ui',
     emptyOutDir: true,
+    chunkSizeWarningLimit: 1000,
   },
 });
