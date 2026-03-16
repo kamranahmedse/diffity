@@ -16,7 +16,7 @@ import { CheckCircleIcon } from './icons/check-circle-icon';
 import { PageLoader } from './skeleton';
 import { useDiffStaleness } from '../hooks/use-diff-staleness';
 import { type ViewMode, getFilePath, getAutoCollapsedPaths, isWorkingTreeRef } from '../lib/diff-utils';
-import { getFileBlocks, getHunkHeaders, scrollToElement } from '../lib/dom-utils';
+import { getHunkHeaders, scrollToElement } from '../lib/dom-utils';
 import type { LineSelection } from '../types/comment';
 import { isThreadResolved } from '../types/comment';
 
@@ -117,28 +117,22 @@ export function DiffPage(props: DiffPageProps) {
     }
   }, []);
 
-  const getFilePathAtIndex = useCallback(
-    (idx: number): string | null => {
-      if (!diff) {
-        return null;
-      }
-      const clampedIdx = Math.max(0, Math.min(diff.files.length - 1, idx));
-      return getFilePath(diff.files[clampedIdx]);
-    },
-    [diff],
-  );
+  const getCurrentFilePath = useCallback((): string | null => {
+    if (!diff) {
+      return null;
+    }
+    return getFilePath(diff.files[currentFileIdx.current]);
+  }, [diff]);
 
   const navigateFile = useCallback((direction: number) => {
-    const blocks = getFileBlocks();
-    if (blocks.length === 0) {
+    if (!diff) {
       return;
     }
-    currentFileIdx.current = Math.max(
-      0,
-      Math.min(blocks.length - 1, currentFileIdx.current + direction),
-    );
-    scrollToElement(blocks[currentFileIdx.current]);
-  }, []);
+    const nextIdx = Math.max(0, Math.min(diff.files.length - 1, currentFileIdx.current + direction));
+    currentFileIdx.current = nextIdx;
+    const path = getFilePath(diff.files[nextIdx]);
+    diffViewRef.current?.scrollToFile(path);
+  }, [diff]);
 
   const navigateHunk = useCallback((direction: number) => {
     const hunks = getHunkHeaders();
@@ -167,7 +161,7 @@ export function DiffPage(props: DiffPageProps) {
     onNextHunk: () => navigateHunk(1),
     onPrevHunk: () => navigateHunk(-1),
     onToggleCollapse: () => {
-      const path = getFilePathAtIndex(currentFileIdx.current);
+      const path = getCurrentFilePath();
       if (path) {
         handleToggleCollapse(path);
       }
@@ -185,7 +179,7 @@ export function DiffPage(props: DiffPageProps) {
       }
     },
     onToggleReviewed: () => {
-      const path = getFilePathAtIndex(currentFileIdx.current);
+      const path = getCurrentFilePath();
       if (!path) {
         return;
       }
