@@ -1,4 +1,4 @@
-![](./packages/ui/public/brand.svg)
+<img src="./packages/ui/public/brand.svg" width="100" />
 
 [Diffity](https://diffity.com) is an agent-agnostic, GitHub-style diff viewer and code review tool. It works with Claude Code, Cursor, Codex, and any AI coding agent.
 
