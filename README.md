@@ -1,6 +1,6 @@
-# diffity
+![](./packages/ui/public/brand.svg)
 
-Diffity is an agent-agnostic, GitHub-style diff viewer and code review tool. It works with Claude Code, Cursor, Codex, and any AI coding agent.
+[Diffity](https://diffity.com) is an agent-agnostic, GitHub-style diff viewer and code review tool. It works with Claude Code, Cursor, Codex, and any AI coding agent.
 
 ```bash
 npm install -g diffity
@@ -17,6 +17,8 @@ diffity HEAD~3             # last 3 commits
 diffity main..feature      # compare branches
 diffity v1.0.0..v2.0.0    # compare tags
 ```
+
+For the working tree, you can leave comments, copy them into your agent with a button and ask it to resolve them. Alternatively, use the skills below to avoid this manual step and let your agent auto-solve them.
 
 ## AI code review
 
