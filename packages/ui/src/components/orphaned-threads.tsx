@@ -46,6 +46,9 @@ export function OrphanedThreads(props: OrphanedThreadsProps) {
                   <div className="flex items-center gap-2">
                     <span className="text-[11px] text-text-muted font-mono">{lineLabel}</span>
                     <ThreadBadge variant="outdated" />
+                    {(thread.status === 'resolved' || thread.status === 'dismissed') && (
+                      <ThreadBadge variant={thread.status} />
+                    )}
                   </div>
                   <button
                     onClick={() => onDeleteThread(thread.id)}
@@ -55,6 +58,9 @@ export function OrphanedThreads(props: OrphanedThreadsProps) {
                     <TrashIcon className="w-3.5 h-3.5" />
                   </button>
                 </div>
+                {thread.anchorContent && (
+                  <pre className="px-3 py-2 text-xs font-mono text-text-muted bg-bg-tertiary/50 border-b border-border overflow-x-auto whitespace-pre max-h-24 overflow-y-auto">{thread.anchorContent}</pre>
+                )}
                 <div>
                   {thread.comments.map((comment) => (
                     <CommentBubble

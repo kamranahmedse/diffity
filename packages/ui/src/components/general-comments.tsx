@@ -19,7 +19,7 @@ export function GeneralComments(props: GeneralCommentsProps) {
   const { threads: allThreads, commentActions } = props;
 
   const threads = allThreads.filter(t => t.filePath === GENERAL_THREAD_FILE_PATH);
-  const [isExpanded, setIsExpanded] = useState(false);
+  const [isExpanded, setIsExpanded] = useState(threads.length > 0);
   const [showForm, setShowForm] = useState(false);
 
   return (

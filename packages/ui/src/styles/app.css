@@ -121,6 +121,32 @@
   animation: slide-down 0.2s ease-out;
 }
 
+@keyframes flash-highlight {
+  0% {
+    background-color: var(--color-diff-comment-bg);
+  }
+  100% {
+    background-color: var(--color-bg-secondary);
+  }
+}
+
+@keyframes flash-highlight-border {
+  0% {
+    border-color: var(--color-modified);
+  }
+  100% {
+    border-color: var(--color-border);
+  }
+}
+
+.animate-flash-highlight {
+  animation: flash-highlight 1.5s ease-out forwards;
+}
+
+.animate-flash-highlight-border {
+  animation: flash-highlight-border 1.5s ease-out forwards;
+}
+
 .diff-empty-cell {
   background:
     repeating-linear-gradient(

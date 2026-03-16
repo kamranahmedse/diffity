@@ -4,7 +4,6 @@ import type { DiffHunk } from '@diffity/parser';
 import type { DiffFile, DiffLine as DiffLineType } from '@diffity/parser';
 import type { SyntaxToken } from '../lib/syntax-token';
 import type { HighlightedTokens } from '../hooks/use-highlighter';
-import { isThreadResolved } from '../types/comment';
 import type { CommentSide, LineSelection } from '../types/comment';
 import { type ViewMode, getFilePath, buildChangeGroupPatch, extractLinesFromDiff } from '../lib/diff-utils';
 import { revertHunk as apiRevertHunk } from '../lib/api';
@@ -58,6 +57,8 @@ interface FileBlockProps {
   onAddThread: CommentActions['addThread'];
   pendingSelection: LineSelection | null;
   onPendingSelectionChange: (selection: LineSelection | null) => void;
+  highlighted?: boolean;
+  onHighlightEnd?: () => void;
 }
 
 interface GapExpansion {
@@ -71,6 +72,7 @@ export function FileBlock(props: FileBlockProps) {
   const {
     file, viewMode, collapsed, onToggleCollapse, reviewed, onReviewedChange, highlightLine, baseRef, canRevert, onRevert,
     threads: allThreads, commentsEnabled, commentActions, onAddThread: rawAddThread, pendingSelection, onPendingSelectionChange,
+    highlighted, onHighlightEnd,
   } = props;
 
   const totalLines = getTotalLineCount(file);
@@ -141,7 +143,7 @@ export function FileBlock(props: FileBlockProps) {
 
       if (isInDiff) {
         anchored.push(thread);
-      } else if (!isThreadResolved(thread)) {
+      } else {
         orphaned.push(thread);
       }
     }
@@ -328,8 +330,14 @@ export function FileBlock(props: FileBlockProps) {
   const filePendingSelection = pendingSelection && pendingSelection.filePath === filePath ? pendingSelection : null;
 
   return (
-    <div className="border border-border rounded-lg mx-4 my-4 overflow-hidden" id={`file-${encodeURIComponent(filePath)}`}>
-      <div className="flex items-center gap-2 px-3 py-2 bg-bg-secondary border-b border-border text-sm sticky top-0 z-10 shadow-sticky">
+    <div
+      className={`border rounded-lg mx-4 my-4 overflow-hidden ${highlighted ? 'animate-flash-highlight-border' : 'border-border'}`}
+      id={`file-${encodeURIComponent(filePath)}`}
+      onAnimationEnd={onHighlightEnd}
+    >
+      <div
+        className={`flex items-center gap-2 px-3 py-2 border-b border-border text-sm sticky top-0 z-10 shadow-sticky ${highlighted ? 'animate-flash-highlight' : 'bg-bg-secondary'}`}
+      >
         <IconButton
           className="text-[10px] w-5 h-5 shrink-0"
           onClick={() => onToggleCollapse(filePath)}

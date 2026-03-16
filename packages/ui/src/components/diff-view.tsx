@@ -87,6 +87,7 @@ export function DiffView(props: DiffViewProps) {
   });
 
   const scrollTargetRef = useRef<string | null>(null);
+  const [highlightedFile, setHighlightedFile] = useState<string | null>(null);
 
   const [pendingThreadScroll, setPendingThreadScroll] = useState<string | null>(null);
 
@@ -95,6 +96,7 @@ export function DiffView(props: DiffViewProps) {
       const index = diff.files.findIndex((f) => getFilePath(f) === path);
       if (index >= 0) {
         scrollTargetRef.current = path;
+        setHighlightedFile(path);
         virtualizer.scrollToIndex(index, { align: 'start' });
       }
     },
@@ -236,6 +238,12 @@ export function DiffView(props: DiffViewProps) {
               ref={virtualizer.measureElement}
             >
               <FileBlock
+                highlighted={highlightedFile === filePath}
+                onHighlightEnd={() => {
+                  if (highlightedFile === filePath) {
+                    setHighlightedFile(null);
+                  }
+                }}
                 file={file}
                 viewMode={viewMode}
                 collapsed={collapsedFiles.has(filePath)}
