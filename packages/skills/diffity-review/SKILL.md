@@ -1,7 +1,7 @@
 ---
 name: diffity-review
 description: Review current diff and leave comments using diffity agent commands
-user-invokable: true
+user-invocable: true
 ---
 
 # Diffity Review Skill
@@ -32,11 +32,11 @@ You are reviewing a diff and leaving inline comments using the `{{binary}} agent
 ## Prerequisites
 
 1. Check that `{{binary}}` is available: run `which {{binary}}`. If not found, {{install_hint}}.
-2. Check that a review session exists: run `cat .diffity/current-session`. If the file doesn't exist or is stale, tell the user to start diffity first (e.g. `{{binary}}` or `{{binary}} --staged`).
+2. Check that a review session exists: run `cat .diffity/current-session`. If the file doesn't exist or is stale, tell the user to start diffity first (e.g. `{{binary}}`).
 
 ## Instructions
 
-1. Read the current diff using `git diff` (for working tree changes) or `git diff --staged` (for staged changes). Check `.diffity/current-session` to determine which ref is active.
+1. Read the current diff using `git diff`. Check `.diffity/current-session` to determine which ref is active.
 2. For each changed file, read the **entire file** (not just the diff hunks) to understand the full context. This prevents false positives from missing surrounding code.
 3. Analyze the code changes thoroughly. If a `focus` argument was provided, concentrate on that area. Otherwise look for:
    - Bugs, logic errors, off-by-one errors

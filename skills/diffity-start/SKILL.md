@@ -3,7 +3,7 @@ name: diffity-start
 description: >-
   Start the diffity diff viewer server for the current working tree or staged
   changes
-user-invokable: true
+user-invocable: true
 ---
 
 # Diffity Start Skill
@@ -13,11 +13,8 @@ You are starting the diffity diff viewer so the user can see their changes in th
 ## Instructions
 
 1. Check that `diffity` is available: run `which diffity`. If not found, install it with `npm install -g diffity`.
-2. Determine which mode to start in:
-   - If the user said "staged" or there are staged changes they want to review: `diffity --staged`
-   - Otherwise default to: `diffity`
-3. Start the server using the Bash tool with `run_in_background: true`:
-   - Command: `diffity` (or `diffity --staged`)
+2. Start the server using the Bash tool with `run_in_background: true`:
+   - Command: `diffity`
    - Do NOT use `&` or `--quiet` — let the Bash tool handle backgrounding
    - The browser will open automatically and the session is auto-created on startup
 4. Wait 2 seconds, then verify the session exists by checking that `.diffity/current-session` file is present.

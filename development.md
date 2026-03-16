@@ -128,7 +128,6 @@ npm run test:watch -w @diffity/ui
 
 ```bash
 diffity-dev                        # Working tree changes
-diffity-dev --staged               # Staged changes
 diffity-dev HEAD~1                 # Last commit vs working tree
 diffity-dev HEAD~3                 # Last 3 commits vs working tree
 diffity-dev main..feature          # Compare branches

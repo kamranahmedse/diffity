@@ -12,7 +12,6 @@ Run `diffity` inside any git repo — your browser opens with a GitHub-style, sy
 
 ```bash
 diffity                    # working tree changes
-diffity --staged           # staged changes
 diffity HEAD~1             # last commit
 diffity HEAD~3             # last 3 commits
 diffity main..feature      # compare branches
@@ -24,7 +23,7 @@ diffity v1.0.0..v2.0.0    # compare tags
 Install the skills for your coding agent (Claude Code, Cursor, Codex, etc.):
 
 ```bash
-npx skills add kamrify/diffity
+npx skills add kamranahmedse/diffity
 ```
 
 Then use the slash commands:
@@ -46,7 +45,6 @@ You can focus the review on what you care about: `/diffity-review security` or `
 ## Options
 
 ```
---staged        Show staged changes
 --port <port>   Custom port (default: 5391)
 --no-open       Don't open browser
 --dark          Dark mode

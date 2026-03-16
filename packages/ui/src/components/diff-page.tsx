@@ -259,9 +259,6 @@ export function DiffPage(props: DiffPageProps) {
         <div className="mt-4 flex flex-col gap-1.5 items-center">
           <p className="text-xs text-text-muted mb-1">Try one of these</p>
           <code className="inline-block px-3 py-1 bg-bg-secondary border border-border rounded-md font-mono text-xs text-text">
-            diffity --staged
-          </code>
-          <code className="inline-block px-3 py-1 bg-bg-secondary border border-border rounded-md font-mono text-xs text-text">
             diffity HEAD~1
           </code>
           <code className="inline-block px-3 py-1 bg-bg-secondary border border-border rounded-md font-mono text-xs text-text">

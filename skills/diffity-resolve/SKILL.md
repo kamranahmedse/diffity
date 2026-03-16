@@ -1,7 +1,7 @@
 ---
 name: diffity-resolve
 description: Read open review comments and resolve them by making code fixes
-user-invokable: true
+user-invocable: true
 ---
 
 # Diffity Resolve Skill
