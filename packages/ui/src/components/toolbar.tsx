@@ -128,17 +128,17 @@ export function Toolbar(props: ToolbarProps) {
   const { copied, copy } = useCopy();
   const { currentIndex, count: unresolvedCount, goToPrevious, goToNext } = useThreadNavigation(threads, onScrollToThread);
 
-  const baseBtn = 'px-2.5 py-1 text-xs text-text-secondary transition-colors duration-150 cursor-pointer';
-  const activeBtn = 'bg-accent text-white';
-  const inactiveBtn = 'bg-bg hover:bg-hover hover:text-text';
+  const baseBtn = 'px-2.5 py-1 text-xs text-text-secondary transition-colors duration-150 cursor-pointer border';
+  const activeBtn = 'bg-accent text-white border-accent';
+  const inactiveBtn = 'bg-bg hover:bg-hover hover:text-text border-border';
 
   const iconBtn = 'p-1.5 rounded-md text-text-muted hover:text-text hover:bg-hover transition-colors cursor-pointer';
 
   return (
     <div className="flex items-center gap-3 px-4 py-1.5 bg-bg-secondary border-b border-border font-sans text-xs">
-      <div className="flex items-center border border-border rounded-md overflow-hidden">
+      <div className="flex items-center">
         <button
-          className={cn(baseBtn, 'flex items-center gap-1.5', viewMode === 'unified' ? activeBtn : inactiveBtn)}
+          className={cn(baseBtn, 'flex items-center gap-1.5 rounded-l-md', viewMode === 'unified' ? `${activeBtn} z-10` : inactiveBtn)}
           onClick={() => onViewModeChange('unified')}
           title="Unified view (u)"
         >
@@ -146,7 +146,7 @@ export function Toolbar(props: ToolbarProps) {
           Unified
         </button>
         <button
-          className={cn(baseBtn, 'flex items-center gap-1.5', viewMode === 'split' ? activeBtn : inactiveBtn)}
+          className={cn(baseBtn, 'flex items-center gap-1.5 rounded-r-md -ml-px', viewMode === 'split' ? `${activeBtn} z-10` : inactiveBtn)}
           onClick={() => onViewModeChange('split')}
           title="Split view (s)"
         >

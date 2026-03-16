@@ -336,7 +336,7 @@ export function FileBlock(props: FileBlockProps) {
       onAnimationEnd={onHighlightEnd}
     >
       <div
-        className={`flex items-center gap-2 px-3 py-1.5 border-border text-xs sticky top-0 z-10 shadow-sticky ${highlighted ? 'animate-flash-highlight' : 'bg-bg-secondary'}`}
+        className={`group flex items-center gap-2 px-3 py-1.5 border-border text-xs sticky top-0 z-10 shadow-sticky ${highlighted ? 'animate-flash-highlight' : 'bg-bg-secondary'}`}
       >
         <IconButton
           className="text-[10px] w-4 h-4 shrink-0"
@@ -361,7 +361,7 @@ export function FileBlock(props: FileBlockProps) {
         </button>
         <button
           onClick={() => copyPath(filePath)}
-          className="shrink-0 text-text-muted hover:text-text transition-colors cursor-pointer opacity-0 group-hover:opacity-100"
+          className="shrink-0 text-text-muted hover:text-text transition-colors cursor-pointer"
           title="Copy file path"
         >
           {pathCopied ? (
