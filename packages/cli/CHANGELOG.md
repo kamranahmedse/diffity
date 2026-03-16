@@ -1,5 +1,11 @@
 # diffity
 
+## 0.1.4
+
+### Patch Changes
+
+- Fix chunk loading indicator
+
 ## 0.1.3
 
 ### Patch Changes
