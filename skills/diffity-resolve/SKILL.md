@@ -44,19 +44,12 @@ diffity agent reply <id> --body "<text>"
 2. If there are no open threads, tell the user there's nothing to resolve.
 3. For each open thread:
    a. **Skip** general comments (filePath `__general__`) — these are summaries, not actionable code changes.
-   b. **Skip** threads explicitly tagged with the literal text `[question]` or `[nit]` in the comment body — these don't require code changes. Tell the user you skipped them and why.
-      - **Important**: Do NOT skip comments just because they are phrased as questions. Many review comments use questions to request changes or ask the agent to analyze the code (e.g. "missing something here?", "should this be X instead?", "is this handling Y correctly?"). These require you to read the code, analyze, and either make a fix or reply with your findings.
-   c. Read the comment body from the JSON output and understand what is being asked.
-   d. Read the relevant source file to understand the full context around the commented lines.
-   e. Decide the appropriate action:
-      - If the comment requests a specific code change → make the change using the Edit tool, then resolve the thread:
-        ```
-        diffity agent resolve <thread-id> --summary "Fixed: <brief description of what was changed>"
-        ```
-      - If the comment asks you to review/analyze the code (e.g. "missing something?", "is this right?") → analyze the code thoroughly, then reply with your findings:
-        ```
-        diffity agent reply <thread-id> --body "<your analysis>"
-        ```
-        If your analysis reveals a problem, also fix it and resolve the thread. If the code looks correct, reply explaining why it's fine.
+   b. **Skip** threads tagged `[question]` or `[nit]` — these don't require code changes. Tell the user you skipped them and why.
+   c. Read the comment body from the JSON output and understand what change is requested.
+   d. Read the relevant source file to understand the full context around the commented lines, then make the requested code change using the Edit tool.
+   e. After making the change, resolve the thread with a summary:
+      ```
+      diffity agent resolve <thread-id> --summary "Fixed: <brief description of what was changed>"
+      ```
 4. After resolving all applicable threads, run `diffity agent list` to confirm status.
 5. Tell the user to check the browser — resolved status will appear within 2 seconds via polling.
