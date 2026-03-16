@@ -4,7 +4,6 @@ import { DiffStats } from './diff-stats';
 import { StatusBadge } from './ui/status-badge';
 import { ChevronIcon } from './icons/chevron-icon';
 import { FolderIcon } from './icons/folder-icon';
-import { FileIcon } from './icons/file-icon';
 import { CommentIcon } from './icons/comment-icon';
 
 interface FileTreeItemProps {
@@ -27,7 +26,7 @@ export function FileTreeItem(props: FileTreeItemProps) {
     return (
       <>
         <button
-          className="flex items-center gap-1.5 w-full py-0.5 pr-2 text-left text-sm hover:bg-hover cursor-pointer"
+          className="flex items-center gap-1.5 w-full py-1 pr-2 text-left text-[13px] hover:bg-hover cursor-pointer"
           style={{ paddingLeft: `${paddingLeft}px` }}
           onClick={() => onToggleDir(node.path)}
         >
@@ -59,25 +58,24 @@ export function FileTreeItem(props: FileTreeItemProps) {
   return (
     <button
       className={cn(
-        'flex items-center gap-1.5 w-full py-0.5 pr-2 text-left text-sm cursor-pointer border-l-2',
+        'flex items-center gap-1.5 w-full py-1 pr-2 text-left text-[13px] cursor-pointer border-l-2',
         isActive
           ? 'bg-active border-l-accent'
           : 'border-l-transparent hover:bg-hover',
-        isReviewed && 'opacity-60'
+        isReviewed && 'opacity-50'
       )}
       style={{ paddingLeft: `${paddingLeft + 15}px` }}
       onClick={() => onFileClick(node.path)}
     >
-      <FileIcon />
       <StatusBadge status={node.file.status} compact />
       <span className={cn('flex-1 min-w-0 truncate', isReviewed && 'line-through')}>
         {node.name}
       </span>
       {hasComments && (
-        <CommentIcon className="w-3.5 h-3.5 text-accent shrink-0" />
+        <CommentIcon className="w-3 h-3 text-accent shrink-0" />
       )}
       {isReviewed ? (
-        <span className="text-added text-xs shrink-0" title="Viewed">&#10003;</span>
+        <span className="text-added text-[10px] shrink-0" title="Viewed">&#10003;</span>
       ) : (
         <DiffStats additions={node.file.additions} deletions={node.file.deletions} />
       )}

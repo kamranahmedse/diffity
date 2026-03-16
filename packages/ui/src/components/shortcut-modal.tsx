@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react';
-import { IconButton } from './ui/icon-button';
+import { XIcon } from './icons/x-icon';
 
 interface ShortcutModalProps {
   onClose: () => void;
@@ -52,7 +52,7 @@ export function ShortcutModal(props: ShortcutModalProps) {
   return (
     <dialog
       ref={dialogRef}
-      className="bg-bg border border-border rounded-lg shadow-md w-[480px] max-w-[90vw] max-h-[80vh] overflow-y-auto backdrop:bg-black/50 p-0"
+      className="bg-bg text-text border border-border rounded-xl shadow-md w-[420px] max-w-[90vw] max-h-[80vh] overflow-y-auto backdrop:bg-black/60 backdrop:backdrop-blur-sm p-0 m-auto fixed inset-0 h-fit"
       onClose={onClose}
       onClick={(e) => {
         if (e.target === dialogRef.current) {
@@ -60,25 +60,28 @@ export function ShortcutModal(props: ShortcutModalProps) {
         }
       }}
     >
-      <div className="flex items-center justify-between p-4 border-b border-border">
-        <h2 className="text-lg font-semibold">Keyboard shortcuts</h2>
-        <IconButton className="text-2xl w-8 h-8" onClick={onClose}>
-          &times;
-        </IconButton>
+      <div className="flex items-center justify-between px-5 py-3.5 border-b border-border">
+        <h2 className="text-sm font-semibold">Keyboard shortcuts</h2>
+        <button
+          className="p-1 rounded-md text-text-muted hover:text-text hover:bg-hover cursor-pointer"
+          onClick={onClose}
+        >
+          <XIcon className="w-4 h-4" />
+        </button>
       </div>
-      <div className="p-4">
+      <div className="px-5 py-4">
         {shortcuts.map(group => (
-          <div key={group.category} className="mb-4 last:mb-0">
-            <h3 className="text-sm font-semibold text-text-secondary mb-2 uppercase tracking-wide">
+          <div key={group.category} className="mb-5 last:mb-0">
+            <h3 className="text-[10px] font-semibold text-text-muted mb-2.5 uppercase tracking-widest">
               {group.category}
             </h3>
-            <div className="flex flex-col gap-2">
+            <div className="flex flex-col gap-1.5">
               {group.items.map(item => (
-                <div key={item.key} className="flex items-center gap-3">
-                  <kbd className="inline-flex items-center justify-center min-w-7 h-6 px-1.5 bg-bg-secondary border border-border rounded font-mono text-xs font-semibold shadow-[inset_0_-1px_0_var(--color-border)]">
+                <div key={item.key} className="flex items-center justify-between py-0.5">
+                  <span className="text-xs text-text-secondary">{item.description}</span>
+                  <kbd className="inline-flex items-center justify-center min-w-6 h-5 px-1.5 bg-bg-secondary border border-border rounded font-mono text-[11px] text-text-muted shadow-[inset_0_-1px_0_var(--color-border)]">
                     {item.key}
                   </kbd>
-                  <span className="text-sm text-text-secondary">{item.description}</span>
                 </div>
               ))}
             </div>

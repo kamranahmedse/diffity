@@ -256,21 +256,21 @@ export function DiffPage(props: DiffPageProps) {
 
   if (diff && diff.files.length === 0 && !diffLoading) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-screen bg-bg text-text font-sans gap-3">
-        <div className="text-added opacity-50 mb-2">
+      <div className="flex flex-col items-center justify-center min-h-screen bg-bg text-text font-sans gap-2">
+        <div className="text-added opacity-40 mb-1">
           <CheckCircleIcon />
         </div>
-        <h2 className="text-xl text-text-secondary">No changes found</h2>
-        <p className="text-text-muted">There are no differences to display.</p>
-        <div className="mt-4 flex flex-col gap-2 items-center">
-          <p className="text-sm text-text-muted mb-1">Try one of these</p>
-          <code className="inline-block px-3 py-1 bg-bg-secondary border border-border rounded-md font-mono text-sm text-text">
+        <h2 className="text-base font-medium text-text-secondary">No changes found</h2>
+        <p className="text-xs text-text-muted">There are no differences to display.</p>
+        <div className="mt-4 flex flex-col gap-1.5 items-center">
+          <p className="text-xs text-text-muted mb-1">Try one of these</p>
+          <code className="inline-block px-3 py-1 bg-bg-secondary border border-border rounded-md font-mono text-xs text-text">
             diffity --staged
           </code>
-          <code className="inline-block px-3 py-1 bg-bg-secondary border border-border rounded-md font-mono text-sm text-text">
+          <code className="inline-block px-3 py-1 bg-bg-secondary border border-border rounded-md font-mono text-xs text-text">
             diffity HEAD~1
           </code>
-          <code className="inline-block px-3 py-1 bg-bg-secondary border border-border rounded-md font-mono text-sm text-text">
+          <code className="inline-block px-3 py-1 bg-bg-secondary border border-border rounded-md font-mono text-xs text-text">
             diffity main..feature
           </code>
         </div>
@@ -293,6 +293,7 @@ export function DiffPage(props: DiffPageProps) {
         onHideWhitespaceChange={setHideWhitespace}
         theme={theme}
         onToggleTheme={toggleTheme}
+        onShowHelp={() => setShowHelp(true)}
         diff={diff || undefined}
         diffRef={refParam}
         threads={threads}

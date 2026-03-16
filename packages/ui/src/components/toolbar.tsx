@@ -11,6 +11,11 @@ import { ChevronDownIcon } from './icons/chevron-down-icon';
 import { TrashIcon } from './icons/trash-icon';
 import { UnifiedViewIcon } from './icons/unified-view-icon';
 import { SplitViewIcon } from './icons/split-view-icon';
+import { SunIcon } from './icons/sun-icon';
+import { MoonIcon } from './icons/moon-icon';
+import { EyeIcon } from './icons/eye-icon';
+import { EyeOffIcon } from './icons/eye-off-icon';
+import { KeyboardIcon } from './icons/keyboard-icon';
 import { ConfirmDialog } from './ui/confirm-dialog';
 import { GENERAL_THREAD_FILE_PATH } from '../types/comment';
 import type { ViewMode } from '../lib/diff-utils';
@@ -24,6 +29,7 @@ interface ToolbarProps {
   onHideWhitespaceChange: (hide: boolean) => void;
   theme: 'light' | 'dark';
   onToggleTheme: () => void;
+  onShowHelp: () => void;
   diff?: ParsedDiff;
   diffRef?: string;
   threads: CommentThread[];
@@ -111,6 +117,7 @@ export function Toolbar(props: ToolbarProps) {
     onHideWhitespaceChange,
     theme,
     onToggleTheme,
+    onShowHelp,
     diff,
     diffRef,
     threads,
@@ -121,95 +128,101 @@ export function Toolbar(props: ToolbarProps) {
   const { copied, copy } = useCopy();
   const { currentIndex, count: unresolvedCount, goToPrevious, goToNext } = useThreadNavigation(threads, onScrollToThread);
 
-  const baseBtn = 'px-3 py-1 border border-border text-sm text-text-secondary transition-colors duration-150 cursor-pointer';
-  const activeBtn = 'bg-accent text-white border-accent';
+  const baseBtn = 'px-2.5 py-1 text-xs text-text-secondary transition-colors duration-150 cursor-pointer';
+  const activeBtn = 'bg-accent text-white';
   const inactiveBtn = 'bg-bg hover:bg-hover hover:text-text';
 
+  const iconBtn = 'p-1.5 rounded-md text-text-muted hover:text-text hover:bg-hover transition-colors cursor-pointer';
+
   return (
-    <div className="flex items-center gap-4 px-4 py-2 bg-bg-secondary border-b border-border font-sans text-sm">
-      <div className="flex items-center">
+    <div className="flex items-center gap-3 px-4 py-1.5 bg-bg-secondary border-b border-border font-sans text-xs">
+      <div className="flex items-center border border-border rounded-md overflow-hidden">
         <button
-          className={cn(baseBtn, 'rounded-l-md border-r-0 flex items-center gap-1.5', viewMode === 'unified' ? activeBtn : inactiveBtn)}
+          className={cn(baseBtn, 'flex items-center gap-1.5', viewMode === 'unified' ? activeBtn : inactiveBtn)}
           onClick={() => onViewModeChange('unified')}
           title="Unified view (u)"
         >
-          <UnifiedViewIcon className="w-4 h-4" />
+          <UnifiedViewIcon className="w-3.5 h-3.5" />
           Unified
         </button>
         <button
-          className={cn(baseBtn, 'rounded-r-md border-l-0 flex items-center gap-1.5', viewMode === 'split' ? activeBtn : inactiveBtn)}
+          className={cn(baseBtn, 'flex items-center gap-1.5', viewMode === 'split' ? activeBtn : inactiveBtn)}
           onClick={() => onViewModeChange('split')}
           title="Split view (s)"
         >
-          <SplitViewIcon className="w-4 h-4" />
+          <SplitViewIcon className="w-3.5 h-3.5" />
           Split
         </button>
       </div>
-      <div className="flex items-center gap-px">
-        <label className="flex items-center gap-2 text-text-secondary cursor-pointer">
-          <input
-            type="checkbox"
-            checked={hideWhitespace}
-            onChange={e => onHideWhitespaceChange(e.target.checked)}
-            className="cursor-pointer"
-          />
-          <span>Hide whitespace</span>
-        </label>
-      </div>
-      <div className="flex items-center gap-px">
+      <button
+        className={cn(iconBtn, 'flex items-center gap-1.5 text-xs', hideWhitespace && 'text-accent')}
+        onClick={() => onHideWhitespaceChange(!hideWhitespace)}
+        title={hideWhitespace ? 'Show whitespace' : 'Hide whitespace'}
+      >
+        {hideWhitespace ? <EyeOffIcon className="w-3.5 h-3.5" /> : <EyeIcon className="w-3.5 h-3.5" />}
+        <span className="text-text-secondary">Whitespace</span>
+      </button>
+      <div className="flex items-center gap-0.5">
         <button
-          className={cn(baseBtn, 'rounded-md', inactiveBtn)}
+          className={iconBtn}
           onClick={onToggleTheme}
-          title="Toggle theme"
+          title={theme === 'light' ? 'Switch to dark mode' : 'Switch to light mode'}
         >
-          {theme === 'light' ? 'Dark' : 'Light'}
+          {theme === 'light' ? <MoonIcon className="w-3.5 h-3.5" /> : <SunIcon className="w-3.5 h-3.5" />}
+        </button>
+        <button
+          className={iconBtn}
+          onClick={onShowHelp}
+          title="Keyboard shortcuts (?)"
+        >
+          <KeyboardIcon className="w-3.5 h-3.5" />
         </button>
       </div>
       {unresolvedCount > 0 && (
         <div className="flex items-center gap-2 ml-auto">
           <div className="flex items-center border border-border rounded-md overflow-hidden">
-            <span className="text-xs text-text-muted px-2.5 py-1">
-              {currentIndex >= 0 ? `${currentIndex + 1}/${unresolvedCount}` : unresolvedCount} comment{unresolvedCount !== 1 ? 's' : ''}
+            <span className="text-xs text-text-muted px-2 py-1">
+              {currentIndex >= 0 ? `${currentIndex + 1}/${unresolvedCount}` : unresolvedCount}
             </span>
             <button
               onClick={goToPrevious}
-              className="px-1.5 py-1 border-l border-border text-text-secondary hover:bg-hover hover:text-text transition-colors cursor-pointer"
+              className="px-1 py-1 border-l border-border text-text-muted hover:bg-hover hover:text-text transition-colors cursor-pointer"
               title="Previous comment"
             >
-              <ChevronUpIcon className="w-3.5 h-3.5" />
+              <ChevronUpIcon className="w-3 h-3" />
             </button>
             <button
               onClick={goToNext}
-              className="px-1.5 py-1 border-l border-border text-text-secondary hover:bg-hover hover:text-text transition-colors cursor-pointer"
+              className="px-1 py-1 border-l border-border text-text-muted hover:bg-hover hover:text-text transition-colors cursor-pointer"
               title="Next comment"
             >
-              <ChevronDownIcon className="w-3.5 h-3.5" />
+              <ChevronDownIcon className="w-3 h-3" />
             </button>
           </div>
-          <div className="flex items-center">
+          <div className="flex items-center border border-border rounded-md overflow-hidden">
             <button
               onClick={() => copy(formatThreadsForCopy(threads, diff, diffRef))}
-              className={cn(baseBtn, 'rounded-l-md flex items-center gap-1.5', inactiveBtn)}
+              className={cn(baseBtn, 'flex items-center gap-1.5', inactiveBtn)}
               title="Copy unresolved comments to clipboard"
             >
               {copied ? (
                 <>
-                  <CheckIcon className="w-3.5 h-3.5 text-added" />
+                  <CheckIcon className="w-3 h-3 text-added" />
                   Copied
                 </>
               ) : (
                 <>
-                  <CopyIcon className="w-3.5 h-3.5" />
-                  Copy comments
+                  <CopyIcon className="w-3 h-3" />
+                  Copy
                 </>
               )}
             </button>
             <button
               onClick={() => setShowDeleteConfirm(true)}
-              className={cn(baseBtn, 'rounded-r-md border-l-0 flex items-center self-stretch', inactiveBtn)}
+              className={cn(baseBtn, 'flex items-center border-l border-border', inactiveBtn)}
               title="Delete all comments"
             >
-              <TrashIcon className="w-3.5 h-3.5" />
+              <TrashIcon className="w-3 h-3" />
             </button>
           </div>
         </div>

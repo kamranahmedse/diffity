@@ -7,6 +7,7 @@ import { CommentBubble } from './comment-bubble';
 import { TrashIcon } from './icons/trash-icon';
 import { CommentIcon } from './icons/comment-icon';
 import { ThreadBadge } from './ui/thread-badge';
+import { cn } from '../lib/cn';
 
 interface CommentThreadProps {
   thread: CommentThreadType;
@@ -27,34 +28,48 @@ function StatusBadge(props: { status: string }) {
 
   switch (status) {
     case 'resolved':
-      return <ThreadBadge variant="resolved" />;
+      return <ThreadBadge variant='resolved' />;
     case 'dismissed':
-      return <ThreadBadge variant="dismissed" />;
+      return <ThreadBadge variant='dismissed' />;
     default:
       return null;
   }
 }
 
 export function CommentThread(props: CommentThreadProps) {
-  const { thread, onReply, onResolve, onUnresolve, onDeleteComment, onDeleteThread, currentAuthor, colSpan, viewMode, side, currentCode } = props;
+  const {
+    thread,
+    onReply,
+    onResolve,
+    onUnresolve,
+    onDeleteComment,
+    onDeleteThread,
+    currentAuthor,
+    colSpan,
+    viewMode,
+    side,
+    currentCode,
+  } = props;
   const [showReply, setShowReply] = useState(false);
   const [isCollapsed, setIsCollapsed] = useState(isThreadResolved(thread));
 
-  const isOutdated = thread.anchorContent && currentCode && thread.anchorContent !== currentCode;
+  const isOutdated =
+    thread.anchorContent && currentCode && thread.anchorContent !== currentCode;
 
   if (isCollapsed) {
     const collapsedContent = (
-      <td colSpan={colSpan} className="px-4 py-2 border-l border-border">
+      <td colSpan={colSpan} className='px-4 py-2 border-l border-border'>
         <button
           onClick={() => setIsCollapsed(false)}
-          className="flex items-center gap-2 text-xs text-text-muted hover:text-text-secondary transition-colors cursor-pointer"
+          className='flex items-center gap-2 text-xs text-text-muted hover:text-text-secondary transition-colors cursor-pointer'
         >
-          <CommentIcon className="w-4 h-4" />
-          <span>{thread.comments.length} comment{thread.comments.length !== 1 ? 's' : ''}</span>
+          <CommentIcon className='w-4 h-4' />
+          <span>
+            {thread.comments.length} comment
+            {thread.comments.length !== 1 ? 's' : ''}
+          </span>
           <StatusBadge status={thread.status} />
-          {isOutdated && (
-            <ThreadBadge variant="outdated" />
-          )}
+          {isOutdated && <ThreadBadge variant='outdated' />}
         </button>
       </td>
     );
@@ -63,9 +78,15 @@ export function CommentThread(props: CommentThreadProps) {
       return (
         <tr data-thread-id={thread.id}>
           {side === 'old' ? (
-            <>{collapsedContent}<td colSpan={colSpan}></td></>
+            <>
+              {collapsedContent}
+              <td colSpan={colSpan}></td>
+            </>
           ) : (
-            <><td colSpan={colSpan}></td>{collapsedContent}</>
+            <>
+              <td colSpan={colSpan}></td>
+              {collapsedContent}
+            </>
           )}
         </tr>
       );
@@ -74,28 +95,34 @@ export function CommentThread(props: CommentThreadProps) {
     return <tr data-thread-id={thread.id}>{collapsedContent}</tr>;
   }
 
-  const lineLabel = thread.startLine === thread.endLine
-    ? `Line ${thread.startLine}`
-    : `Lines ${thread.startLine}–${thread.endLine}`;
+  const lineLabel =
+    thread.startLine === thread.endLine
+      ? `Line ${thread.startLine}`
+      : `Lines ${thread.startLine}–${thread.endLine}`;
 
   const resolved = isThreadResolved(thread);
 
   const threadContent = (
-    <td colSpan={colSpan} className="px-4 py-3 border-l border-border">
-      <div className="border border-border rounded-lg overflow-hidden max-w-[700px]">
-        <div className="flex items-center justify-between px-3 py-1.5 bg-bg-secondary border-b border-border">
-          <div className="flex items-center gap-2">
-            <span className="text-[11px] text-text-muted font-mono">{lineLabel}</span>
+    <td
+      colSpan={colSpan}
+      className={cn('px-4 py-3', {
+        'border-l border-border': side === 'new' && viewMode === 'split',
+      })}
+    >
+      <div className='border border-border rounded-lg overflow-hidden max-w-[700px]'>
+        <div className='flex items-center justify-between px-3 py-1.5 bg-bg-secondary border-b border-border'>
+          <div className='flex items-center gap-2'>
+            <span className='text-[11px] text-text-muted font-mono'>
+              {lineLabel}
+            </span>
             <StatusBadge status={thread.status} />
-            {isOutdated && (
-              <ThreadBadge variant="outdated" />
-            )}
+            {isOutdated && <ThreadBadge variant='outdated' />}
           </div>
-          <div className="flex items-center gap-1">
+          <div className='flex items-center gap-1'>
             {resolved ? (
               <button
                 onClick={() => onUnresolve(thread.id)}
-                className="text-[11px] text-text-muted hover:text-text-secondary transition-colors cursor-pointer"
+                className='text-[11px] text-text-muted hover:text-text-secondary transition-colors cursor-pointer'
               >
                 Reopen
               </button>
@@ -105,23 +132,23 @@ export function CommentThread(props: CommentThreadProps) {
                   onResolve(thread.id);
                   setIsCollapsed(true);
                 }}
-                className="text-[11px] text-text-muted hover:text-text-secondary transition-colors cursor-pointer"
+                className='text-[11px] text-text-muted hover:text-text-secondary transition-colors cursor-pointer'
               >
                 Resolve
               </button>
             )}
             <button
               onClick={() => setIsCollapsed(true)}
-              className="text-[11px] text-text-muted hover:text-text-secondary transition-colors cursor-pointer ml-2"
+              className='text-[11px] text-text-muted hover:text-text-secondary transition-colors cursor-pointer ml-2'
             >
               Collapse
             </button>
             <button
               onClick={() => onDeleteThread(thread.id)}
-              className="text-text-muted hover:text-deleted transition-colors cursor-pointer ml-1"
-              title="Delete thread"
+              className='text-text-muted hover:text-deleted transition-colors cursor-pointer ml-1'
+              title='Delete thread'
             >
-              <TrashIcon className="w-3.5 h-3.5" />
+              <TrashIcon className='w-3.5 h-3.5' />
             </button>
           </div>
         </div>
@@ -135,22 +162,22 @@ export function CommentThread(props: CommentThreadProps) {
           ))}
         </div>
         {showReply ? (
-          <div className="px-3 py-2 border-t border-border">
+          <div className='px-3 py-2 border-t border-border'>
             <CommentForm
               onSubmit={(body) => {
                 onReply(thread.id, body, currentAuthor);
                 setShowReply(false);
               }}
               onCancel={() => setShowReply(false)}
-              placeholder="Reply..."
-              submitLabel="Reply"
+              placeholder='Reply...'
+              submitLabel='Reply'
             />
           </div>
         ) : (
-          <div className="px-3 py-2 border-t border-border">
+          <div className='px-3 py-2 border-t border-border'>
             <button
               onClick={() => setShowReply(true)}
-              className="text-xs text-accent hover:text-accent-hover transition-colors cursor-pointer"
+              className='text-xs text-accent hover:text-accent-hover transition-colors cursor-pointer'
             >
               Reply
             </button>
@@ -164,9 +191,15 @@ export function CommentThread(props: CommentThreadProps) {
     return (
       <tr data-thread-id={thread.id}>
         {side === 'old' ? (
-          <>{threadContent}<td colSpan={colSpan}></td></>
+          <>
+            {threadContent}
+            <td colSpan={colSpan}></td>
+          </>
         ) : (
-          <><td colSpan={colSpan}></td>{threadContent}</>
+          <>
+            <td colSpan={colSpan}></td>
+            {threadContent}
+          </>
         )}
       </tr>
     );

@@ -331,22 +331,22 @@ export function FileBlock(props: FileBlockProps) {
 
   return (
     <div
-      className={`border rounded-lg mx-4 my-4 overflow-hidden ${highlighted ? 'animate-flash-highlight-border' : 'border-border'}`}
+      className={`border rounded-lg mx-4 my-3 overflow-hidden ${highlighted ? 'animate-flash-highlight-border' : 'border-border'}`}
       id={`file-${encodeURIComponent(filePath)}`}
       onAnimationEnd={onHighlightEnd}
     >
       <div
-        className={`flex items-center gap-2 px-3 py-2 border-b border-border text-sm sticky top-0 z-10 shadow-sticky ${highlighted ? 'animate-flash-highlight' : 'bg-bg-secondary'}`}
+        className={`flex items-center gap-2 px-3 py-1.5 border-border text-xs sticky top-0 z-10 shadow-sticky ${highlighted ? 'animate-flash-highlight' : 'bg-bg-secondary'}`}
       >
         <IconButton
-          className="text-[10px] w-5 h-5 shrink-0"
+          className="text-[10px] w-4 h-4 shrink-0"
           onClick={() => onToggleCollapse(filePath)}
           title={collapsed ? 'Expand' : 'Collapse'}
         >
           {collapsed ? '\u25b6' : '\u25bc'}
         </IconButton>
         <button
-          className="font-mono text-sm truncate text-left cursor-pointer hover:text-text-link transition-colors"
+          className="font-mono text-xs truncate text-left cursor-pointer hover:text-accent transition-colors"
           onClick={() => onToggleCollapse(filePath)}
         >
           {showRename ? (
@@ -361,21 +361,21 @@ export function FileBlock(props: FileBlockProps) {
         </button>
         <button
           onClick={() => copyPath(filePath)}
-          className="shrink-0 text-text-muted hover:text-text transition-colors cursor-pointer"
+          className="shrink-0 text-text-muted hover:text-text transition-colors cursor-pointer opacity-0 group-hover:opacity-100"
           title="Copy file path"
         >
           {pathCopied ? (
-            <CheckIcon className="w-3.5 h-3.5 text-added" />
+            <CheckIcon className="w-3 h-3 text-added" />
           ) : (
-            <CopyIcon className="w-3.5 h-3.5" />
+            <CopyIcon className="w-3 h-3" />
           )}
         </button>
         {file.status !== 'modified' && <StatusBadge status={file.status} />}
         {file.isBinary && <Badge className="bg-bg-tertiary text-text-muted">Binary</Badge>}
-        <div className="ml-auto flex items-center gap-3 shrink-0">
+        <div className="ml-auto flex items-center gap-2.5 shrink-0">
           {(fileThreads.length + orphanedThreads.length) > 0 && (
-            <span className="text-xs text-text-muted flex items-center gap-1">
-              <CommentIcon className="w-3.5 h-3.5" />
+            <span className="text-[11px] text-text-muted flex items-center gap-1">
+              <CommentIcon className="w-3 h-3" />
               {fileThreads.length + orphanedThreads.length}
               {orphanedThreads.length > 0 && (
                 <ThreadBadge variant="outdated" size="sm">
@@ -388,22 +388,22 @@ export function FileBlock(props: FileBlockProps) {
             <DiffStats additions={file.additions} deletions={file.deletions} />
             <div className="flex gap-px">
               {Array.from({ length: addBlocks }).map((_, i) => (
-                <span key={`a${i}`} className="w-2 h-2 rounded-[1px] bg-added" />
+                <span key={`a${i}`} className="w-1.5 h-1.5 rounded-sm bg-added" />
               ))}
               {Array.from({ length: delBlocks }).map((_, i) => (
-                <span key={`d${i}`} className="w-2 h-2 rounded-[1px] bg-deleted" />
+                <span key={`d${i}`} className="w-1.5 h-1.5 rounded-sm bg-deleted" />
               ))}
               {Array.from({ length: neutralBlocks }).map((_, i) => (
-                <span key={`n${i}`} className="w-2 h-2 rounded-[1px] bg-border" />
+                <span key={`n${i}`} className="w-1.5 h-1.5 rounded-sm bg-border" />
               ))}
             </div>
           </div>
-          <label className="flex items-center gap-1.5 text-xs text-text-muted cursor-pointer select-none hover:text-text transition-colors">
+          <label className="flex items-center gap-1.5 text-[11px] text-text-muted cursor-pointer select-none hover:text-text transition-colors">
             <input
               type="checkbox"
               checked={reviewed}
               onChange={() => onReviewedChange(filePath, !reviewed)}
-              className="accent-added cursor-pointer"
+              className="accent-added cursor-pointer w-3 h-3"
             />
             Viewed
           </label>
