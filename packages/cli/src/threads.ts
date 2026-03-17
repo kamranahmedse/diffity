@@ -184,9 +184,15 @@ export function addReply(threadId: string, body: string, author: ThreadAuthor): 
     'INSERT INTO comments (id, thread_id, author_name, author_type, body, created_at) VALUES (?, ?, ?, ?, ?, ?)'
   ).run(commentId, threadId, author.name, author.type, body, now);
 
-  db.prepare(
-    'UPDATE comment_threads SET updated_at = ? WHERE id = ?'
-  ).run(now, threadId);
+  if (author.type === 'user') {
+    db.prepare(
+      'UPDATE comment_threads SET status = ?, updated_at = ? WHERE id = ?'
+    ).run('open', now, threadId);
+  } else {
+    db.prepare(
+      'UPDATE comment_threads SET updated_at = ? WHERE id = ?'
+    ).run(now, threadId);
+  }
 
   return {
     id: commentId,
