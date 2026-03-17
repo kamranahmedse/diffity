@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import type { DiffHunk } from '@diffity/parser';
 import type { DiffFile, DiffLine as DiffLineType } from '@diffity/parser';
@@ -213,25 +213,54 @@ export function FileBlock(props: FileBlockProps) {
   }, [isLineInSelection, pendingSelection, filePath, fileThreads]);
 
 
-  const syntaxMap = useMemo(() => {
+  const [syntaxMap, setSyntaxMap] = useState<Map<string, SyntaxToken[]> | undefined>(undefined);
+
+  useEffect(() => {
     if (!highlightLine) {
-      return undefined;
+      return;
     }
 
-    const map = new Map<string, SyntaxToken[]>();
-
+    const allLines: { content: string; type: string; num: number | null }[] = [];
     for (const hunk of file.hunks) {
       for (const line of hunk.lines) {
-        const highlighted = highlightLine(line.content);
-        if (highlighted && highlighted.length > 0) {
-          const num = line.type === 'delete' ? line.oldLineNumber : line.newLineNumber;
-          const key = `${line.type}-${num}`;
-          map.set(key, highlighted[0].tokens);
-        }
+        const num = line.type === 'delete' ? line.oldLineNumber : line.newLineNumber;
+        allLines.push({ content: line.content, type: line.type, num });
       }
     }
 
-    return map;
+    let cancelled = false;
+    const map = new Map<string, SyntaxToken[]>();
+    let index = 0;
+    const CHUNK_SIZE = 50;
+
+    const processChunk = () => {
+      if (cancelled) {
+        return;
+      }
+
+      const end = Math.min(index + CHUNK_SIZE, allLines.length);
+      for (let i = index; i < end; i++) {
+        const line = allLines[i];
+        const highlighted = highlightLine(line.content);
+        if (highlighted && highlighted.length > 0) {
+          const key = `${line.type}-${line.num}`;
+          map.set(key, highlighted[0].tokens);
+        }
+      }
+
+      index = end;
+      if (index < allLines.length) {
+        requestAnimationFrame(processChunk);
+      } else if (!cancelled) {
+        setSyntaxMap(new Map(map));
+      }
+    };
+
+    requestAnimationFrame(processChunk);
+
+    return () => {
+      cancelled = true;
+    };
   }, [file, highlightLine]);
 
   const gaps = useMemo(() => {
