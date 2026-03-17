@@ -72,6 +72,12 @@ range syntax (main..feature, main...feature) also work.`)
       }
     }
 
+    for (let i = 0; i < refs.length; i++) {
+      if (refs[i] === '.') {
+        refs[i] = 'work';
+      }
+    }
+
     for (const ref of refs) {
       if (!isValidGitRef(ref)) {
         console.error(pc.red(`Error: '${ref}' is not a valid git reference.`));

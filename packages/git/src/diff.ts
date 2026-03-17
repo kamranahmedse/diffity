@@ -44,6 +44,7 @@ export function resolveRef(ref: string, extraArgs: string[] = []): string {
       }
       return getUntrackedDiff(files);
     }
+    case '.':
     case 'work': {
       let raw = getDiff(['HEAD', ...extraArgs]);
       const untrackedFiles = getUntrackedFiles();
@@ -98,7 +99,7 @@ export function normalizeRef(ref: string): string {
 }
 
 export function resolveBaseRef(ref: string): string {
-  if (['staged', 'working', 'work', 'unstaged', 'untracked'].includes(ref)) {
+  if (['staged', 'working', 'work', '.', 'unstaged', 'untracked'].includes(ref)) {
     return 'HEAD';
   }
 
