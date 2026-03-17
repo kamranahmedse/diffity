@@ -69,22 +69,24 @@ The review needs a running session to add comments to, but we don't want to open
    - `[suggestion]` — Improvements that would meaningfully improve the code.
    - `[nit]` — Style or preference. Fine to ignore.
    - `[question]` — Something unclear that needs clarification from the author.
-2. For each finding, leave a comment using:
+2. For each finding, leave an inline comment using:
    ```
    {{binary}} agent comment --file <path> --line <n> [--end-line <n>] [--side new] --body "<comment>"
    ```
    - Use `--side new` (default) for comments on added/modified code
    - Use `--side old` for comments on removed code
    - Use `--end-line` when the issue spans multiple lines
-   - Be specific and actionable in your comments
-3. After leaving all inline comments, write a general comment that summarizes your overall assessment of the diff. This should cover:
-   - Overall quality verdict (e.g. "Looks good with minor issues" or "Needs significant changes before merging")
-   - Cross-cutting concerns that don't belong on any single line (architecture, naming consistency across files, missing tests, etc.)
-   - A count of findings by severity (e.g. "2 must-fix, 3 suggestions, 1 nit")
+   - Be specific and actionable — lead with the point, skip filler
+3. After leaving all inline comments, write a general comment summarizing the diff. **Do not use severity prefixes in the general comment** — prefixes are only for inline findings. The general comment should:
+   - **Lead with the verdict** (e.g. "LGTM", "Needs changes before merging", "Looks good with minor issues")
+   - Use separate paragraphs or bullets when covering multiple points — no walls of text
+   - Mention cross-cutting concerns that don't belong on any single line (architecture, naming consistency, missing tests, etc.)
+   - Include a count of findings by severity if there are any (e.g. "1 must-fix, 2 suggestions")
+   - Be direct and concise — no compliments, no filler, no narrating what the code does
    ```
    {{binary}} agent general-comment --body "<overall review summary>"
    ```
-   If there are no inline findings, still leave a general comment with your assessment (e.g. "Clean diff — no issues found").
+   If there are no inline findings, still leave a general comment with your assessment (e.g. "LGTM — clean diff, no issues found").
 
 ### Step 4: Open the browser
 

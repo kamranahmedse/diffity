@@ -37,27 +37,23 @@ npx skills add kamranahmedse/diffity
 
 Then use the slash commands:
 
+### `/diffity-diff`
+
+Opens the diff viewer in your browser. Leave comments on any line — when you're done, run `/diffity-resolve` to have your agent fix them.
+
+### `/diffity-review`
+
+Your agent reviews the diff and leaves comments in the viewer. Uses severity tags: `[must-fix]`, `[suggestion]`, `[nit]`, `[question]`. You can focus on a specific area:
+
 ```
-# use this skill to open the browser with diff viewer
-# you can review the code yourself and leave comments
-/diffity-start
-
-# once done, you can come back to the agent and use the
-# below skill to ask agent to resolve your comments.
-/diffity-resolve
-
-# you can use this to have AI review your uncommitted
-# changes and leave comments in the diff viewer
-/diffity-review
+/diffity-review security
+/diffity-review performance
+/diffity-review naming
 ```
 
-The review uses severity tags so you know what matters:
-- `[must-fix]` — Bugs, security issues
-- `[suggestion]` — Meaningful improvements
-- `[nit]` — Style preferences
-- `[question]` — Needs clarification
+### `/diffity-resolve`
 
-You can focus the review on what you care about: `/diffity-review security` or `/diffity-review performance`
+Reads all open comments and makes the requested code changes. Works with both your comments and AI review comments.
 
 ## Multiple projects
 
