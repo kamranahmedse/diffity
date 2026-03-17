@@ -7,6 +7,7 @@ import { DiffLine } from './diff-line';
 import { HunkHeader, type ExpandControls } from './hunk-header';
 import { CommentThread } from './comment-thread';
 import { CommentFormRow } from './comment-form-row';
+import { UndoIcon } from './icons/undo-icon';
 
 interface HunkBlockProps {
   hunk: DiffHunk;
@@ -41,7 +42,6 @@ export function renderLineWithComments(
   expanded: boolean,
   syntaxMap: Map<string, SyntaxToken[]> | undefined,
   props: LineRenderProps,
-  onUndo?: () => void,
 ): React.ReactNode[] {
   const side: CommentSide = line.type === 'delete' ? 'old' : 'new';
   const activeLine = side === 'old' ? line.oldLineNumber : line.newLineNumber;
@@ -62,7 +62,6 @@ export function renderLineWithComments(
       onLineMouseDown={props.onLineMouseDown}
       onLineMouseEnter={props.onLineMouseEnter}
       onCommentClick={props.onCommentClick}
-      onUndo={onUndo}
     />
   );
 
@@ -122,42 +121,106 @@ export function HunkBlock(props: HunkBlockProps) {
     onCancelPending, filePath, getOriginalCode,
   };
 
-  const changeGroupEnds = useMemo(() => {
+  const changeGroups = useMemo(() => {
     if (!onRevertChange) {
-      return new Map<number, { startIndex: number; endIndex: number }>();
+      return [];
     }
-    const groups = getChangeGroups(hunk.lines);
-    const map = new Map<number, { startIndex: number; endIndex: number }>();
-    for (const group of groups) {
-      map.set(group.endIndex, group);
-    }
-    return map;
+    return getChangeGroups(hunk.lines);
   }, [hunk.lines, onRevertChange]);
 
-  const rows: React.ReactNode[] = [];
+  const changeGroupForLine = useMemo(() => {
+    const map = new Map<number, number>();
+    for (let g = 0; g < changeGroups.length; g++) {
+      for (let i = changeGroups[g].startIndex; i <= changeGroups[g].endIndex; i++) {
+        map.set(i, g);
+      }
+    }
+    return map;
+  }, [changeGroups]);
+
+  const expansionRows: React.ReactNode[] = [];
 
   if (topExpansionLines) {
     for (let i = 0; i < topExpansionLines.length; i++) {
-      rows.push(...renderLineWithComments(topExpansionLines[i], i, true, expansionSyntaxMap, commentProps));
+      expansionRows.push(...renderLineWithComments(topExpansionLines[i], i, true, expansionSyntaxMap, commentProps));
     }
   }
 
   if (bottomExpansionLines) {
     for (let i = 0; i < bottomExpansionLines.length; i++) {
-      rows.push(...renderLineWithComments(bottomExpansionLines[i], i, true, expansionSyntaxMap, commentProps));
+      expansionRows.push(...renderLineWithComments(bottomExpansionLines[i], i, true, expansionSyntaxMap, commentProps));
     }
   }
 
+  const sections: React.ReactNode[] = [];
+  let currentGroupIndex = -1;
+  let currentRows: React.ReactNode[] = [];
+
+  const flushRows = (isChangeGroup: boolean, groupIdx: number) => {
+    if (currentRows.length === 0) {
+      return;
+    }
+    if (isChangeGroup && onRevertChange) {
+      const group = changeGroups[groupIdx];
+      sections.push(
+        <tbody key={`change-${groupIdx}`} className="group/undo">
+          {currentRows}
+          <tr className="relative z-10">
+            <td colSpan={4} className="relative h-0">
+              <div className="absolute right-3 -top-3 z-10 flex items-center gap-1.5 opacity-0 group-hover/undo:opacity-100 pointer-events-none group-hover/undo:pointer-events-auto">
+                <button
+                  onClick={() => onRevertChange(hunk, group.startIndex, group.endIndex)}
+                  className="flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium rounded-md border border-deleted/40 bg-bg text-deleted hover:bg-deleted hover:text-white transition-colors cursor-pointer shadow-md"
+                  title="Undo this change"
+                >
+                  <UndoIcon className="w-3 h-3" />
+                  Undo
+                </button>
+              </div>
+            </td>
+          </tr>
+        </tbody>
+      );
+    } else {
+      sections.push(
+        <tbody key={`context-${sections.length}`}>
+          {currentRows}
+        </tbody>
+      );
+    }
+    currentRows = [];
+  };
+
   for (let i = 0; i < hunk.lines.length; i++) {
-    const group = changeGroupEnds.get(i);
-    const onUndo = group ? () => onRevertChange!(hunk, group.startIndex, group.endIndex) : undefined;
-    rows.push(...renderLineWithComments(hunk.lines[i], i, false, syntaxMap, commentProps, onUndo));
+    const groupIdx = changeGroupForLine.get(i) ?? -1;
+    const isChange = groupIdx !== -1;
+
+    if (isChange && currentGroupIndex === -1) {
+      flushRows(false, -1);
+      currentGroupIndex = groupIdx;
+    } else if (!isChange && currentGroupIndex !== -1) {
+      flushRows(true, currentGroupIndex);
+      currentGroupIndex = -1;
+    }
+
+    currentRows.push(...renderLineWithComments(hunk.lines[i], i, false, syntaxMap, commentProps));
   }
 
+  if (currentGroupIndex !== -1) {
+    flushRows(true, currentGroupIndex);
+  } else {
+    flushRows(false, -1);
+  }
+
+  const tbodyClass = expandControls?.wasExpanded && expandControls.remainingLines <= 0 ? '' : 'border-t border-border-muted';
+
   return (
-    <tbody className={expandControls?.wasExpanded && expandControls.remainingLines <= 0 ? '' : 'border-t border-border-muted'}>
-      <HunkHeader hunk={hunk} expandControls={expandControls} />
-      {rows}
-    </tbody>
+    <>
+      <tbody className={tbodyClass}>
+        <HunkHeader hunk={hunk} expandControls={expandControls} />
+        {expansionRows}
+      </tbody>
+      {sections}
+    </>
   );
 }

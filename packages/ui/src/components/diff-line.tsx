@@ -4,7 +4,6 @@ import { getLineBg } from '../lib/diff-utils';
 import { renderContent } from '../lib/render-content';
 import type { SyntaxToken } from '../lib/syntax-token';
 import { CommentLineNumber } from './comment-line-number';
-import { UndoIcon } from './icons/undo-icon';
 import type { CommentSide } from '../types/comment';
 
 export type { SyntaxToken };
@@ -17,7 +16,6 @@ interface DiffLineProps {
   onLineMouseDown?: (line: number, side: CommentSide) => void;
   onLineMouseEnter?: (line: number, side: CommentSide) => void;
   onCommentClick?: (line: number, side: CommentSide) => void;
-  onUndo?: () => void;
 }
 
 function getPrefix(type: string): string {
@@ -43,7 +41,7 @@ function getPrefixColor(type: string): string {
 }
 
 export function DiffLine(props: DiffLineProps) {
-  const { line, syntaxTokens, expanded, isSelected, onLineMouseDown, onLineMouseEnter, onCommentClick, onUndo } = props;
+  const { line, syntaxTokens, expanded, isSelected, onLineMouseDown, onLineMouseEnter, onCommentClick } = props;
 
   const side: CommentSide = line.type === 'delete' ? 'old' : 'new';
   const activeLine = side === 'old' ? line.oldLineNumber : line.newLineNumber;
@@ -72,18 +70,8 @@ export function DiffLine(props: DiffLineProps) {
       <td className={cn('w-5 min-w-5 px-1 text-center select-none align-top', getPrefixColor(line.type), isSelected && 'bg-diff-comment-bg')}>
         {getPrefix(line.type)}
       </td>
-      <td className={cn('px-3 whitespace-pre-wrap break-all relative', isSelected && 'bg-diff-comment-bg')}>
+      <td className={cn('px-3 whitespace-pre-wrap break-all', isSelected && 'bg-diff-comment-bg')}>
         <span className="inline">{renderContent(line, syntaxTokens)}</span>
-        {onUndo && (
-          <button
-            onClick={onUndo}
-            className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1 px-2 py-0.5 text-xs rounded bg-deleted/15 text-deleted hover:bg-deleted/25 transition-colors cursor-pointer opacity-0 group-hover/row:opacity-100"
-            title="Undo this change"
-          >
-            <UndoIcon className="w-3 h-3" />
-            Undo
-          </button>
-        )}
       </td>
     </tr>
   );

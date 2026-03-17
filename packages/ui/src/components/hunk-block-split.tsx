@@ -112,9 +112,8 @@ function SplitCell(props: {
   onMouseDown?: () => void;
   onMouseEnter?: () => void;
   onCommentClick?: () => void;
-  onUndo?: () => void;
 }) {
-  const { line, side, syntaxMap, expanded, isSelected, onMouseDown, onMouseEnter, onCommentClick, onUndo } = props;
+  const { line, side, syntaxMap, expanded, isSelected, onMouseDown, onMouseEnter, onCommentClick } = props;
   const [contentHovered, setContentHovered] = useState(false);
 
   if (!line) {
@@ -145,21 +144,11 @@ function SplitCell(props: {
         onCommentClick={onCommentClick}
       />
       <td
-        className={cn('px-3 whitespace-pre-wrap break-all border-r border-border-muted align-top relative', isSelected ? 'bg-diff-comment-bg' : contentBgClass)}
+        className={cn('px-3 whitespace-pre-wrap break-all border-r border-border-muted align-top', isSelected ? 'bg-diff-comment-bg' : contentBgClass)}
         onMouseEnter={() => setContentHovered(true)}
         onMouseLeave={() => setContentHovered(false)}
       >
         <span className="inline">{renderContent(line, tokens)}</span>
-        {onUndo && (
-          <button
-            onClick={onUndo}
-            className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1 px-2 py-0.5 text-xs rounded bg-deleted/15 text-deleted hover:bg-deleted/25 transition-colors cursor-pointer opacity-0 group-hover/split-row:opacity-100"
-            title="Undo this change"
-          >
-            <UndoIcon className="w-3 h-3" />
-            Undo
-          </button>
-        )}
       </td>
     </>
   );
@@ -171,7 +160,6 @@ export function renderSplitRows(
   syntaxMap: Map<string, SyntaxToken[]> | undefined,
   keyPrefix: string,
   props: LineRenderProps,
-  undoForRow?: Map<number, () => void>,
 ): React.ReactNode[] {
   const splitRows = buildSplitRows(lines);
   const result: React.ReactNode[] = [];
@@ -182,7 +170,6 @@ export function renderSplitRows(
     const rightLine = row.right;
     const leftNum = leftLine?.oldLineNumber ?? null;
     const rightNum = rightLine?.newLineNumber ?? null;
-    const onUndo = undoForRow?.get(i);
 
     result.push(
       <tr key={`${keyPrefix}-${i}`} className="group/split-row font-mono text-sm leading-6">
@@ -195,7 +182,6 @@ export function renderSplitRows(
           onMouseDown={leftNum !== null ? () => props.onLineMouseDown?.(leftNum, 'old') : undefined}
           onMouseEnter={leftNum !== null ? () => props.onLineMouseEnter?.(leftNum, 'old') : undefined}
           onCommentClick={leftNum !== null && props.onCommentClick ? () => props.onCommentClick!(leftNum, 'old') : undefined}
-          onUndo={onUndo && !rightLine ? onUndo : undefined}
         />
         <SplitCell
           line={rightLine}
@@ -206,7 +192,6 @@ export function renderSplitRows(
           onMouseDown={rightNum !== null ? () => props.onLineMouseDown?.(rightNum, 'new') : undefined}
           onMouseEnter={rightNum !== null ? () => props.onLineMouseEnter?.(rightNum, 'new') : undefined}
           onCommentClick={rightNum !== null && props.onCommentClick ? () => props.onCommentClick!(rightNum, 'new') : undefined}
-          onUndo={onUndo && rightLine ? onUndo : undefined}
         />
       </tr>
     );
@@ -304,57 +289,140 @@ export function HunkBlockSplit(props: HunkBlockSplitProps) {
     onCancelPending, filePath, getOriginalCode,
   };
 
-  const undoForRow = useMemo(() => {
+  const changeGroups = useMemo(() => {
     if (!onRevertChange) {
-      return undefined;
+      return [];
     }
-    const groups = getChangeGroups(hunk.lines);
-    const splitRows = buildSplitRows(hunk.lines);
-    const map = new Map<number, () => void>();
+    return getChangeGroups(hunk.lines);
+  }, [hunk.lines, onRevertChange]);
 
-    for (const group of groups) {
-      let lastSplitRowIdx = -1;
-      for (let ri = 0; ri < splitRows.length; ri++) {
-        const row = splitRows[ri];
-        const leftIsChange = row.left && row.left.type !== 'context';
-        const rightIsChange = row.right && row.right.type !== 'context';
-        if (leftIsChange || rightIsChange) {
-          const nextRow = splitRows[ri + 1];
-          const nextIsContext = !nextRow || ((!nextRow.left || nextRow.left.type === 'context') && (!nextRow.right || nextRow.right.type === 'context'));
-          if (nextIsContext) {
-            const leftInGroup = row.left && row.left.type !== 'context' && hunk.lines.indexOf(row.left) >= group.startIndex && hunk.lines.indexOf(row.left) <= group.endIndex;
-            const rightInGroup = row.right && row.right.type !== 'context' && hunk.lines.indexOf(row.right) >= group.startIndex && hunk.lines.indexOf(row.right) <= group.endIndex;
-            if (leftInGroup || rightInGroup) {
-              lastSplitRowIdx = ri;
-            }
-          }
-        }
-      }
-      if (lastSplitRowIdx >= 0) {
-        const g = group;
-        map.set(lastSplitRowIdx, () => onRevertChange(hunk, g.startIndex, g.endIndex));
+  const splitRows = useMemo(() => buildSplitRows(hunk.lines), [hunk.lines]);
+
+  const splitRowToChangeGroup = useMemo(() => {
+    if (changeGroups.length === 0) {
+      return new Map<number, number>();
+    }
+    const lineToGroup = new Map<DiffLineType, number>();
+    for (let g = 0; g < changeGroups.length; g++) {
+      for (let i = changeGroups[g].startIndex; i <= changeGroups[g].endIndex; i++) {
+        lineToGroup.set(hunk.lines[i], g);
       }
     }
-
+    const map = new Map<number, number>();
+    for (let ri = 0; ri < splitRows.length; ri++) {
+      const row = splitRows[ri];
+      const leftGroup = row.left ? lineToGroup.get(row.left) : undefined;
+      const rightGroup = row.right ? lineToGroup.get(row.right) : undefined;
+      const groupIdx = leftGroup ?? rightGroup;
+      if (groupIdx !== undefined) {
+        map.set(ri, groupIdx);
+      }
+    }
     return map;
-  }, [hunk, onRevertChange]);
+  }, [hunk.lines, splitRows, changeGroups]);
 
-  const rows: React.ReactNode[] = [];
+  const expansionRows: React.ReactNode[] = [];
 
   if (topExpansionLines && topExpansionLines.length > 0) {
-    rows.push(...renderSplitRows(topExpansionLines, true, expansionSyntaxMap, 'top-exp', commentProps));
+    expansionRows.push(...renderSplitRows(topExpansionLines, true, expansionSyntaxMap, 'top-exp', commentProps));
   }
 
   if (bottomExpansionLines && bottomExpansionLines.length > 0) {
-    rows.push(...renderSplitRows(bottomExpansionLines, true, expansionSyntaxMap, 'bot-exp', commentProps));
+    expansionRows.push(...renderSplitRows(bottomExpansionLines, true, expansionSyntaxMap, 'bot-exp', commentProps));
   }
 
-  rows.push(...renderSplitRows(hunk.lines, false, syntaxMap, 'hunk', commentProps, undoForRow));
+  const allRows = renderSplitRows(hunk.lines, false, syntaxMap, 'hunk', commentProps);
+
+  const sections: React.ReactNode[] = [];
+  let currentGroupIndex = -1;
+  let currentRows: React.ReactNode[] = [];
+  let allRowIdx = 0;
+
+  const flushRows = (isChangeGroup: boolean, groupIdx: number) => {
+    if (currentRows.length === 0) {
+      return;
+    }
+    if (isChangeGroup && onRevertChange) {
+      const group = changeGroups[groupIdx];
+      sections.push(
+        <tbody key={`change-${groupIdx}`} className="group/undo">
+          {currentRows}
+          <tr className="relative z-10">
+            <td colSpan={4} className="relative h-0">
+              <div className="absolute right-3 -top-3 z-10 flex items-center gap-1.5 opacity-0 group-hover/undo:opacity-100 pointer-events-none group-hover/undo:pointer-events-auto">
+                <button
+                  onClick={() => onRevertChange(hunk, group.startIndex, group.endIndex)}
+                  className="flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium rounded-md border border-deleted/40 bg-bg text-deleted hover:bg-deleted hover:text-white transition-colors cursor-pointer shadow-md"
+                  title="Undo this change"
+                >
+                  <UndoIcon className="w-3 h-3" />
+                  Undo
+                </button>
+              </div>
+            </td>
+          </tr>
+        </tbody>
+      );
+    } else {
+      sections.push(
+        <tbody key={`context-${sections.length}`}>
+          {currentRows}
+        </tbody>
+      );
+    }
+    currentRows = [];
+  };
+
+  for (let ri = 0; ri < splitRows.length; ri++) {
+    const groupIdx = splitRowToChangeGroup.get(ri) ?? -1;
+    const isChange = groupIdx !== -1;
+
+    if (isChange && currentGroupIndex === -1) {
+      flushRows(false, -1);
+      currentGroupIndex = groupIdx;
+    } else if (!isChange && currentGroupIndex !== -1) {
+      flushRows(true, currentGroupIndex);
+      currentGroupIndex = -1;
+    }
+
+    // Each split row may produce multiple React nodes (row + thread rows)
+    // Find nodes for this split row
+    const rowKey = `hunk-${ri}`;
+    while (allRowIdx < allRows.length) {
+      const node = allRows[allRowIdx] as React.ReactElement;
+      currentRows.push(node);
+      allRowIdx++;
+      if (node.key === rowKey) {
+        // Collect any thread/comment rows that follow
+        while (allRowIdx < allRows.length) {
+          const next = allRows[allRowIdx] as React.ReactElement;
+          const nextKey = typeof next.key === 'string' ? next.key : '';
+          if (nextKey.startsWith('hunk-') && !nextKey.startsWith('thread-') && !nextKey.startsWith('pending-')) {
+            break;
+          }
+          currentRows.push(next);
+          allRowIdx++;
+        }
+        break;
+      }
+    }
+  }
+
+  if (currentGroupIndex !== -1) {
+    flushRows(true, currentGroupIndex);
+  } else {
+    flushRows(false, -1);
+  }
+
+  const tbodyClass = expandControls?.wasExpanded && expandControls.remainingLines <= 0 ? '' : 'border-t border-border-muted';
 
   return (
-    <tbody className={expandControls?.wasExpanded && expandControls.remainingLines <= 0 ? '' : 'border-t border-border-muted'}>
-      <HunkHeader hunk={hunk} expandControls={expandControls} />
-      {rows}
-    </tbody>
+    <>
+      <tbody className={tbodyClass}>
+        <HunkHeader hunk={hunk} expandControls={expandControls} />
+        {expansionRows}
+      </tbody>
+      {sections}
+    </>
   );
 }
