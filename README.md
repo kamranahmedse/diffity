@@ -2,6 +2,8 @@
 
 # diffity
 
+[![npm version](https://img.shields.io/npm/v/diffity)](https://www.npmjs.com/package/diffity)
+
 Diffity is an agent-agnostic, GitHub-style diff viewer and code review tool.
 
 ```bash
