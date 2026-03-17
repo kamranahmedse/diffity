@@ -32,7 +32,7 @@ You are reading open review comments and resolving them by making the requested 
 ## Prerequisites
 
 1. Check that `{{binary}}` is available: run `which {{binary}}`. If not found, {{install_hint}}.
-2. Check that a review session exists: run `{{binary}} agent list`. If this fails with "No active review session", tell the user to start diffity first (e.g. `{{binary}}` or **{{slash}}start**).
+2. Check that a review session exists: run `{{binary}} agent list`. If this fails with "No active review session", tell the user to start diffity first (e.g. `{{binary}}` or **{{slash}}diff**).
 
 ## Instructions
 
@@ -42,11 +42,17 @@ You are reading open review comments and resolving them by making the requested 
    ```
    If a `thread-id` argument was provided, filter to just that thread. The JSON output includes the full comment body, file path, line numbers, and side for each thread.
 2. If there are no open threads, tell the user there's nothing to resolve.
-3. For each open thread:
+3. For each open thread, check the `comments` array and the `author.type` field (`"user"` or `"agent"`) on each comment:
    a. **Skip** general comments (filePath `__general__`) — these are summaries, not actionable code changes.
-   b. **Skip** threads where the comment body starts with an explicit `[question]` or `[nit]` tag prefix — these don't require code changes. Tell the user you skipped them and why.
-      - **Important:** Only skip if the comment body literally begins with `[question]` or `[nit]`. Do NOT skip comments just because they are phrased as a question (e.g. "should we add X?" or "can we rename this?"). Comments phrased as questions without explicit tags are suggestions — treat them as actionable requests.
-   c. Read the comment body from the JSON output and understand what change is requested. Interpret the intent:
+   b. **Skip** threads where the last comment is an agent reply that asks the user a question (e.g. "Could you clarify...?") and the user hasn't responded yet — the agent is waiting for user input. Still process threads where the agent left the original comment (code suggestion, review feedback, etc.) — those are actionable.
+   c. **`[nit]` comments** — these are minor suggestions but still actionable. Resolve them like any other comment.
+   d. **`[question]` comments** (from the user) — read the question, examine the relevant code, and reply with an answer:
+      ```
+      {{binary}} agent reply <thread-id> --body "Your answer here"
+      ```
+      Then resolve the thread with a summary of your answer.
+   e. Comments phrased as questions without an explicit `[question]` tag (e.g. "should we add X?" or "can we rename this?") are suggestions — treat them as actionable requests and make the change.
+   f. Read the comment body from the JSON output and understand what change is requested. Interpret the intent:
       - If the comment suggests a code change, make the change.
       - If the comment suggests adding documentation, add or update the relevant docs.
       - If the comment asks a question that implies an action (e.g. "should we add X?"), treat it as a request to do that action.
@@ -54,8 +60,8 @@ You are reading open review comments and resolving them by making the requested 
         ```
         {{binary}} agent reply <thread-id> --body "Could you clarify what change you'd like here?"
         ```
-   d. Read the relevant source file to understand the full context around the commented lines, then make the requested change using the Edit tool.
-   e. After making the change, resolve the thread with a summary:
+   g. Read the relevant source file to understand the full context around the commented lines, then make the requested change using the Edit tool.
+   h. After making the change, resolve the thread with a summary:
       ```
       {{binary}} agent resolve <thread-id> --summary "Fixed: <brief description of what was changed>"
       ```
