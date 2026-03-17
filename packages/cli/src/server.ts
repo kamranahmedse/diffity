@@ -16,7 +16,7 @@ import {
   getUnstagedFiles,
   getRecentCommits,
   getFileLineCount,
-  getMergeBase,
+  resolveBaseRef,
   resolveRef,
   revertFile,
   revertHunk,
@@ -94,28 +94,6 @@ function descriptionForRef(ref: string): string {
   }
 }
 
-function resolveBaseRef(ref: string): string {
-  if (['staged', 'working', 'work'].includes(ref)) {
-    return 'HEAD';
-  }
-  if (ref === 'unstaged' || ref === 'untracked') {
-    return 'HEAD';
-  }
-
-  const threeDotsIdx = ref.indexOf('...');
-  if (threeDotsIdx !== -1) {
-    const left = ref.slice(0, threeDotsIdx);
-    const right = ref.slice(threeDotsIdx + 3);
-    return getMergeBase(left, right);
-  }
-
-  const twoDotsIdx = ref.indexOf('..');
-  if (twoDotsIdx !== -1) {
-    return ref.slice(0, twoDotsIdx);
-  }
-
-  return ref;
-}
 
 interface ServerResult {
   port: number;

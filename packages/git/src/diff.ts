@@ -53,7 +53,7 @@ export function resolveRef(ref: string, extraArgs: string[] = []): string {
       return raw;
     }
     default: {
-      return getDiff([ref, ...extraArgs]);
+      return getDiff([normalizeRef(ref), ...extraArgs]);
     }
   }
 }
@@ -81,6 +81,42 @@ export function getDiffStat(args: string[] = []): string {
 
 export function getMergeBase(a: string, b: string): string {
   return exec(`git merge-base ${a} ${b}`);
+}
+
+export function normalizeRef(ref: string): string {
+  if (ref.includes('...')) {
+    return ref;
+  }
+  const idx = ref.indexOf('..');
+  if (idx !== -1) {
+    const left = ref.slice(0, idx);
+    const right = ref.slice(idx + 2);
+    const base = getMergeBase(left, right);
+    return `${base}..${right}`;
+  }
+  return ref;
+}
+
+export function resolveBaseRef(ref: string): string {
+  if (['staged', 'working', 'work', 'unstaged', 'untracked'].includes(ref)) {
+    return 'HEAD';
+  }
+
+  const threeDotsIdx = ref.indexOf('...');
+  if (threeDotsIdx !== -1) {
+    const left = ref.slice(0, threeDotsIdx);
+    const right = ref.slice(threeDotsIdx + 3);
+    return getMergeBase(left, right);
+  }
+
+  const twoDotsIdx = ref.indexOf('..');
+  if (twoDotsIdx !== -1) {
+    const left = ref.slice(0, twoDotsIdx);
+    const right = ref.slice(twoDotsIdx + 2);
+    return getMergeBase(left, right);
+  }
+
+  return ref;
 }
 
 export function getFileContent(path: string, ref = 'HEAD'): string {

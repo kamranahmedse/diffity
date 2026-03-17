@@ -3,7 +3,7 @@ import { createHash } from 'node:crypto';
 import { createRequire } from 'node:module';
 import open from 'open';
 import pc from 'picocolors';
-import { isGitRepo, isValidGitRef, getRepoRoot, getRepoName } from '@diffity/git';
+import { isGitRepo, isValidGitRef, getRepoRoot, getRepoName, normalizeRef } from '@diffity/git';
 import { startServer } from './server.js';
 import { registerAgentCommands } from './agent.js';
 import { findInstanceForRepo, findAvailablePort, deregisterInstance } from './registry.js';
@@ -92,14 +92,14 @@ range syntax (main..feature, main...feature) also work.`)
     if (refs.length === 1) {
       const ref = refs[0];
       if (ref.includes('..')) {
-        diffArgs.push(ref);
+        diffArgs.push(normalizeRef(ref));
         description = ref;
       } else {
         diffArgs.push(ref);
         description = `Changes from ${ref}`;
       }
     } else if (refs.length === 2) {
-      diffArgs.push(`${refs[0]}..${refs[1]}`);
+      diffArgs.push(normalizeRef(`${refs[0]}..${refs[1]}`));
       description = `${refs[0]}..${refs[1]}`;
     } else {
       description = 'Unstaged changes';
