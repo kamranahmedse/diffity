@@ -38,6 +38,7 @@ export function DiffPage(props: DiffPageProps) {
   const [activeFile, setActiveFile] = useState<string | null>(null);
   const [reviewedFiles, setReviewedFiles] = useState<Set<string>>(new Set());
   const [collapsedFiles, setCollapsedFiles] = useState<Set<string>>(new Set());
+  const manuallyToggledRef = useRef<Set<string>>(new Set());
   const [pendingSelection, setPendingSelection] = useState<LineSelection | null>(null);
   const mainRef = useRef<HTMLElement | null>(null);
   const diffViewRef = useRef<DiffViewHandle>(null);
@@ -75,12 +76,43 @@ export function DiffPage(props: DiffPageProps) {
     initializedDiffRef.current = diff;
 
     const autoCollapsed = getAutoCollapsedPaths(diff.files);
-    if (autoCollapsed.size > 0) {
-      setCollapsedFiles(autoCollapsed);
+    for (const path of filesWithComments) {
+      autoCollapsed.delete(path);
     }
+    for (const path of manuallyToggledRef.current) {
+      if (autoCollapsed.has(path)) {
+        autoCollapsed.delete(path);
+      } else {
+        autoCollapsed.add(path);
+      }
+    }
+    setCollapsedFiles(autoCollapsed);
   }, [diff]);
 
+  useEffect(() => {
+    if (filesWithComments.size === 0) {
+      return;
+    }
+    setCollapsedFiles((prev) => {
+      let changed = false;
+      const next = new Set(prev);
+      for (const path of filesWithComments) {
+        if (next.has(path)) {
+          next.delete(path);
+          changed = true;
+        }
+      }
+      return changed ? next : prev;
+    });
+  }, [filesWithComments]);
+
   const handleToggleCollapse = useCallback((path: string) => {
+    const toggled = manuallyToggledRef.current;
+    if (toggled.has(path)) {
+      toggled.delete(path);
+    } else {
+      toggled.add(path);
+    }
     setCollapsedFiles((prev) => {
       const next = new Set(prev);
       if (next.has(path)) {
@@ -172,6 +204,7 @@ export function DiffPage(props: DiffPageProps) {
       }
       const allPaths = diff.files.map((f) => getFilePath(f));
       const anyExpanded = allPaths.some((p) => !collapsedFiles.has(p));
+      manuallyToggledRef.current = new Set();
       if (anyExpanded) {
         setCollapsedFiles(new Set(allPaths));
       } else {

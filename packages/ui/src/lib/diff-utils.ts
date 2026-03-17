@@ -78,8 +78,22 @@ const GENERATED_PATTERNS = [
   /\.lock$/,
 ];
 
+const AUTO_COLLAPSE_LINE_THRESHOLD = 1000;
+
+function getTotalLineCount(file: DiffFile): number {
+  let count = 0;
+  for (const hunk of file.hunks) {
+    count += hunk.lines.length;
+  }
+  return count;
+}
+
 function isAutoCollapsible(file: DiffFile): boolean {
   if (file.status === 'deleted' || file.status === 'renamed') {
+    return true;
+  }
+
+  if (getTotalLineCount(file) >= AUTO_COLLAPSE_LINE_THRESHOLD) {
     return true;
   }
 

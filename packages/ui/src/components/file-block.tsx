@@ -350,7 +350,7 @@ export function FileBlock(props: FileBlockProps) {
 
   return (
     <div
-      className={`border rounded-lg mx-4 my-3 overflow-hidden ${highlighted ? 'animate-flash-highlight-border' : 'border-border'}`}
+      className={`border rounded-lg mx-4 my-3 overflow-clip ${highlighted ? 'animate-flash-highlight-border' : 'border-border'}`}
       id={`file-${encodeURIComponent(filePath)}`}
       onAnimationEnd={onHighlightEnd}
     >

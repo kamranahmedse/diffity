@@ -372,6 +372,9 @@ export function startServer(options: ServerOptions): Promise<ServerResult> {
     server.on('listening', () => {
       const addr = server.address();
       if (addr && typeof addr !== 'string') {
+        if (effectiveRef) {
+          findOrCreateSession(effectiveRef);
+        }
         if (registryInfo) {
           registerInstance({
             pid: process.pid,
