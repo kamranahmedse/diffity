@@ -438,7 +438,7 @@ export function FileBlock(props: FileBlockProps) {
                 ? `File mode changed from ${file.oldMode} to ${file.newMode}`
                 : 'No content changes'}
             </div>
-          ) : isLargeDiff && !largeDiffExpanded ? (
+          ) : isLargeDiff && !largeDiffExpanded && allFileThreads.length === 0 ? (
             <div className="flex items-center justify-center gap-3 py-6 px-4 text-sm text-text-muted">
               <span>Large diff not rendered — {totalLines} lines</span>
               <button

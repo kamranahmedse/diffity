@@ -253,6 +253,14 @@ export function DiffPage(props: DiffPageProps) {
   }, []);
 
   const handleScrollToThread = useCallback((threadId: string, filePath: string) => {
+    setCollapsedFiles((prev) => {
+      if (!prev.has(filePath)) {
+        return prev;
+      }
+      const next = new Set(prev);
+      next.delete(filePath);
+      return next;
+    });
     diffViewRef.current?.scrollToThread(threadId, filePath);
   }, []);
 
