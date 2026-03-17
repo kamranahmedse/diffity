@@ -22,7 +22,9 @@ program
   .name('diffity')
   .description('GitHub-style git diff viewer in the browser')
   .version(pkg.version)
-  .argument('[refs...]', 'Git refs to diff (e.g. HEAD~3, main, main..feature)')
+  .argument('[refs...]', 'Git refs to diff')
+  .option('--base <ref>', 'Base ref to compare from (e.g. main, HEAD~3, v1.0.0)')
+  .option('--compare <ref>', 'Ref to compare against base (default: working tree)')
   .option('--port <port>', 'Port to use (default: auto-assigned from 5391)', '5391')
   .option('--no-open', 'Do not open browser automatically')
   .option('--quiet', 'Minimal terminal output')
@@ -30,29 +32,47 @@ program
   .option('--unified', 'Open in unified view (default: split)')
   .option('--new', 'Stop existing instance and start fresh')
   .addHelpText('after', `
-Examples:
-  $ diffity                    Working tree changes
-  $ diffity HEAD~1             Last commit vs working tree
-  $ diffity HEAD~3             Last 3 commits vs working tree
-  $ diffity abc1234            Changes since a specific commit
-  $ diffity main..feature      Compare branches
-  $ diffity main feature       Same as main..feature
-  $ diffity v1.0.0..v2.0.0    Compare tags`)
+Common usage:
+  $ diffity                              See all uncommitted changes
+  $ diffity main                         What changed since main
+  $ diffity HEAD~1                       Review your last commit
+  $ diffity --base main --compare feature   Compare two branches
+  $ diffity v1.0.0 v2.0.0                  Compare two tags
+
+The --base/--compare flags are optional — positional args and
+range syntax (main..feature, main...feature) also work.`)
   .action(async (refs: string[], opts) => {
     if (!isGitRepo()) {
       console.error(pc.red('Error: Not a git repository'));
       process.exit(1);
     }
 
+    // --base/--compare flags take precedence over positional args
+    if (opts.base || opts.compare) {
+      if (refs.length > 0) {
+        console.error(pc.red('Error: Cannot use --base/--compare with positional ref arguments.'));
+        console.log(`  Use either ${pc.cyan('diffity --base main --compare feature')} or ${pc.cyan('diffity main feature')}, not both.`);
+        process.exit(1);
+      }
+      if (opts.compare && !opts.base) {
+        console.error(pc.red('Error: --compare requires --base.'));
+        console.log(`  Example: ${pc.cyan('diffity --base main --compare feature')}`);
+        process.exit(1);
+      }
+      refs.push(opts.base);
+      if (opts.compare) {
+        refs.push(opts.compare);
+      }
+    }
+
     for (const ref of refs) {
       if (!isValidGitRef(ref)) {
         console.error(pc.red(`Error: '${ref}' is not a valid git reference.`));
         console.log('');
-        console.log('Usage:');
-        console.log(`  ${pc.cyan('diffity')}                    Working tree changes`);
-        console.log(`  ${pc.cyan('diffity HEAD~1')}             Last commit vs working tree`);
-        console.log(`  ${pc.cyan('diffity main..feature')}      Compare branches`);
-        console.log(`  ${pc.cyan('diffity main feature')}       Same as main..feature`);
+        console.log('Examples:');
+        console.log(`  ${pc.cyan('diffity')}                              See all uncommitted changes`);
+        console.log(`  ${pc.cyan('diffity main')}                         What changed since main`);
+        console.log(`  ${pc.cyan('diffity --base main --compare feature')}   Compare two branches`);
         console.log('');
         console.log(`Run ${pc.cyan('diffity --help')} for more options.`);
         process.exit(1);
