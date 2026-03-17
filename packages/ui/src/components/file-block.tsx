@@ -5,7 +5,7 @@ import type { DiffFile, DiffLine as DiffLineType } from '@diffity/parser';
 import type { SyntaxToken } from '../lib/syntax-token';
 import type { HighlightedTokens } from '../hooks/use-highlighter';
 import type { CommentSide, LineSelection } from '../types/comment';
-import { type ViewMode, getFilePath, buildChangeGroupPatch, extractLinesFromDiff } from '../lib/diff-utils';
+import { type ViewMode, getFilePath, buildChangeGroupPatch, extractLinesFromDiff, extractLinesFromExpandedLines } from '../lib/diff-utils';
 import { revertHunk as apiRevertHunk } from '../lib/api';
 import { ConfirmDialog } from './ui/confirm-dialog';
 import { computeGaps, createContextLines, getExpandRange, type ExpandableGap } from '../lib/context-expansion';
@@ -104,14 +104,29 @@ export function FileBlock(props: FileBlockProps) {
 
   const { addReply, resolveThread, unresolveThread, dismissThread, deleteComment, deleteThread } = commentActions;
 
+  const allExpandedLines = useMemo(() => {
+    const lines: DiffLineType[] = [];
+    for (const [, expansion] of expansions) {
+      lines.push(...expansion.linesFromTop, ...expansion.linesFromBottom);
+    }
+    return lines;
+  }, [expansions]);
+
   const getOriginalCode = useCallback((side: CommentSide, startLine: number, endLine: number) => {
-    return extractLinesFromDiff(file.hunks, side, startLine, endLine);
-  }, [file.hunks]);
+    const fromHunks = extractLinesFromDiff(file.hunks, side, startLine, endLine);
+    if (fromHunks) {
+      return fromHunks;
+    }
+    return extractLinesFromExpandedLines(allExpandedLines, side, startLine, endLine);
+  }, [file.hunks, allExpandedLines]);
 
   const addThread = useCallback((fp: string, side: CommentSide, startLine: number, endLine: number, body: string, author: import('../types/comment').CommentAuthor) => {
-    const anchorContent = extractLinesFromDiff(file.hunks, side, startLine, endLine);
+    let anchorContent = extractLinesFromDiff(file.hunks, side, startLine, endLine);
+    if (!anchorContent) {
+      anchorContent = extractLinesFromExpandedLines(allExpandedLines, side, startLine, endLine);
+    }
     rawAddThread(fp, side, startLine, endLine, body, author, anchorContent || undefined);
-  }, [rawAddThread, file.hunks]);
+  }, [rawAddThread, file.hunks, allExpandedLines]);
 
   const allFileThreads = useMemo(() => {
     return allThreads.filter(t => t.filePath === filePath && t.filePath !== GENERAL_THREAD_FILE_PATH);
@@ -119,8 +134,8 @@ export function FileBlock(props: FileBlockProps) {
 
   const { anchoredThreads: fileThreads, orphanedThreads } = useMemo(() => {
     const diffLineNumbers = new Set<string>();
-    for (const hunk of file.hunks) {
-      for (const line of hunk.lines) {
+    const addLines = (lines: DiffLineType[]) => {
+      for (const line of lines) {
         if (line.oldLineNumber !== null) {
           diffLineNumbers.add(`old:${line.oldLineNumber}`);
         }
@@ -128,7 +143,11 @@ export function FileBlock(props: FileBlockProps) {
           diffLineNumbers.add(`new:${line.newLineNumber}`);
         }
       }
+    };
+    for (const hunk of file.hunks) {
+      addLines(hunk.lines);
     }
+    addLines(allExpandedLines);
 
     const anchored: typeof allFileThreads = [];
     const orphaned: typeof allFileThreads = [];
@@ -149,7 +168,7 @@ export function FileBlock(props: FileBlockProps) {
     }
 
     return { anchoredThreads: anchored, orphanedThreads: orphaned };
-  }, [allFileThreads, file.hunks]);
+  }, [allFileThreads, file.hunks, allExpandedLines]);
 
   const handleSelectionComplete = useCallback((selection: LineSelection) => {
     if (!commentsEnabled) {

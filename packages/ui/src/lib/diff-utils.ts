@@ -254,6 +254,23 @@ export function extractLinesFromDiff(
   return result.join('\n');
 }
 
+export function extractLinesFromExpandedLines(
+  lines: { type: string; content: string; oldLineNumber: number | null; newLineNumber: number | null }[],
+  side: CommentSide,
+  startLine: number,
+  endLine: number,
+): string {
+  const result: string[] = [];
+  for (const line of lines) {
+    const lineNum = side === 'old' ? line.oldLineNumber : line.newLineNumber;
+    if (lineNum === null || lineNum < startLine || lineNum > endLine) {
+      continue;
+    }
+    result.push(line.content);
+  }
+  return result.join('\n');
+}
+
 export function getStatusColor(status: string): string {
   switch (status) {
     case 'added':
