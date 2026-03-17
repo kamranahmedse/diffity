@@ -1,5 +1,11 @@
 # diffity
 
+## 0.1.5
+
+### Patch Changes
+
+- Improve skills and add support for multiple sessions
+
 ## 0.1.4
 
 ### Patch Changes
