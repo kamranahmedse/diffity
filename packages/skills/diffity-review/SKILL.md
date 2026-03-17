@@ -10,6 +10,7 @@ You are reviewing a diff and leaving inline comments using the `{{binary}} agent
 
 ## Arguments
 
+- `ref` (optional): Git ref to review (e.g. `main..feature`, `HEAD~3`). Defaults to working tree changes. When both `ref` and `focus` are provided, use both (e.g. `/diffity-review main..feature security`).
 - `focus` (optional): Focus the review on a specific area. One of: `security`, `performance`, `naming`, `errors`, `types`, `logic`. If omitted, review everything.
 
 ## CLI Reference
@@ -42,13 +43,13 @@ The review needs a running session to add comments to, but we don't want to open
 1. Run `{{binary}} list --json` to check if diffity is already running for this repo.
 2. If already running, note the port and continue to Step 2.
 3. If not running, start it in the background **without opening the browser**:
-   - Command: `{{binary}} --no-open`
+   - Command: `{{binary}} <ref> --no-open` (or `{{binary}} --no-open` if no ref)
    - Use Bash tool with `run_in_background: true`
    - Wait 2 seconds, then verify with `{{binary}} list --json` and note the port.
 
 ### Step 2: Review the diff
 
-1. Read the current diff using `git diff`. If diffity was started with a specific ref, use the appropriate git diff command.
+1. Read the current diff using `git diff` (or `git diff <ref>` when a ref was provided).
 2. For each changed file, read the **entire file** (not just the diff hunks) to understand the full context. This prevents false positives from missing surrounding code.
 3. Analyze the code changes thoroughly. If a `focus` argument was provided, concentrate on that area. Otherwise look for:
    - Bugs, logic errors, off-by-one errors

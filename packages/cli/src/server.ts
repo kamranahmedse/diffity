@@ -20,7 +20,7 @@ import {
   resolveRef,
   revertFile,
   revertHunk,
-  isActionableRef,
+  getRefCapabilities,
 } from '@diffity/git';
 import { findOrCreateSession } from './session.js';
 import { handleReviewRoute } from './review-routes.js';
@@ -133,13 +133,6 @@ function readBody(req: IncomingMessage): Promise<string> {
 
 export function startServer(options: ServerOptions): Promise<ServerResult> {
   const { port, portIsExplicit, diffArgs, description, effectiveRef, registryInfo } = options;
-
-  let sessionId: string | null = null;
-  const reviewsEnabled = isActionableRef(effectiveRef);
-  if (reviewsEnabled && effectiveRef) {
-    const session = findOrCreateSession(effectiveRef);
-    sessionId = session.id;
-  }
 
   const includeUntracked = diffArgs.length === 0;
   function enrichWithLineCounts(diff: ParsedDiff, baseRef: string): ParsedDiff {
@@ -320,16 +313,22 @@ export function startServer(options: ServerOptions): Promise<ServerResult> {
     }
 
     if (pathname === '/api/info') {
-      const ref = url.searchParams.get('ref');
+      const ref = url.searchParams.get('ref') || effectiveRef;
       const info = getRepoInfo();
       let refDescription = description || diffArgs.join(' ') || 'Unstaged changes';
+      if (url.searchParams.get('ref')) {
+        refDescription = descriptionForRef(url.searchParams.get('ref')!);
+      }
+      const capabilities = getRefCapabilities(ref);
+      let sessionId: string | null = null;
       if (ref) {
-        refDescription = descriptionForRef(ref);
+        const session = findOrCreateSession(ref);
+        sessionId = session.id;
       }
       sendJson(res, {
         ...info,
         description: refDescription,
-        capabilities: { reviews: reviewsEnabled },
+        capabilities,
         sessionId,
       });
       return;

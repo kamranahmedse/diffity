@@ -25,7 +25,14 @@ diffity main..feature      # compare branches
 diffity v1.0.0..v2.0.0     # compare tags
 ```
 
-For the working tree, you can leave comments, copy them into your agent with a button and ask it to resolve them. Alternatively, use the skills below to avoid this manual step and let your agent auto-solve them.
+New to git refs? Here's what the syntax means:
+
+- `HEAD` is your current commit. `HEAD~1` means "one commit back", `HEAD~3` means "three commits back".
+- `main..feature` means "what's in feature that's not in main" — exactly what a PR would show.
+- `main..HEAD` means "what will my PR look like" — committed changes on your branch vs main.
+- `diffity main` (no dots) compares main against your working tree, including uncommitted changes.
+
+You can leave comments on any diff — working tree changes, branch comparisons, commit ranges. Copy them into your agent with a button and ask it to resolve them, or use the skills below to let your agent auto-review and auto-solve them.
 
 ## AI code review
 
@@ -39,16 +46,26 @@ Then use the slash commands:
 
 ### `/diffity-diff`
 
-Opens the diff viewer in your browser. Leave comments on any line — when you're done, run `/diffity-resolve` to have your agent fix them.
+Opens the diff viewer in your browser. Optionally pass a ref:
+
+```
+/diffity-diff                          # working tree changes
+/diffity-diff main..feature            # branch diff
+/diffity-diff last 3 commits           # natural language works too
+```
+
+Leave comments on any line — when you're done, run `/diffity-resolve` to have your agent fix them.
 
 ### `/diffity-review`
 
-Your agent reviews the diff and leaves comments in the viewer. Uses severity tags: `[must-fix]`, `[suggestion]`, `[nit]`, `[question]`. You can focus on a specific area:
+Your agent reviews the diff and leaves comments in the viewer. Uses severity tags: `[must-fix]`, `[suggestion]`, `[nit]`, `[question]`. Supports refs, focus areas, and natural language:
 
 ```
-/diffity-review security
-/diffity-review performance
-/diffity-review naming
+/diffity-review                             # review working tree
+/diffity-review main..feature               # review branch diff
+/diffity-review security                    # focus on security
+/diffity-review main to feature             # natural language
+/diffity-review what I'm merging into main  # also works
 ```
 
 ### `/diffity-resolve`

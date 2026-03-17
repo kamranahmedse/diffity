@@ -15,7 +15,7 @@ import { StaleDiffBanner } from './stale-diff-banner';
 import { CheckCircleIcon } from './icons/check-circle-icon';
 import { PageLoader } from './skeleton';
 import { useDiffStaleness } from '../hooks/use-diff-staleness';
-import { type ViewMode, getFilePath, getAutoCollapsedPaths, isWorkingTreeRef } from '../lib/diff-utils';
+import { type ViewMode, getFilePath, getAutoCollapsedPaths } from '../lib/diff-utils';
 import { getHunkHeaders, scrollToElement } from '../lib/dom-utils';
 import type { LineSelection } from '../types/comment';
 import { isThreadResolved } from '../types/comment';
@@ -46,8 +46,8 @@ export function DiffPage(props: DiffPageProps) {
 
   const reviewsEnabled = !!info?.capabilities?.reviews;
   const sessionId = info?.sessionId ?? null;
-  const isWorkingTree = isWorkingTreeRef(refParam);
-  const { isStale, resetStaleness } = useDiffStaleness(refParam, isWorkingTree);
+  const canRevert = !!info?.capabilities?.revert;
+  const { isStale, resetStaleness } = useDiffStaleness(refParam, !!info?.capabilities?.staleness);
 
   const { data: serverThreads, isFetched: threadsFetched } = useReviewThreads(reviewsEnabled ? sessionId : null);
   const threads = reviewsEnabled && serverThreads ? serverThreads : [];
@@ -204,7 +204,6 @@ export function DiffPage(props: DiffPageProps) {
   });
 
   const queryClient = useQueryClient();
-  const canRevert = useMemo(() => isWorkingTreeRef(refParam), [refParam]);
 
   const handleRevert = useCallback(() => {
     queryClient.invalidateQueries({ queryKey: ['diff'] });

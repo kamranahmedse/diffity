@@ -75,8 +75,22 @@ export function isValidGitRef(ref: string): boolean {
   }
 }
 
-const ACTIONABLE_REFS = new Set(['work', 'staged', 'unstaged', 'working', 'untracked']);
+export interface RefCapabilities {
+  reviews: boolean;
+  revert: boolean;
+  staleness: boolean;
+}
 
-export function isActionableRef(ref?: string): boolean {
-  return !!ref && ACTIONABLE_REFS.has(ref);
+const WORKING_TREE_REFS = new Set(['work', 'staged', 'unstaged', 'working', 'untracked']);
+
+export function getRefCapabilities(ref?: string): RefCapabilities {
+  if (!ref) {
+    return { reviews: true, revert: false, staleness: false };
+  }
+  const isWorkingTree = WORKING_TREE_REFS.has(ref);
+  return {
+    reviews: true,
+    revert: isWorkingTree,
+    staleness: isWorkingTree || ref.includes('..'),
+  };
 }

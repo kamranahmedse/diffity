@@ -6,7 +6,7 @@ export interface RepoInfo {
   branch: string;
   root: string;
   description: string;
-  capabilities?: { reviews: boolean };
+  capabilities?: { reviews: boolean; revert: boolean; staleness: boolean };
   sessionId?: string | null;
 }
 
