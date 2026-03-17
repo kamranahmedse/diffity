@@ -97,13 +97,8 @@ range syntax (main..feature, main...feature) also work.`)
 
     if (refs.length === 1) {
       const ref = refs[0];
-      if (ref.includes('..')) {
-        diffArgs.push(normalizeRef(ref));
-        description = ref;
-      } else {
-        diffArgs.push(ref);
-        description = `Changes from ${ref}`;
-      }
+      diffArgs.push(normalizeRef(ref));
+      description = ref.includes('..') ? ref : `Changes from ${ref}`;
     } else if (refs.length === 2) {
       diffArgs.push(normalizeRef(`${refs[0]}..${refs[1]}`));
       description = `${refs[0]}..${refs[1]}`;

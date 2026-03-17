@@ -95,7 +95,7 @@ export function normalizeRef(ref: string): string {
     const base = getMergeBase(left, right);
     return `${base}..${right}`;
   }
-  return ref;
+  return getMergeBase(ref, 'HEAD');
 }
 
 export function resolveBaseRef(ref: string): string {
@@ -117,7 +117,7 @@ export function resolveBaseRef(ref: string): string {
     return getMergeBase(left, right);
   }
 
-  return ref;
+  return getMergeBase(ref, 'HEAD');
 }
 
 export function getFileContent(path: string, ref = 'HEAD'): string {

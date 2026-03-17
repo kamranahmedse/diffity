@@ -16,6 +16,7 @@ import {
   getUnstagedFiles,
   getRecentCommits,
   getFileLineCount,
+  normalizeRef,
   resolveBaseRef,
   resolveRef,
   revertFile,
@@ -244,7 +245,7 @@ export function startServer(options: ServerOptions): Promise<ServerResult> {
             stat = getUntrackedFiles().join('\n');
             break;
           default:
-            stat = getDiffStat([ref]);
+            stat = getDiffStat([normalizeRef(ref)]);
             break;
         }
       } else {
