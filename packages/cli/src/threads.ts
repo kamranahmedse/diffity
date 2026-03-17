@@ -228,6 +228,11 @@ export function deleteAllThreadsForSession(sessionId: string): void {
   db.prepare('DELETE FROM comment_threads WHERE session_id = ?').run(sessionId);
 }
 
+export function editComment(commentId: string, body: string): void {
+  const db = getDb();
+  db.prepare('UPDATE comments SET body = ? WHERE id = ?').run(body, commentId);
+}
+
 export function deleteComment(commentId: string): void {
   const db = getDb();
   const comment = db.prepare('SELECT thread_id FROM comments WHERE id = ?').get(commentId) as { thread_id: string } | undefined;

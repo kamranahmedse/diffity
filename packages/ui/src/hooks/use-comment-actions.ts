@@ -55,6 +55,15 @@ export function useCommentActions(sessionId: string | null, enabled: boolean) {
     });
   }, [enabled, invalidateThreads]);
 
+  const editComment = useCallback((commentId: string, body: string) => {
+    if (!enabled) {
+      return;
+    }
+    api.editComment(commentId, body).then(() => {
+      invalidateThreads();
+    });
+  }, [enabled, invalidateThreads]);
+
   const deleteComment = useCallback((threadId: string, commentId: string) => {
     if (!enabled) {
       return;
@@ -88,6 +97,7 @@ export function useCommentActions(sessionId: string | null, enabled: boolean) {
     resolveThread,
     unresolveThread,
     dismissThread,
+    editComment,
     deleteComment,
     deleteThread,
     deleteAllThreads,

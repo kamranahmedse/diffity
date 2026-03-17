@@ -35,6 +35,7 @@ interface HunkWithGapProps {
   onReply?: (threadId: string, body: string, author: CommentAuthor) => void;
   onResolve?: (threadId: string) => void;
   onUnresolve?: (threadId: string) => void;
+  onEditComment?: (commentId: string, body: string) => void;
   onDeleteComment?: (threadId: string, commentId: string) => void;
   onDeleteThread?: (threadId: string) => void;
   onCancelPending?: () => void;
@@ -48,7 +49,7 @@ export function HunkWithGap(props: HunkWithGapProps) {
     hunk, viewMode, syntaxMap, expandControls, topExpansionLines, gapExpansion, gapId, highlightLine,
     threads, pendingSelection, currentAuthor, isLineSelected,
     onLineMouseDown, onLineMouseEnter, onCommentClick,
-    onAddThread, onReply, onResolve, onUnresolve, onDeleteComment, onDeleteThread,
+    onAddThread, onReply, onResolve, onUnresolve, onEditComment, onDeleteComment, onDeleteThread,
     onCancelPending, filePath, onRevertChange, getOriginalCode,
   } = props;
 
@@ -66,7 +67,7 @@ export function HunkWithGap(props: HunkWithGapProps) {
   const commentProps = {
     isLineSelected, onLineMouseDown, onLineMouseEnter, onCommentClick,
     threads, pendingSelection, currentAuthor,
-    onAddThread, onReply, onResolve, onUnresolve, onDeleteComment, onDeleteThread,
+    onAddThread, onReply, onResolve, onUnresolve, onEditComment, onDeleteComment, onDeleteThread,
     onCancelPending, filePath,
   };
 
@@ -101,6 +102,7 @@ export function HunkWithGap(props: HunkWithGapProps) {
         onReply={onReply}
         onResolve={onResolve}
         onUnresolve={onUnresolve}
+        onEditComment={onEditComment}
         onDeleteComment={onDeleteComment}
         onDeleteThread={onDeleteThread}
         onCancelPending={onCancelPending}

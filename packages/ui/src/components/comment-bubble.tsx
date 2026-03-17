@@ -1,9 +1,12 @@
+import { useState, useRef, useEffect } from 'react';
 import type { Comment } from '../types/comment';
+import { PencilIcon } from './icons/pencil-icon';
 import { TrashIcon } from './icons/trash-icon';
 import { MarkdownContent } from './markdown-content';
 
 interface CommentBubbleProps {
   comment: Comment;
+  onEdit: (body: string) => void;
   onDelete: () => void;
 }
 
@@ -51,7 +54,45 @@ function AuthorAvatar(props: { name: string; avatarUrl?: string; type: 'user' | 
 }
 
 export function CommentBubble(props: CommentBubbleProps) {
-  const { comment, onDelete } = props;
+  const { comment, onEdit, onDelete } = props;
+  const [isEditing, setIsEditing] = useState(false);
+  const [editBody, setEditBody] = useState(comment.body);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  useEffect(() => {
+    if (isEditing && textareaRef.current) {
+      textareaRef.current.focus();
+      textareaRef.current.selectionStart = textareaRef.current.value.length;
+    }
+  }, [isEditing]);
+
+  const handleSave = () => {
+    const trimmed = editBody.trim();
+    if (!trimmed || trimmed === comment.body) {
+      setIsEditing(false);
+      setEditBody(comment.body);
+      return;
+    }
+    onEdit(trimmed);
+    setIsEditing(false);
+  };
+
+  const handleCancel = () => {
+    setIsEditing(false);
+    setEditBody(comment.body);
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
+      e.preventDefault();
+      handleSave();
+      return;
+    }
+    if (e.key === 'Escape') {
+      e.preventDefault();
+      handleCancel();
+    }
+  };
 
   return (
     <div className="px-3 py-2 border-b border-border last:border-b-0 group">
@@ -62,16 +103,56 @@ export function CommentBubble(props: CommentBubbleProps) {
           <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-accent/15 text-accent font-medium">bot</span>
         )}
         <span className="text-[11px] text-text-muted">{formatRelativeTime(comment.createdAt)}</span>
-        <button
-          onClick={onDelete}
-          className="ml-auto text-text-muted hover:text-deleted opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
-          title="Delete comment"
-        >
-          <TrashIcon className="w-3.5 h-3.5" />
-        </button>
+        {!isEditing && (
+          <div className="ml-auto flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+            <button
+              onClick={() => setIsEditing(true)}
+              className="text-text-muted hover:text-text cursor-pointer"
+              title="Edit comment"
+            >
+              <PencilIcon className="w-3.5 h-3.5" />
+            </button>
+            <button
+              onClick={onDelete}
+              className="text-text-muted hover:text-deleted cursor-pointer"
+              title="Delete comment"
+            >
+              <TrashIcon className="w-3.5 h-3.5" />
+            </button>
+          </div>
+        )}
       </div>
       <div className="text-sm text-text pl-7">
-        <MarkdownContent content={comment.body} />
+        {isEditing ? (
+          <div>
+            <textarea
+              ref={textareaRef}
+              value={editBody}
+              onChange={(e) => setEditBody(e.target.value)}
+              onKeyDown={handleKeyDown}
+              rows={3}
+              className="w-full px-3 py-2 text-sm bg-bg text-text resize-y outline-none border border-border rounded-md min-h-[60px] font-mono"
+            />
+            <div className="flex items-center gap-2 mt-1">
+              <div className="flex-1" />
+              <button
+                onClick={handleCancel}
+                className="px-3 py-1 text-xs font-medium rounded-md border border-border text-text-secondary hover:bg-hover transition-colors cursor-pointer"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleSave}
+                disabled={!editBody.trim()}
+                className="px-3 py-1 text-xs font-medium rounded-md bg-accent text-white hover:bg-accent-hover transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+              >
+                Save
+              </button>
+            </div>
+          </div>
+        ) : (
+          <MarkdownContent content={comment.body} />
+        )}
       </div>
     </div>
   );

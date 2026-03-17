@@ -16,9 +16,11 @@
     "test": "npm run test -w @diffity/parser && npm run test -w @diffity/ui",
     "link-dev": "tsx scripts/link-dev.ts",
     "dev": "tsx scripts/dev.ts",
-    "changeset": "changeset",
-    "version": "changeset version",
-    "release": "npm run build && changeset publish"
+    "release:patch": "npm run build && bumpp patch --no-push -C packages/cli && npm publish -w packages/cli",
+    "release:minor": "npm run build && bumpp minor --no-push -C packages/cli && npm publish -w packages/cli",
+    "release:major": "npm run build && bumpp major --no-push -C packages/cli && npm publish -w packages/cli",
+    "release:pre": "npm run build && bumpp prerelease --no-push -C packages/cli && npm publish -w packages/cli --tag next",
+    "release": "npm run build && bumpp --no-push -C packages/cli && npm publish -w packages/cli"
   },
   "keywords": [
     "git",
@@ -29,7 +31,7 @@
   "author": "",
   "license": "MIT",
   "devDependencies": {
-    "@changesets/cli": "^2.30.0",
+    "bumpp": "^10.1.0",
     "concurrently": "^9.2.1",
     "gray-matter": "^4.0.3",
     "tsx": "^4.21.0"

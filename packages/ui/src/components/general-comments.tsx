@@ -77,6 +77,7 @@ export function GeneralComments(props: GeneralCommentsProps) {
                   onReply={(body) => commentActions.addReply(thread.id, body, DEFAULT_AUTHOR)}
                   onResolve={() => commentActions.resolveThread(thread.id)}
                   onUnresolve={() => commentActions.unresolveThread(thread.id)}
+                  onEditComment={(commentId, body) => commentActions.editComment(commentId, body)}
                   onDeleteComment={(commentId) => commentActions.deleteComment(thread.id, commentId)}
                   onDeleteThread={() => commentActions.deleteThread(thread.id)}
                 />
@@ -98,12 +99,13 @@ interface GeneralThreadCardProps {
   onReply: (body: string) => void;
   onResolve: () => void;
   onUnresolve: () => void;
+  onEditComment: (commentId: string, body: string) => void;
   onDeleteComment: (commentId: string) => void;
   onDeleteThread: () => void;
 }
 
 function GeneralThreadCard(props: GeneralThreadCardProps) {
-  const { thread, onReply, onResolve, onUnresolve, onDeleteComment, onDeleteThread } = props;
+  const { thread, onReply, onResolve, onUnresolve, onEditComment, onDeleteComment, onDeleteThread } = props;
   const [showReply, setShowReply] = useState(false);
   const resolved = isThreadResolved(thread);
 
@@ -143,6 +145,7 @@ function GeneralThreadCard(props: GeneralThreadCardProps) {
           <CommentBubble
             key={comment.id}
             comment={comment}
+            onEdit={(body) => onEditComment(comment.id, body)}
             onDelete={() => onDeleteComment(comment.id)}
           />
         ))}

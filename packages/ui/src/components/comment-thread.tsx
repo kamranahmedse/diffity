@@ -14,6 +14,7 @@ interface CommentThreadProps {
   onReply: (threadId: string, body: string, author: CommentAuthor) => void;
   onResolve: (threadId: string) => void;
   onUnresolve: (threadId: string) => void;
+  onEditComment: (commentId: string, body: string) => void;
   onDeleteComment: (threadId: string, commentId: string) => void;
   onDeleteThread: (threadId: string) => void;
   currentAuthor: CommentAuthor;
@@ -42,6 +43,7 @@ export function CommentThread(props: CommentThreadProps) {
     onReply,
     onResolve,
     onUnresolve,
+    onEditComment,
     onDeleteComment,
     onDeleteThread,
     currentAuthor,
@@ -157,6 +159,7 @@ export function CommentThread(props: CommentThreadProps) {
             <CommentBubble
               key={comment.id}
               comment={comment}
+              onEdit={(body) => onEditComment(comment.id, body)}
               onDelete={() => onDeleteComment(thread.id, comment.id)}
             />
           ))}

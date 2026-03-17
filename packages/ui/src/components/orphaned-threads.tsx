@@ -8,12 +8,13 @@ import { ThreadBadge } from './ui/thread-badge';
 
 interface OrphanedThreadsProps {
   threads: CommentThreadType[];
+  onEditComment: (commentId: string, body: string) => void;
   onDeleteComment: (threadId: string, commentId: string) => void;
   onDeleteThread: (threadId: string) => void;
 }
 
 export function OrphanedThreads(props: OrphanedThreadsProps) {
-  const { threads, onDeleteComment, onDeleteThread } = props;
+  const { threads, onEditComment, onDeleteComment, onDeleteThread } = props;
   const [isExpanded, setIsExpanded] = useState(false);
 
   if (threads.length === 0) {
@@ -66,6 +67,7 @@ export function OrphanedThreads(props: OrphanedThreadsProps) {
                     <CommentBubble
                       key={comment.id}
                       comment={comment}
+                      onEdit={(body) => onEditComment(comment.id, body)}
                       onDelete={() => onDeleteComment(thread.id, comment.id)}
                     />
                   ))}

@@ -55,6 +55,7 @@ export interface LineRenderProps {
   onReply?: (threadId: string, body: string, author: CommentAuthor) => void;
   onResolve?: (threadId: string) => void;
   onUnresolve?: (threadId: string) => void;
+  onEditComment?: (commentId: string, body: string) => void;
   onDeleteComment?: (threadId: string, commentId: string) => void;
   onDeleteThread?: (threadId: string) => void;
   getOriginalCode?: (side: CommentSide, startLine: number, endLine: number) => string;

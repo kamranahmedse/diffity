@@ -29,6 +29,7 @@ interface HunkBlockSplitProps {
   onReply?: (threadId: string, body: string, author: CommentAuthor) => void;
   onResolve?: (threadId: string) => void;
   onUnresolve?: (threadId: string) => void;
+  onEditComment?: (commentId: string, body: string) => void;
   onDeleteComment?: (threadId: string, commentId: string) => void;
   onDeleteThread?: (threadId: string) => void;
   onCancelPending?: () => void;
@@ -222,6 +223,7 @@ export function renderSplitRows(
             onReply={props.onReply!}
             onResolve={props.onResolve!}
             onUnresolve={props.onUnresolve!}
+            onEditComment={props.onEditComment!}
             onDeleteComment={props.onDeleteComment!}
             onDeleteThread={props.onDeleteThread!}
             currentAuthor={props.currentAuthor!}
@@ -244,6 +246,7 @@ export function renderSplitRows(
             onReply={props.onReply!}
             onResolve={props.onResolve!}
             onUnresolve={props.onUnresolve!}
+            onEditComment={props.onEditComment!}
             onDeleteComment={props.onDeleteComment!}
             onDeleteThread={props.onDeleteThread!}
             currentAuthor={props.currentAuthor!}
@@ -290,14 +293,14 @@ export function HunkBlockSplit(props: HunkBlockSplitProps) {
     hunk, syntaxMap, expandControls, topExpansionLines, bottomExpansionLines, expansionSyntaxMap,
     threads, pendingSelection, currentAuthor, isLineSelected,
     onLineMouseDown, onLineMouseEnter, onCommentClick,
-    onAddThread, onReply, onResolve, onUnresolve, onDeleteComment, onDeleteThread,
+    onAddThread, onReply, onResolve, onUnresolve, onEditComment, onDeleteComment, onDeleteThread,
     onCancelPending, filePath, onRevertChange, getOriginalCode,
   } = props;
 
   const commentProps = {
     isLineSelected, onLineMouseDown, onLineMouseEnter, onCommentClick,
     threads, pendingSelection, currentAuthor,
-    onAddThread, onReply, onResolve, onUnresolve, onDeleteComment, onDeleteThread,
+    onAddThread, onReply, onResolve, onUnresolve, onEditComment, onDeleteComment, onDeleteThread,
     onCancelPending, filePath, getOriginalCode,
   };
 

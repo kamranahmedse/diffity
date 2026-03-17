@@ -26,6 +26,7 @@ interface HunkBlockProps {
   onReply?: (threadId: string, body: string, author: CommentAuthor) => void;
   onResolve?: (threadId: string) => void;
   onUnresolve?: (threadId: string) => void;
+  onEditComment?: (commentId: string, body: string) => void;
   onDeleteComment?: (threadId: string, commentId: string) => void;
   onDeleteThread?: (threadId: string) => void;
   onCancelPending?: () => void;
@@ -75,6 +76,7 @@ export function renderLineWithComments(
           onReply={props.onReply!}
           onResolve={props.onResolve!}
           onUnresolve={props.onUnresolve!}
+          onEditComment={props.onEditComment!}
           onDeleteComment={props.onDeleteComment!}
           onDeleteThread={props.onDeleteThread!}
           currentAuthor={props.currentAuthor!}

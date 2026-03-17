@@ -6,6 +6,7 @@ import {
   updateThreadStatus,
   deleteThread,
   deleteAllThreadsForSession,
+  editComment,
   deleteComment,
   type ThreadStatus,
 } from './threads.js';
@@ -132,6 +133,25 @@ export function handleReviewRoute(req: IncomingMessage, res: ServerResponse, pat
     } catch (err) {
       sendError(res, 500, `Failed to delete thread: ${err}`);
     }
+    return true;
+  }
+
+  const commentEditMatch = pathname.match(/^\/api\/comments\/([^/]+)$/);
+  if (commentEditMatch && req.method === 'PATCH') {
+    readBody(req).then((raw) => {
+      try {
+        const body = JSON.parse(raw);
+        const { body: commentBody } = body;
+        if (!commentBody) {
+          sendError(res, 400, 'Missing body');
+          return;
+        }
+        editComment(commentEditMatch[1], commentBody);
+        sendJson(res, { ok: true });
+      } catch (err) {
+        sendError(res, 500, `Failed to edit comment: ${err}`);
+      }
+    });
     return true;
   }
 

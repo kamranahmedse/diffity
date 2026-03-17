@@ -102,7 +102,7 @@ export function FileBlock(props: FileBlockProps) {
   }, [file, onRevert]);
 
 
-  const { addReply, resolveThread, unresolveThread, dismissThread, deleteComment, deleteThread } = commentActions;
+  const { addReply, resolveThread, unresolveThread, dismissThread, editComment, deleteComment, deleteThread } = commentActions;
 
   const allExpandedLines = useMemo(() => {
     const lines: DiffLineType[] = [];
@@ -452,6 +452,7 @@ export function FileBlock(props: FileBlockProps) {
             <>
             <OrphanedThreads
               threads={orphanedThreads}
+              onEditComment={editComment}
               onDeleteComment={deleteComment}
               onDeleteThread={deleteThread}
             />
@@ -498,6 +499,7 @@ export function FileBlock(props: FileBlockProps) {
                     onReply={addReply}
                     onResolve={resolveThread}
                     onUnresolve={unresolveThread}
+                    onEditComment={editComment}
                     onDeleteComment={deleteComment}
                     onDeleteThread={deleteThread}
                     onCancelPending={handleCancelPending}
@@ -518,7 +520,7 @@ export function FileBlock(props: FileBlockProps) {
                   isLineSelected, onLineMouseDown: handleLineMouseDown, onLineMouseEnter: handleLineMouseEnter,
                   onCommentClick: handleCommentClick, threads: fileThreads, pendingSelection: filePendingSelection,
                   currentAuthor: DEFAULT_AUTHOR, onAddThread: addThread, onReply: addReply,
-                  onResolve: resolveThread, onUnresolve: unresolveThread, onDeleteComment: deleteComment,
+                  onResolve: resolveThread, onUnresolve: unresolveThread, onEditComment: editComment, onDeleteComment: deleteComment,
                   onDeleteThread: deleteThread, onCancelPending: handleCancelPending, filePath,
                   getOriginalCode,
                 };

@@ -181,6 +181,17 @@ export async function deleteThread(threadId: string): Promise<void> {
   }
 }
 
+export async function editComment(commentId: string, body: string): Promise<void> {
+  const res = await fetch(`/api/comments/${commentId}`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ body }),
+  });
+  if (!res.ok) {
+    throw new Error(`HTTP ${res.status}`);
+  }
+}
+
 export async function deleteComment(commentId: string): Promise<void> {
   const res = await fetch(`/api/comments/${commentId}`, {
     method: 'DELETE',
