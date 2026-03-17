@@ -97,6 +97,61 @@ export function DiffView(props: DiffViewProps) {
 
   const [pendingThreadScroll, setPendingThreadScroll] = useState<string | null>(null);
 
+  const settleScrollToElement = useCallback((selector: string, align: ScrollLogicalPosition, onFound?: (el: Element) => void) => {
+    let disposed = false;
+    const scrollEl = scrollElementRef.current;
+
+    const doScroll = () => {
+      const element = document.querySelector(selector);
+      if (!element) {
+        return false;
+      }
+      requestAnimationFrame(() => {
+        if (!disposed) {
+          element.scrollIntoView({ behavior: 'instant', block: align });
+          onFound?.(element);
+        }
+      });
+      return true;
+    };
+
+    if (doScroll()) {
+      return () => { disposed = true; };
+    }
+
+    const observer = scrollEl
+      ? new MutationObserver(() => {
+          if (doScroll()) {
+            observer.disconnect();
+          }
+        })
+      : null;
+
+    observer?.observe(scrollEl!, { childList: true, subtree: true });
+
+    const retryTimers = [50, 150, 300, 500].map((delay) =>
+      setTimeout(() => {
+        if (!disposed && doScroll()) {
+          observer?.disconnect();
+        }
+      }, delay)
+    );
+
+    const timeout = setTimeout(() => {
+      disposed = true;
+      observer?.disconnect();
+    }, 2000);
+
+    return () => {
+      disposed = true;
+      observer?.disconnect();
+      clearTimeout(timeout);
+      for (const timer of retryTimers) {
+        clearTimeout(timer);
+      }
+    };
+  }, []);
+
   useImperativeHandle(handle, () => ({
     scrollToFile: (path: string) => {
       const index = diff.files.findIndex((f) => getFilePath(f) === path);
@@ -104,13 +159,16 @@ export function DiffView(props: DiffViewProps) {
         scrollTargetRef.current = path;
         setHighlightedFile(path);
         virtualizer.scrollToIndex(index, { align: 'start' });
+        settleScrollToElement(`#file-${CSS.escape(encodeURIComponent(path))}`, 'start');
       }
     },
     scrollToThread: (threadId: string, filePath: string) => {
       const element = document.querySelector(`[data-thread-id="${threadId}"]`);
       if (element) {
-        element.scrollIntoView({ behavior: 'instant', block: 'center' });
-        flashThreadElement(element);
+        requestAnimationFrame(() => {
+          element.scrollIntoView({ behavior: 'instant', block: 'center' });
+          flashThreadElement(element);
+        });
         return;
       }
 
@@ -121,53 +179,24 @@ export function DiffView(props: DiffViewProps) {
         setPendingThreadScroll(threadId);
       }
     },
-  }), [diff.files, virtualizer]);
+  }), [diff.files, virtualizer, settleScrollToElement]);
 
   useEffect(() => {
     if (!pendingThreadScroll) {
       return;
     }
 
-    const scrollEl = scrollElementRef.current;
-    if (!scrollEl) {
-      return;
-    }
-
     const threadId = pendingThreadScroll;
 
-    const tryScroll = () => {
-      const element = document.querySelector(`[data-thread-id="${threadId}"]`);
-      if (element) {
+    return settleScrollToElement(
+      `[data-thread-id="${threadId}"]`,
+      'center',
+      (element) => {
         setPendingThreadScroll(null);
-        element.scrollIntoView({ behavior: 'instant', block: 'center' });
         flashThreadElement(element);
-        return true;
-      }
-      return false;
-    };
-
-    if (tryScroll()) {
-      return;
-    }
-
-    const observer = new MutationObserver(() => {
-      if (tryScroll()) {
-        observer.disconnect();
-      }
-    });
-
-    observer.observe(scrollEl, { childList: true, subtree: true });
-
-    const timeout = setTimeout(() => {
-      setPendingThreadScroll(null);
-      observer.disconnect();
-    }, 2000);
-
-    return () => {
-      observer.disconnect();
-      clearTimeout(timeout);
-    };
-  }, [pendingThreadScroll]);
+      },
+    );
+  }, [pendingThreadScroll, settleScrollToElement]);
 
   const getTopVisibleFile = useCallback((): string | null => {
     const visibleItems = virtualizer.getVirtualItems();
