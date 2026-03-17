@@ -16,6 +16,7 @@ import { CheckCircleIcon } from './icons/check-circle-icon';
 import { PageLoader } from './skeleton';
 import { useDiffStaleness } from '../hooks/use-diff-staleness';
 import { type ViewMode, getFilePath, getAutoCollapsedPaths } from '../lib/diff-utils';
+import { buildFirstOpenThreadByFile, buildThreadCountsByFile } from '../lib/comment-navigation';
 import { getHunkHeaders, scrollToElement } from '../lib/dom-utils';
 import type { LineSelection } from '../types/comment';
 import { isThreadResolved } from '../types/comment';
@@ -53,16 +54,16 @@ export function DiffPage(props: DiffPageProps) {
   const { data: serverThreads, isFetched: threadsFetched } = useReviewThreads(reviewsEnabled ? sessionId : null);
   const threads = reviewsEnabled && serverThreads ? serverThreads : [];
   const commentActions = useCommentActions(sessionId, reviewsEnabled);
+  const commentCountsByFile = useMemo(() => buildThreadCountsByFile(threads), [threads]);
 
   const filesWithComments = useMemo(() => {
-    const paths = new Set<string>();
-    for (const thread of threads) {
-      if (!isThreadResolved(thread)) {
-        paths.add(thread.filePath);
-      }
-    }
-    return paths;
-  }, [threads]);
+    return new Set(commentCountsByFile.keys());
+  }, [commentCountsByFile]);
+
+  const firstOpenThreadByFile = useMemo(() => {
+    const fileOrder = diff?.files.map(file => getFilePath(file)) ?? [];
+    return buildFirstOpenThreadByFile(threads, fileOrder);
+  }, [diff, threads]);
 
   const handleAddThread = useCallback((...args: Parameters<typeof commentActions.addThread>) => {
     commentActions.addThread(...args);
@@ -253,6 +254,7 @@ export function DiffPage(props: DiffPageProps) {
   }, []);
 
   const handleScrollToThread = useCallback((threadId: string, filePath: string) => {
+    setActiveFile(filePath);
     setCollapsedFiles((prev) => {
       if (!prev.has(filePath)) {
         return prev;
@@ -263,6 +265,15 @@ export function DiffPage(props: DiffPageProps) {
     });
     diffViewRef.current?.scrollToThread(threadId, filePath);
   }, []);
+
+  const handleSidebarCommentedFileClick = useCallback((path: string) => {
+    const threadId = firstOpenThreadByFile.get(path);
+    if (!threadId) {
+      handleSidebarFileClick(path);
+      return;
+    }
+    handleScrollToThread(threadId, path);
+  }, [firstOpenThreadByFile, handleSidebarFileClick, handleScrollToThread]);
 
   const handleActiveFileFromScroll = useCallback((path: string) => {
     setActiveFile(path);
@@ -337,8 +348,9 @@ export function DiffPage(props: DiffPageProps) {
           files={diff?.files || []}
           activeFile={activeFile}
           reviewedFiles={reviewedFiles}
-          filesWithComments={filesWithComments}
+          commentCountsByFile={commentCountsByFile}
           onFileClick={handleSidebarFileClick}
+          onCommentedFileClick={handleSidebarCommentedFileClick}
         />
         {diff ? (
           <DiffView

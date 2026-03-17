@@ -110,6 +110,25 @@ export function filterTree(nodes: TreeNode[], search: string): TreeNode[] {
   return result;
 }
 
+export function filterTreeToPaths(nodes: TreeNode[], allowedPaths: Set<string>): TreeNode[] {
+  const result: TreeNode[] = [];
+
+  for (const node of nodes) {
+    if (node.type === 'file') {
+      if (allowedPaths.has(node.path)) {
+        result.push(node);
+      }
+    } else {
+      const filteredChildren = filterTreeToPaths(node.children, allowedPaths);
+      if (filteredChildren.length > 0) {
+        result.push({ ...node, children: filteredChildren });
+      }
+    }
+  }
+
+  return result;
+}
+
 export function collectAllDirPaths(nodes: TreeNode[]): string[] {
   const paths: string[] = [];
   for (const node of nodes) {

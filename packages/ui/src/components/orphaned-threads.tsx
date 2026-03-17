@@ -1,5 +1,6 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import type { CommentThread as CommentThreadType } from '../types/comment';
+import { isThreadResolved } from '../types/comment';
 import { CommentBubble } from './comment-bubble';
 import { CommentIcon } from './icons/comment-icon';
 import { ChevronIcon } from './icons/chevron-icon';
@@ -15,7 +16,13 @@ interface OrphanedThreadsProps {
 
 export function OrphanedThreads(props: OrphanedThreadsProps) {
   const { threads, onEditComment, onDeleteComment, onDeleteThread } = props;
-  const [isExpanded, setIsExpanded] = useState(false);
+  const [isExpanded, setIsExpanded] = useState(() => threads.some(thread => !isThreadResolved(thread)));
+
+  useEffect(() => {
+    if (threads.some(thread => !isThreadResolved(thread))) {
+      setIsExpanded(true);
+    }
+  }, [threads]);
 
   if (threads.length === 0) {
     return null;
@@ -42,7 +49,11 @@ export function OrphanedThreads(props: OrphanedThreadsProps) {
               : `Lines ${thread.startLine}–${thread.endLine}`;
 
             return (
-              <div key={thread.id} className="border border-border rounded-lg overflow-hidden max-w-[700px]">
+              <div
+                key={thread.id}
+                data-thread-id={thread.id}
+                className="border border-border rounded-lg overflow-hidden max-w-[700px]"
+              >
                 <div className="flex items-center justify-between px-3 py-1.5 bg-bg-secondary border-b border-border">
                   <div className="flex items-center gap-2">
                     <span className="text-[11px] text-text-muted font-mono">{lineLabel}</span>

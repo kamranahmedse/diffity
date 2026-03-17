@@ -5,6 +5,7 @@ import {
   collapseSingleChildDirs,
   sortTree,
   filterTree,
+  filterTreeToPaths,
   collectAllDirPaths,
 } from '../lib/file-tree';
 import { FileTreeItem } from './file-tree-item';
@@ -14,12 +15,21 @@ interface FileTreeProps {
   search: string;
   activeFile: string | null;
   reviewedFiles: Set<string>;
-  filesWithComments: Set<string>;
+  commentCountsByFile: Map<string, number>;
+  commentedFilesOnly: boolean;
   onFileClick: (path: string) => void;
 }
 
 export function FileTree(props: FileTreeProps) {
-  const { files, search, activeFile, reviewedFiles, filesWithComments, onFileClick } = props;
+  const {
+    files,
+    search,
+    activeFile,
+    reviewedFiles,
+    commentCountsByFile,
+    commentedFilesOnly,
+    onFileClick,
+  } = props;
 
   const tree = useMemo(() => {
     return sortTree(collapseSingleChildDirs(buildFileTree(files)));
@@ -33,12 +43,31 @@ export function FileTree(props: FileTreeProps) {
     setExpandedDirs(new Set(collectAllDirPaths(tree)));
   }
 
-  const displayTree = useMemo(() => {
-    if (!search) {
+  const commentedPaths = useMemo(
+    () => new Set(commentCountsByFile.keys()),
+    [commentCountsByFile],
+  );
+
+  const baseTree = useMemo(() => {
+    if (!commentedFilesOnly) {
       return tree;
     }
-    return filterTree(tree, search);
-  }, [tree, search]);
+    return filterTreeToPaths(tree, commentedPaths);
+  }, [tree, commentedFilesOnly, commentedPaths]);
+
+  const displayTree = useMemo(() => {
+    if (!search) {
+      return baseTree;
+    }
+    return filterTree(baseTree, search);
+  }, [baseTree, search]);
+
+  const effectiveExpandedDirs = useMemo(() => {
+    if (search || commentedFilesOnly) {
+      return new Set(collectAllDirPaths(displayTree));
+    }
+    return expandedDirs;
+  }, [search, commentedFilesOnly, displayTree, expandedDirs]);
 
   const handleToggleDir = useCallback((path: string) => {
     setExpandedDirs(prev => {
@@ -54,19 +83,29 @@ export function FileTree(props: FileTreeProps) {
 
   return (
     <div className="flex-1 overflow-y-auto py-1">
-      {displayTree.map(node => (
-        <FileTreeItem
-          key={node.path}
-          node={node}
-          depth={0}
-          activeFile={activeFile}
-          reviewedFiles={reviewedFiles}
-          filesWithComments={filesWithComments}
-          expandedDirs={expandedDirs}
-          onToggleDir={handleToggleDir}
-          onFileClick={onFileClick}
-        />
-      ))}
+      {displayTree.length === 0 ? (
+        <div className="px-4 py-6 text-center text-xs text-text-muted">
+          {search
+            ? 'No matching files'
+            : commentedFilesOnly
+              ? 'No files with open comments'
+              : 'No files'}
+        </div>
+      ) : (
+        displayTree.map(node => (
+          <FileTreeItem
+            key={node.path}
+            node={node}
+            depth={0}
+            activeFile={activeFile}
+            reviewedFiles={reviewedFiles}
+            commentCountsByFile={commentCountsByFile}
+            expandedDirs={effectiveExpandedDirs}
+            onToggleDir={handleToggleDir}
+            onFileClick={onFileClick}
+          />
+        ))
+      )}
     </div>
   );
 }

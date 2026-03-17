@@ -11,14 +11,23 @@ interface FileTreeItemProps {
   depth: number;
   activeFile: string | null;
   reviewedFiles: Set<string>;
-  filesWithComments: Set<string>;
+  commentCountsByFile: Map<string, number>;
   expandedDirs: Set<string>;
   onToggleDir: (path: string) => void;
   onFileClick: (path: string) => void;
 }
 
 export function FileTreeItem(props: FileTreeItemProps) {
-  const { node, depth, activeFile, reviewedFiles, filesWithComments, expandedDirs, onToggleDir, onFileClick } = props;
+  const {
+    node,
+    depth,
+    activeFile,
+    reviewedFiles,
+    commentCountsByFile,
+    expandedDirs,
+    onToggleDir,
+    onFileClick,
+  } = props;
   const paddingLeft = depth * 12 + 8;
 
   if (node.type === 'dir') {
@@ -41,7 +50,7 @@ export function FileTreeItem(props: FileTreeItemProps) {
             depth={depth + 1}
             activeFile={activeFile}
             reviewedFiles={reviewedFiles}
-            filesWithComments={filesWithComments}
+            commentCountsByFile={commentCountsByFile}
             expandedDirs={expandedDirs}
             onToggleDir={onToggleDir}
             onFileClick={onFileClick}
@@ -53,7 +62,8 @@ export function FileTreeItem(props: FileTreeItemProps) {
 
   const isActive = activeFile === node.path;
   const isReviewed = reviewedFiles.has(node.path);
-  const hasComments = filesWithComments.has(node.path);
+  const threadCount = commentCountsByFile.get(node.path) ?? 0;
+  const hasComments = threadCount > 0;
 
   return (
     <button
@@ -72,7 +82,13 @@ export function FileTreeItem(props: FileTreeItemProps) {
         {node.name}
       </span>
       {hasComments && (
-        <CommentIcon className="w-3 h-3 text-accent shrink-0" />
+        <span
+          className="flex items-center gap-1 text-accent shrink-0"
+          title={`${threadCount} open comment thread${threadCount === 1 ? '' : 's'}`}
+        >
+          <CommentIcon className="w-3 h-3" />
+          <span className="text-[10px] font-semibold leading-none">{threadCount}</span>
+        </span>
       )}
       {isReviewed ? (
         <span className="text-added text-[10px] shrink-0" title="Viewed">&#10003;</span>

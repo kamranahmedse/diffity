@@ -1,4 +1,8 @@
-import { createServer, type IncomingMessage, type ServerResponse } from 'node:http';
+import {
+  createServer,
+  type IncomingMessage,
+  type ServerResponse,
+} from 'node:http';
 import { createHash } from 'node:crypto';
 import { readFileSync, existsSync } from 'node:fs';
 import { join, extname } from 'node:path';
@@ -25,7 +29,10 @@ import {
 } from '@diffity/git';
 import { findOrCreateSession } from './session.js';
 import { handleReviewRoute } from './review-routes.js';
-import { registerInstance, deregisterInstance, type RegistryEntry } from './registry.js';
+import {
+  registerInstance,
+  deregisterInstance
+} from './registry.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
@@ -74,7 +81,6 @@ function serveStatic(res: ServerResponse, filePath: string) {
   res.end(content);
 }
 
-
 function descriptionForRef(ref: string): string {
   switch (ref) {
     case 'staged':
@@ -95,7 +101,6 @@ function descriptionForRef(ref: string): string {
   }
 }
 
-
 interface ServerResult {
   port: number;
   close: () => void;
@@ -111,7 +116,14 @@ function readBody(req: IncomingMessage): Promise<string> {
 }
 
 export function startServer(options: ServerOptions): Promise<ServerResult> {
-  const { port, portIsExplicit, diffArgs, description, effectiveRef, registryInfo } = options;
+  const {
+    port,
+    portIsExplicit,
+    diffArgs,
+    description,
+    effectiveRef,
+    registryInfo,
+  } = options;
 
   const includeUntracked = diffArgs.length === 0;
   function enrichWithLineCounts(diff: ParsedDiff, baseRef: string): ParsedDiff {
@@ -141,188 +153,223 @@ export function startServer(options: ServerOptions): Promise<ServerResult> {
 
   const uiDir = join(__dirname, 'ui');
 
-  const server = createServer(async (req: IncomingMessage, res: ServerResponse) => {
-    const url = new URL(req.url || '/', `http://localhost:${port}`);
-    const pathname = url.pathname;
-
-    res.setHeader('Access-Control-Allow-Origin', '*');
-    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PATCH, DELETE, OPTIONS');
-    res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
-
-    if (req.method === 'OPTIONS') {
-      res.writeHead(204);
-      res.end();
-      return;
-    }
-
-    if (pathname === '/api/revert-file' && req.method === 'POST') {
+  const server = createServer(
+    async (req: IncomingMessage, res: ServerResponse) => {
       try {
-        const body = JSON.parse(await readBody(req));
-        const { filePath: path, isUntracked } = body;
-        if (!path || typeof path !== 'string') {
-          sendError(res, 400, 'Missing filePath');
+        const url = new URL(req.url || '/', `http://localhost:${port}`);
+        const pathname = url.pathname;
+
+        res.setHeader('Access-Control-Allow-Origin', '*');
+        res.setHeader(
+          'Access-Control-Allow-Methods',
+          'GET, POST, PATCH, DELETE, OPTIONS',
+        );
+        res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+
+        if (req.method === 'OPTIONS') {
+          res.writeHead(204);
+          res.end();
           return;
         }
-        revertFile(path, !!isUntracked);
-        sendJson(res, { ok: true });
-      } catch (err) {
-        sendError(res, 500, `Failed to revert file: ${err}`);
-      }
-      return;
-    }
 
-    if (pathname === '/api/revert-hunk' && req.method === 'POST') {
-      try {
-        const body = JSON.parse(await readBody(req));
-        const { patch } = body;
-        if (!patch || typeof patch !== 'string') {
-          sendError(res, 400, 'Missing patch');
+        if (pathname === '/api/revert-file' && req.method === 'POST') {
+          try {
+            const body = JSON.parse(await readBody(req));
+            const { filePath: path, isUntracked } = body;
+            if (!path || typeof path !== 'string') {
+              sendError(res, 400, 'Missing filePath');
+              return;
+            }
+            revertFile(path, !!isUntracked);
+            sendJson(res, { ok: true });
+          } catch (err) {
+            sendError(res, 500, `Failed to revert file: ${err}`);
+          }
           return;
         }
-        revertHunk(patch);
-        sendJson(res, { ok: true });
+
+        if (pathname === '/api/revert-hunk' && req.method === 'POST') {
+          try {
+            const body = JSON.parse(await readBody(req));
+            const { patch } = body;
+            if (!patch || typeof patch !== 'string') {
+              sendError(res, 400, 'Missing patch');
+              return;
+            }
+            revertHunk(patch);
+            sendJson(res, { ok: true });
+          } catch (err) {
+            sendError(res, 500, `Failed to revert hunk: ${err}`);
+          }
+          return;
+        }
+
+        if (pathname === '/api/overview') {
+          try {
+            const staged = getStagedFiles();
+            const unstaged = getUnstagedFiles();
+            const untracked = getUntrackedFiles();
+
+            const fileMap = new Map<string, string>();
+            for (const f of staged) {
+              fileMap.set(f, 'staged');
+            }
+            for (const f of unstaged) {
+              fileMap.set(f, 'modified');
+            }
+            for (const f of untracked) {
+              fileMap.set(f, 'added');
+            }
+
+            const files = Array.from(fileMap.entries()).map(
+              ([path, status]) => ({ path, status }),
+            );
+
+            sendJson(res, { files });
+          } catch (err) {
+            sendError(res, 500, `Failed to get overview: ${err}`);
+          }
+          return;
+        }
+
+        if (pathname === '/api/commits') {
+          const count = parseInt(url.searchParams.get('count') || '10', 10);
+          const skip = parseInt(url.searchParams.get('skip') || '0', 10);
+          const search = url.searchParams.get('search') || undefined;
+          try {
+            const commits = getRecentCommits({ count, skip, search });
+            sendJson(res, { commits, hasMore: commits.length === count });
+          } catch (err) {
+            sendError(res, 500, `Failed to get commits: ${err}`);
+          }
+          return;
+        }
+
+        if (pathname === '/api/diff-fingerprint') {
+          const ref = url.searchParams.get('ref');
+          let stat: string;
+          if (ref) {
+            switch (ref) {
+              case 'work':
+              case 'working':
+                stat =
+                  getDiffStat(['HEAD']) + '\n' + getUntrackedFiles().join('\n');
+                break;
+              case 'staged':
+                stat = getDiffStat(['--staged']);
+                break;
+              case 'unstaged':
+                stat = getDiffStat([]);
+                break;
+              case 'untracked':
+                stat = getUntrackedFiles().join('\n');
+                break;
+              default:
+                stat = getDiffStat([normalizeRef(ref)]);
+                break;
+            }
+          } else {
+            stat = getDiffStat(diffArgs);
+            if (includeUntracked) {
+              stat += '\n' + getUntrackedFiles().join('\n');
+            }
+          }
+          const hash = createHash('sha1')
+            .update(stat)
+            .digest('hex')
+            .slice(0, 12);
+          sendJson(res, { fingerprint: hash });
+          return;
+        }
+
+        if (pathname === '/api/diff') {
+          const ref = url.searchParams.get('ref');
+          const whitespace = url.searchParams.get('whitespace');
+          const extraArgs = whitespace === 'hide' ? ['-w'] : [];
+          const baseRef = ref ? resolveBaseRef(ref) : 'HEAD';
+
+          if (ref) {
+            sendJson(
+              res,
+              enrichWithLineCounts(
+                parseDiff(resolveRef(ref, extraArgs)),
+                baseRef,
+              ),
+            );
+            return;
+          }
+
+          if (whitespace === 'hide') {
+            sendJson(
+              res,
+              enrichWithLineCounts(
+                parseDiff(getFullDiff([...diffArgs, '-w'])),
+                baseRef,
+              ),
+            );
+            return;
+          }
+          sendJson(
+            res,
+            enrichWithLineCounts(parseDiff(getFullDiff(diffArgs)), baseRef),
+          );
+          return;
+        }
+
+        if (pathname.startsWith('/api/file/')) {
+          const filePath = decodeURIComponent(
+            pathname.slice('/api/file/'.length),
+          );
+          const ref = url.searchParams.get('ref') || undefined;
+          const baseRef = ref ? resolveBaseRef(ref) : 'HEAD';
+          try {
+            const content = getFileContent(filePath, baseRef);
+            sendJson(res, { path: filePath, content: content.split('\n') });
+          } catch {
+            sendError(res, 404, `File not found: ${filePath}`);
+          }
+          return;
+        }
+
+        if (pathname === '/api/info') {
+          const ref = url.searchParams.get('ref') || effectiveRef;
+          const info = getRepoInfo();
+          let refDescription =
+            description || diffArgs.join(' ') || 'Unstaged changes';
+          if (url.searchParams.get('ref')) {
+            refDescription = descriptionForRef(url.searchParams.get('ref')!);
+          }
+          const capabilities = getRefCapabilities(ref);
+          let sessionId: string | null = null;
+          if (ref) {
+            const session = findOrCreateSession(ref);
+            sessionId = session.id;
+          }
+          sendJson(res, {
+            ...info,
+            description: refDescription,
+            capabilities,
+            sessionId,
+          });
+          return;
+        }
+
+        if (handleReviewRoute(req, res, pathname, url)) {
+          return;
+        }
+
+        let filePath = join(uiDir, pathname === '/' ? 'index.html' : pathname);
+        if (!existsSync(filePath)) {
+          filePath = join(uiDir, 'index.html');
+        }
+        serveStatic(res, filePath);
       } catch (err) {
-        sendError(res, 500, `Failed to revert hunk: ${err}`);
-      }
-      return;
-    }
-
-    if (pathname === '/api/overview') {
-      try {
-        const staged = getStagedFiles();
-        const unstaged = getUnstagedFiles();
-        const untracked = getUntrackedFiles();
-
-        const fileMap = new Map<string, string>();
-        for (const f of staged) {
-          fileMap.set(f, 'staged');
-        }
-        for (const f of unstaged) {
-          fileMap.set(f, 'modified');
-        }
-        for (const f of untracked) {
-          fileMap.set(f, 'added');
-        }
-
-        const files = Array.from(fileMap.entries()).map(([path, status]) => ({ path, status }));
-
-        sendJson(res, { files });
-      } catch (err) {
-        sendError(res, 500, `Failed to get overview: ${err}`);
-      }
-      return;
-    }
-
-    if (pathname === '/api/commits') {
-      const count = parseInt(url.searchParams.get('count') || '10', 10);
-      const skip = parseInt(url.searchParams.get('skip') || '0', 10);
-      const search = url.searchParams.get('search') || undefined;
-      try {
-        const commits = getRecentCommits({ count, skip, search });
-        sendJson(res, { commits, hasMore: commits.length === count });
-      } catch (err) {
-        sendError(res, 500, `Failed to get commits: ${err}`);
-      }
-      return;
-    }
-
-    if (pathname === '/api/diff-fingerprint') {
-      const ref = url.searchParams.get('ref');
-      let stat: string;
-      if (ref) {
-        switch (ref) {
-          case 'work':
-          case 'working':
-            stat = getDiffStat(['HEAD']) + '\n' + getUntrackedFiles().join('\n');
-            break;
-          case 'staged':
-            stat = getDiffStat(['--staged']);
-            break;
-          case 'unstaged':
-            stat = getDiffStat([]);
-            break;
-          case 'untracked':
-            stat = getUntrackedFiles().join('\n');
-            break;
-          default:
-            stat = getDiffStat([normalizeRef(ref)]);
-            break;
-        }
-      } else {
-        stat = getDiffStat(diffArgs);
-        if (includeUntracked) {
-          stat += '\n' + getUntrackedFiles().join('\n');
+        if (!res.headersSent) {
+          sendError(res, 500, `${err instanceof Error ? err.message : err}`);
         }
       }
-      const hash = createHash('sha1').update(stat).digest('hex').slice(0, 12);
-      sendJson(res, { fingerprint: hash });
-      return;
-    }
-
-    if (pathname === '/api/diff') {
-      const ref = url.searchParams.get('ref');
-      const whitespace = url.searchParams.get('whitespace');
-      const extraArgs = whitespace === 'hide' ? ['-w'] : [];
-      const baseRef = ref ? resolveBaseRef(ref) : 'HEAD';
-
-      if (ref) {
-        sendJson(res, enrichWithLineCounts(parseDiff(resolveRef(ref, extraArgs)), baseRef));
-        return;
-      }
-
-      if (whitespace === 'hide') {
-        sendJson(res, enrichWithLineCounts(parseDiff(getFullDiff([...diffArgs, '-w'])), baseRef));
-        return;
-      }
-      sendJson(res, enrichWithLineCounts(parseDiff(getFullDiff(diffArgs)), baseRef));
-      return;
-    }
-
-    if (pathname.startsWith('/api/file/')) {
-      const filePath = decodeURIComponent(pathname.slice('/api/file/'.length));
-      const ref = url.searchParams.get('ref') || undefined;
-      const baseRef = ref ? resolveBaseRef(ref) : 'HEAD';
-      try {
-        const content = getFileContent(filePath, baseRef);
-        sendJson(res, { path: filePath, content: content.split('\n') });
-      } catch {
-        sendError(res, 404, `File not found: ${filePath}`);
-      }
-      return;
-    }
-
-    if (pathname === '/api/info') {
-      const ref = url.searchParams.get('ref') || effectiveRef;
-      const info = getRepoInfo();
-      let refDescription = description || diffArgs.join(' ') || 'Unstaged changes';
-      if (url.searchParams.get('ref')) {
-        refDescription = descriptionForRef(url.searchParams.get('ref')!);
-      }
-      const capabilities = getRefCapabilities(ref);
-      let sessionId: string | null = null;
-      if (ref) {
-        const session = findOrCreateSession(ref);
-        sessionId = session.id;
-      }
-      sendJson(res, {
-        ...info,
-        description: refDescription,
-        capabilities,
-        sessionId,
-      });
-      return;
-    }
-
-    if (handleReviewRoute(req, res, pathname, url)) {
-      return;
-    }
-
-    let filePath = join(uiDir, pathname === '/' ? 'index.html' : pathname);
-    if (!existsSync(filePath)) {
-      filePath = join(uiDir, 'index.html');
-    }
-    serveStatic(res, filePath);
-  });
+    },
+  );
 
   const closeFn = () => {
     deregisterInstance(process.pid);

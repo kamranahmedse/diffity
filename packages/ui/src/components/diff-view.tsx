@@ -119,13 +119,14 @@ export function DiffView(props: DiffViewProps) {
       return () => { disposed = true; };
     }
 
-    const observer = scrollEl
-      ? new MutationObserver(() => {
-          if (doScroll()) {
-            observer.disconnect();
-          }
-        })
-      : null;
+    let observer: MutationObserver | null = null;
+    if (scrollEl) {
+      observer = new MutationObserver(() => {
+        if (doScroll()) {
+          observer?.disconnect();
+        }
+      });
+    }
 
     observer?.observe(scrollEl!, { childList: true, subtree: true });
 
