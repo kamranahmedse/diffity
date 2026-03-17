@@ -94,9 +94,9 @@ The review needs a running session to add comments to, but we don't want to open
 1. Run `{{binary}} agent list` to confirm all comments were created.
 2. Open the browser now that comments are ready:
    ```
-   open http://localhost:<port>
+   {{binary}} open <ref>
    ```
-   Use the port from Step 1.
+   Pass the ref argument if one was provided (e.g. `{{binary}} open HEAD~3`). Omit it to open the default view.
 3. Tell the user the review is ready and they can check the browser. Example:
 
    > Review complete — check your browser.

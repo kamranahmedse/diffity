@@ -1,8 +1,4 @@
 import { Command } from 'commander';
-import { execSync } from 'node:child_process';
-import { rmSync, existsSync } from 'node:fs';
-import { join } from 'node:path';
-import { homedir } from 'node:os';
 import { createHash } from 'node:crypto';
 import { createRequire } from 'node:module';
 import open from 'open';
@@ -10,7 +6,12 @@ import pc from 'picocolors';
 import { isGitRepo, isValidGitRef, getRepoRoot, getRepoName } from '@diffity/git';
 import { startServer } from './server.js';
 import { registerAgentCommands } from './agent.js';
-import { findInstanceForRepo, findAvailablePort, readRegistry, deregisterInstance } from './registry.js';
+import { findInstanceForRepo, findAvailablePort, deregisterInstance } from './registry.js';
+import { registerOpenCommand } from './commands/open.js';
+import { registerListCommand } from './commands/list.js';
+import { registerPruneCommand } from './commands/prune.js';
+import { registerUpdateCommand } from './commands/update.js';
+import { registerDoctorCommand } from './commands/doctor.js';
 
 const require = createRequire(import.meta.url);
 const pkg = require('../package.json');
@@ -179,145 +180,11 @@ Examples:
     }
   });
 
-program
-  .command('list')
-  .description('List all running diffity instances')
-  .option('--json', 'Output as JSON')
-  .action((opts) => {
-    const entries = readRegistry();
-
-    if (opts.json) {
-      console.log(JSON.stringify(entries, null, 2));
-      return;
-    }
-
-    if (entries.length === 0) {
-      console.log(pc.dim('No running diffity instances.'));
-      return;
-    }
-
-    console.log('');
-    console.log(
-      `  ${pc.dim('PORT')}   ${pc.dim('PID'.padEnd(8))}${pc.dim('REPO'.padEnd(22))}${pc.dim('REF'.padEnd(22))}${pc.dim('STARTED')}`,
-    );
-
-    for (const entry of entries) {
-      const ago = getTimeAgo(entry.startedAt);
-      console.log(
-        `  ${String(entry.port).padEnd(7)}${String(entry.pid).padEnd(8)}${entry.repoName.slice(0, 20).padEnd(22)}${entry.ref.slice(0, 20).padEnd(22)}${pc.dim(ago)}`,
-      );
-    }
-    console.log('');
-  });
-
-function getTimeAgo(isoDate: string): string {
-  const diff = Date.now() - new Date(isoDate).getTime();
-  const seconds = Math.floor(diff / 1000);
-  if (seconds < 60) {
-    return 'just now';
-  }
-  const minutes = Math.floor(seconds / 60);
-  if (minutes < 60) {
-    return `${minutes}m ago`;
-  }
-  const hours = Math.floor(minutes / 60);
-  if (hours < 24) {
-    return `${hours}h ago`;
-  }
-  const days = Math.floor(hours / 24);
-  return `${days}d ago`;
-}
-
-program
-  .command('prune')
-  .description('Remove all diffity data (database, sessions) for all repos')
-  .action(() => {
-    const dir = join(homedir(), '.diffity');
-    if (!existsSync(dir)) {
-      console.log(pc.dim('Nothing to prune.'));
-      return;
-    }
-
-    const running = readRegistry();
-    for (const entry of running) {
-      try {
-        process.kill(entry.pid, 'SIGTERM');
-      } catch {}
-    }
-    if (running.length > 0) {
-      console.log(pc.dim(`  Stopped ${running.length} running instance${running.length > 1 ? 's' : ''}.`));
-    }
-
-    rmSync(dir, { recursive: true, force: true });
-    console.log(pc.green('Pruned all diffity data (~/.diffity).'));
-  });
-
-program
-  .command('update')
-  .description('Update diffity to the latest version')
-  .action(() => {
-    try {
-      const registry = execSync('npm view diffity version', { encoding: 'utf-8', stdio: ['pipe', 'pipe', 'pipe'] }).trim();
-      if (registry === pkg.version) {
-        console.log(pc.green(`Already on the latest version (${pkg.version}).`));
-        return;
-      }
-      console.log(`${pc.dim(`Current: ${pkg.version}`)} → ${pc.bold(registry)}`);
-      console.log(pc.dim('Updating...'));
-      execSync('npm install -g diffity@latest', { stdio: 'inherit' });
-      console.log(pc.green(`Updated to ${registry}.`));
-    } catch {
-      console.error(pc.red('Failed to update. Try running: npm install -g diffity@latest'));
-      process.exit(1);
-    }
-  });
-
-program
-  .command('doctor')
-  .description('Check that diffity can run correctly')
-  .action(() => {
-    let ok = true;
-
-    process.stdout.write('  git          ');
-    try {
-      const gitVersion = execSync('git --version', { encoding: 'utf-8', stdio: ['pipe', 'pipe', 'pipe'] }).trim();
-      console.log(pc.green(`✓ ${gitVersion}`));
-    } catch {
-      console.log(pc.red('✗ git not found'));
-      ok = false;
-    }
-
-    process.stdout.write('  git repo     ');
-    if (isGitRepo()) {
-      console.log(pc.green('✓ inside a git repository'));
-    } else {
-      console.log(pc.yellow('- not inside a git repository'));
-    }
-
-    process.stdout.write('  node         ');
-    console.log(pc.green(`✓ ${process.version}`));
-
-    process.stdout.write('  sqlite       ');
-    try {
-      require('better-sqlite3');
-      console.log(pc.green('✓ better-sqlite3 loaded'));
-    } catch {
-      console.log(pc.red('✗ better-sqlite3 failed to load (native module issue)'));
-      ok = false;
-    }
-
-    process.stdout.write('  version      ');
-    console.log(pc.green(`✓ diffity ${pkg.version}`));
-
-    console.log('');
-    if (ok) {
-      console.log(pc.green('  All checks passed.'));
-    } else {
-      console.log(pc.red('  Some checks failed. Fix the issues above and try again.'));
-      process.exit(1);
-    }
-  });
-
+registerOpenCommand(program);
+registerListCommand(program);
+registerPruneCommand(program);
+registerUpdateCommand(program, pkg.version);
+registerDoctorCommand(program, pkg.version);
 registerAgentCommands(program);
 
 program.parse();
