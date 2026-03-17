@@ -10,3 +10,4 @@ dist/
 .bin/
 .claude/skills/
 packages/cli/README.md
+packages/cli/src/generated/

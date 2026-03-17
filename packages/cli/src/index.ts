@@ -12,6 +12,7 @@ import { registerListCommand } from './commands/list.js';
 import { registerPruneCommand } from './commands/prune.js';
 import { registerUpdateCommand } from './commands/update.js';
 import { registerDoctorCommand } from './commands/doctor.js';
+import { SKILLS_HASH } from './generated/skills-hash.js';
 
 const require = createRequire(import.meta.url);
 const pkg = require('../package.json');
@@ -22,6 +23,7 @@ program
   .name('diffity')
   .description('GitHub-style git diff viewer in the browser')
   .version(pkg.version)
+  .option('--skills-hash', 'Print skills hash and exit', false)
   .argument('[refs...]', 'Git refs to diff')
   .option('--base <ref>', 'Base ref to compare from (e.g. main, HEAD~3, v1.0.0)')
   .option('--compare <ref>', 'Ref to compare against base (default: working tree)')
@@ -42,6 +44,11 @@ Common usage:
 The --base/--compare flags are optional — positional args and
 range syntax (main..feature, main...feature) also work.`)
   .action(async (refs: string[], opts) => {
+    if (opts.skillsHash) {
+      console.log(SKILLS_HASH);
+      return;
+    }
+
     if (!isGitRepo()) {
       console.error(pc.red('Error: Not a git repository'));
       process.exit(1);
@@ -203,7 +210,7 @@ range syntax (main..feature, main...feature) also work.`)
 registerOpenCommand(program);
 registerListCommand(program);
 registerPruneCommand(program);
-registerUpdateCommand(program, pkg.version);
+registerUpdateCommand(program, pkg.version, SKILLS_HASH);
 registerDoctorCommand(program, pkg.version);
 registerAgentCommands(program);
 
