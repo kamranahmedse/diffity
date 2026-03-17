@@ -2,7 +2,7 @@
 
 # diffity
 
-[Diffity](https://diffity.com) is an agent-agnostic, GitHub-style diff viewer and code review tool.
+Diffity is an agent-agnostic, GitHub-style diff viewer and code review tool.
 
 ```bash
 npm install -g diffity

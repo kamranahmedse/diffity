@@ -9,7 +9,7 @@ export interface ExpandControls {
   remainingLines: number;
   remainingUp: number;
   remainingDown: number;
-  loading: boolean;
+  loadingDirection: 'up' | 'down' | 'all' | null;
   wasExpanded: boolean;
   onExpand: (direction: 'up' | 'down' | 'all') => void;
 }
@@ -56,7 +56,7 @@ export function HunkHeader(props: HunkHeaderProps) {
     );
   }
 
-  const { position, remainingLines, remainingUp, remainingDown, loading, wasExpanded, onExpand } = expandControls;
+  const { position, remainingLines, remainingUp, remainingDown, loadingDirection, wasExpanded, onExpand } = expandControls;
 
   if (remainingLines <= 0) {
     if (wasExpanded) {
@@ -78,7 +78,7 @@ export function HunkHeader(props: HunkHeaderProps) {
   if (position === 'top') {
     return (
       <tr className="bg-diff-hunk-bg group/hunk">
-        {loading ? <SpinnerCell /> : (
+        {loadingDirection ? <SpinnerCell /> : (
           <td className={gutterCell}>
             <button className={expandBtn} onClick={() => onExpand('up')} title={`Expand ${Math.min(remainingLines, 20)} lines`}>
               <ArrowUpIcon />
@@ -95,7 +95,7 @@ export function HunkHeader(props: HunkHeaderProps) {
   if (isSmallGap || (!showUp && showDown) || (showUp && !showDown)) {
     return (
       <tr className="bg-diff-hunk-bg group/hunk">
-        {loading ? <SpinnerCell /> : (
+        {loadingDirection ? <SpinnerCell /> : (
           <td className={gutterCell}>
             <button
               className={expandBtn}
@@ -116,7 +116,7 @@ export function HunkHeader(props: HunkHeaderProps) {
   return (
     <>
       <tr className={expandRow}>
-        {loading ? <SpinnerCell /> : (
+        {loadingDirection === 'down' ? <SpinnerCell /> : (
           <td className={gutterCell}>
             <button className={expandBtn} onClick={() => onExpand('down')} title="Expand down">
               <ArrowDownIcon />
@@ -132,11 +132,13 @@ export function HunkHeader(props: HunkHeaderProps) {
         </td>
       </tr>
       <tr className={expandRow}>
-        <td className={gutterCell}>
-          <button className={expandBtn} onClick={() => onExpand('up')} title="Expand up">
-            <ArrowUpIcon />
-          </button>
-        </td>
+        {loadingDirection === 'up' ? <SpinnerCell /> : (
+          <td className={gutterCell}>
+            <button className={expandBtn} onClick={() => onExpand('up')} title="Expand up">
+              <ArrowUpIcon />
+            </button>
+          </td>
+        )}
         <td colSpan={3} />
       </tr>
     </>

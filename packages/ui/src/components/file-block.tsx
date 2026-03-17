@@ -80,7 +80,7 @@ export function FileBlock(props: FileBlockProps) {
 
   const [largeDiffExpanded, setLargeDiffExpanded] = useState(false);
   const [expansions, setExpansions] = useState<Map<string, GapExpansion>>(new Map());
-  const [loadingGap, setLoadingGap] = useState<string | null>(null);
+  const [loadingGap, setLoadingGap] = useState<{ id: string; direction: 'up' | 'down' | 'all' } | null>(null);
 
   const filePath = getFilePath(file);
   const showRename = file.status === 'renamed' && file.oldPath !== file.newPath;
@@ -231,7 +231,7 @@ export function FileBlock(props: FileBlockProps) {
   }, [gaps]);
 
   const handleExpand = useCallback(async (gap: ExpandableGap, direction: 'up' | 'down' | 'all') => {
-    setLoadingGap(gap.id);
+    setLoadingGap({ id: gap.id, direction });
 
     const lines = await queryClient.ensureQueryData(
       fileContentOptions(fileContentPath, true, baseRef)
@@ -313,7 +313,7 @@ export function FileBlock(props: FileBlockProps) {
       remainingLines: remaining.total,
       remainingUp: remaining.up,
       remainingDown: remaining.down,
-      loading: loadingGap === gap.id,
+      loadingDirection: loadingGap?.id === gap.id ? loadingGap.direction : null,
       wasExpanded,
       onExpand: (dir: 'up' | 'down' | 'all') => handleExpand(gap, dir),
     };
@@ -510,7 +510,7 @@ export function FileBlock(props: FileBlockProps) {
                     <ExpandRow
                       position="bottom"
                       remainingLines={bottomRemaining}
-                      loading={loadingGap === 'bottom'}
+                      loading={loadingGap?.id === 'bottom'}
                       onExpand={(dir) => handleExpand(bottomGap, dir)}
                     />
                     {bottomExpansion?.linesFromBottom && bottomExpansion.linesFromBottom.length > 0 &&
