@@ -250,7 +250,7 @@ export function Toolbar(props: ToolbarProps) {
         )}
         <div className="relative" ref={menuRef}>
           <button
-            className="p-1.5 rounded-md text-text-muted hover:text-text hover:bg-hover transition-colors cursor-pointer"
+            className="p-1.5 rounded-md text-text-muted hover:text-text hover:bg-hover bg-bg-tertiary transition-colors cursor-pointer"
             onClick={() => setShowMenu(!showMenu)}
             title="More options"
           >

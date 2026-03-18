@@ -1,6 +1,5 @@
 import type { TreeNode } from '../lib/file-tree';
 import { cn } from '../lib/cn';
-import { DiffStats } from './diff-stats';
 import { StatusBadge } from './ui/status-badge';
 import { ChevronIcon } from './icons/chevron-icon';
 import { FolderIcon } from './icons/folder-icon';
@@ -90,10 +89,8 @@ export function FileTreeItem(props: FileTreeItemProps) {
           <span className="text-[10px] font-semibold leading-none">{threadCount}</span>
         </span>
       )}
-      {isReviewed ? (
+      {isReviewed && (
         <span className="text-added text-[10px] shrink-0" title="Viewed">&#10003;</span>
-      ) : (
-        <DiffStats additions={node.file.additions} deletions={node.file.deletions} />
       )}
     </button>
   );
