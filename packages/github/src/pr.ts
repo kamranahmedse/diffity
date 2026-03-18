@@ -71,16 +71,18 @@ export function pullComments(owner: string, repo: string, prNumber: number): Pul
     if (!Array.isArray(data)) {
       return [];
     }
-    return data.map(c => ({
-      filePath: c.path,
-      side: c.side === 'LEFT' ? 'old' as const : 'new' as const,
-      startLine: c.start_line ?? c.line,
-      endLine: c.line,
-      body: c.body,
-      authorName: c.user.login,
-      authorType: c.user.type === 'Bot' ? 'agent' as const : 'user' as const,
-      createdAt: c.created_at,
-    }));
+    return data
+      .filter(c => c.line !== null)
+      .map(c => ({
+        filePath: c.path,
+        side: c.side === 'LEFT' ? 'old' as const : 'new' as const,
+        startLine: c.start_line ?? c.line,
+        endLine: c.line,
+        body: c.body,
+        authorName: c.user.login,
+        authorType: c.user.type === 'Bot' ? 'agent' as const : 'user' as const,
+        createdAt: c.created_at,
+      }));
   } catch {
     return [];
   }
