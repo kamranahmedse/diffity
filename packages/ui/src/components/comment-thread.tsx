@@ -60,7 +60,7 @@ export function CommentThread(props: CommentThreadProps) {
 
   if (isCollapsed) {
     const collapsedContent = (
-      <td colSpan={colSpan} className={cn('px-4 py-1.5', side === 'new' && viewMode === 'split' && 'border-l border-border')}>
+      <td colSpan={colSpan} className="px-4 py-1.5">
         <button
           onClick={() => setIsCollapsed(false)}
           className='thread-card inline-flex items-center gap-1.5 px-2 py-1 text-xs text-text-muted hover:text-text-secondary hover:bg-hover rounded-md transition-colors cursor-pointer'
@@ -107,9 +107,7 @@ export function CommentThread(props: CommentThreadProps) {
   const threadContent = (
     <td
       colSpan={colSpan}
-      className={cn('px-4 py-3', {
-        'border-l border-border': side === 'new' && viewMode === 'split',
-      })}
+      className="px-4 py-3"
     >
       <div className='thread-card rounded-lg overflow-hidden max-w-[700px] bg-bg-secondary'>
         <div className='flex items-center justify-between px-3 py-1.5'>
