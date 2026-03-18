@@ -23,8 +23,8 @@ export function GeneralComments(props: GeneralCommentsProps) {
   const [showForm, setShowForm] = useState(false);
 
   return (
-    <div className={`border rounded-lg mx-4 mt-4 overflow-hidden ${threads.length > 0 ? 'border-accent/40' : 'border-border'}`}>
-      <div className={`flex items-center gap-2 px-3 py-2 text-sm select-none ${threads.length > 0 ? 'bg-accent/5' : 'bg-bg-secondary'}`}>
+    <div className={`rounded-lg mx-4 mt-4 overflow-hidden ${threads.length > 0 ? 'bg-accent/5' : 'bg-bg-secondary'}`}>
+      <div className="flex items-center gap-2 px-3 py-2 text-sm select-none">
         <button
           onClick={() => setIsExpanded(!isExpanded)}
           className="text-[10px] w-5 h-5 shrink-0 flex items-center justify-center text-text-muted cursor-pointer"
@@ -54,7 +54,7 @@ export function GeneralComments(props: GeneralCommentsProps) {
         </button>
       </div>
       {isExpanded && (
-        <div className="border-t border-border bg-bg">
+        <div className="bg-bg rounded-md mx-1.5 mb-1.5">
           {showForm && (
             <div className="p-3">
               <CommentForm
@@ -110,8 +110,8 @@ function GeneralThreadCard(props: GeneralThreadCardProps) {
   const resolved = isThreadResolved(thread);
 
   return (
-    <div className="border border-border rounded-lg overflow-hidden">
-      <div className="flex items-center justify-between px-3 py-1.5 bg-bg-secondary border-b border-border">
+    <div className="rounded-lg overflow-hidden bg-bg-secondary">
+      <div className="flex items-center justify-between px-3 py-1.5">
         <div className="flex items-center gap-2">
           {resolved && <ThreadBadge variant="resolved" />}
         </div>
@@ -140,7 +140,7 @@ function GeneralThreadCard(props: GeneralThreadCardProps) {
           </button>
         </div>
       </div>
-      <div>
+      <div className="px-0.5">
         {thread.comments.map((comment) => (
           <CommentBubble
             key={comment.id}
@@ -151,7 +151,7 @@ function GeneralThreadCard(props: GeneralThreadCardProps) {
         ))}
       </div>
       {showReply ? (
-        <div className="px-3 py-2 border-t border-border">
+        <div className="px-3 py-2">
           <CommentForm
             onSubmit={(body) => {
               onReply(body);
@@ -163,7 +163,7 @@ function GeneralThreadCard(props: GeneralThreadCardProps) {
           />
         </div>
       ) : (
-        <div className="px-3 py-2 border-t border-border">
+        <div className="px-3 py-1.5">
           <button
             onClick={() => setShowReply(true)}
             className="text-xs text-accent hover:text-accent-hover transition-colors cursor-pointer"

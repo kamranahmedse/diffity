@@ -60,12 +60,12 @@ export function CommentThread(props: CommentThreadProps) {
 
   if (isCollapsed) {
     const collapsedContent = (
-      <td colSpan={colSpan} className='px-4 py-2 border-l border-border'>
+      <td colSpan={colSpan} className={cn('px-4 py-1.5', side === 'new' && viewMode === 'split' && 'border-l border-border')}>
         <button
           onClick={() => setIsCollapsed(false)}
-          className='thread-card flex items-center gap-2 text-xs text-text-muted hover:text-text-secondary transition-colors cursor-pointer rounded'
+          className='thread-card inline-flex items-center gap-1.5 px-2 py-1 text-xs text-text-muted hover:text-text-secondary hover:bg-hover rounded-md transition-colors cursor-pointer'
         >
-          <CommentIcon className='w-4 h-4' />
+          <CommentIcon className='w-3.5 h-3.5' />
           <span>
             {thread.comments.length} comment
             {thread.comments.length !== 1 ? 's' : ''}
@@ -111,8 +111,8 @@ export function CommentThread(props: CommentThreadProps) {
         'border-l border-border': side === 'new' && viewMode === 'split',
       })}
     >
-      <div className='thread-card border border-border rounded-lg overflow-hidden max-w-[700px]'>
-        <div className='flex items-center justify-between px-3 py-1.5 bg-bg-secondary border-b border-border'>
+      <div className='thread-card rounded-lg overflow-hidden max-w-[700px] bg-bg-secondary'>
+        <div className='flex items-center justify-between px-3 py-1.5'>
           <div className='flex items-center gap-2'>
             <span className='text-[11px] text-text-muted font-mono'>
               {lineLabel}
@@ -154,7 +154,7 @@ export function CommentThread(props: CommentThreadProps) {
             </button>
           </div>
         </div>
-        <div>
+        <div className='px-0.5'>
           {thread.comments.map((comment) => (
             <CommentBubble
               key={comment.id}
@@ -165,7 +165,7 @@ export function CommentThread(props: CommentThreadProps) {
           ))}
         </div>
         {showReply ? (
-          <div className='px-3 py-2 border-t border-border'>
+          <div className='px-3 py-2'>
             <CommentForm
               onSubmit={(body) => {
                 onReply(thread.id, body, currentAuthor);
@@ -177,7 +177,7 @@ export function CommentThread(props: CommentThreadProps) {
             />
           </div>
         ) : (
-          <div className='px-3 py-2 border-t border-border'>
+          <div className='px-3 py-1.5'>
             <button
               onClick={() => setShowReply(true)}
               className='text-xs text-accent hover:text-accent-hover transition-colors cursor-pointer'

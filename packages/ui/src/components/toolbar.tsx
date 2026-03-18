@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import type { ParsedDiff } from '@diffity/parser';
 import { cn } from '../lib/cn';
 import { useCopy } from '../hooks/use-copy';
@@ -16,6 +16,9 @@ import { MoonIcon } from './icons/moon-icon';
 import { EyeIcon } from './icons/eye-icon';
 import { EyeOffIcon } from './icons/eye-off-icon';
 import { KeyboardIcon } from './icons/keyboard-icon';
+import { EllipsisIcon } from './icons/ellipsis-icon';
+import { GitBranchIcon } from './icons/git-branch-icon';
+import { DiffStats } from './diff-stats';
 import { ConfirmDialog } from './ui/confirm-dialog';
 import { GENERAL_THREAD_FILE_PATH } from '../types/comment';
 import type { ViewMode } from '../lib/diff-utils';
@@ -35,6 +38,9 @@ interface ToolbarProps {
   threads: CommentThread[];
   onDeleteAllComments: () => void;
   onScrollToThread: (threadId: string, filePath: string) => void;
+  repoName: string | null;
+  branch: string | null;
+  description: string | null;
 }
 
 function extractCodeContext(diff: ParsedDiff | undefined, filePath: string, side: 'old' | 'new', startLine: number, endLine: number): string[] {
@@ -123,112 +129,171 @@ export function Toolbar(props: ToolbarProps) {
     threads,
     onDeleteAllComments,
     onScrollToThread,
+    repoName,
+    branch,
+    description,
   } = props;
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [showMenu, setShowMenu] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
   const { copied, copy } = useCopy();
   const { currentIndex, count: unresolvedCount, goToPrevious, goToNext } = useThreadNavigation(threads, onScrollToThread);
 
-  const baseBtn = 'px-2.5 py-1 text-xs text-text-secondary transition-colors duration-150 cursor-pointer border';
-  const activeBtn = 'bg-accent text-white border-accent';
-  const inactiveBtn = 'bg-bg hover:bg-hover hover:text-text border-border';
+  useEffect(() => {
+    if (!showMenu) {
+      return;
+    }
+    function handleClick(e: MouseEvent) {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+        setShowMenu(false);
+      }
+    }
+    document.addEventListener('mousedown', handleClick);
+    return () => document.removeEventListener('mousedown', handleClick);
+  }, [showMenu]);
 
-  const iconBtn = 'p-1.5 rounded-md text-text-muted hover:text-text hover:bg-hover transition-colors cursor-pointer';
+  const baseBtn = 'px-2.5 py-1 text-xs text-text-secondary transition-colors duration-150 cursor-pointer';
+  const activeBtn = 'bg-accent text-white';
+  const inactiveBtn = 'bg-bg-tertiary hover:bg-hover hover:text-text';
+
+  const menuItemClass = 'flex items-center gap-2.5 w-full px-3 py-1.5 text-xs text-text-secondary hover:bg-hover hover:text-text transition-colors cursor-pointer text-left';
 
   return (
     <div className="flex items-center gap-3 px-4 py-1.5 bg-bg-secondary border-b border-border font-sans text-xs">
-      <div className="flex items-center">
-        <button
-          className={cn(baseBtn, 'flex items-center gap-1.5 rounded-l-md', viewMode === 'unified' ? `${activeBtn} z-10` : inactiveBtn)}
-          onClick={() => onViewModeChange('unified')}
-          title="Unified view (u)"
-        >
-          <UnifiedViewIcon className="w-3.5 h-3.5" />
-          Unified
-        </button>
-        <button
-          className={cn(baseBtn, 'flex items-center gap-1.5 rounded-r-md -ml-px', viewMode === 'split' ? `${activeBtn} z-10` : inactiveBtn)}
-          onClick={() => onViewModeChange('split')}
-          title="Split view (s)"
-        >
-          <SplitViewIcon className="w-3.5 h-3.5" />
-          Split
-        </button>
-      </div>
-      <button
-        className={cn(iconBtn, 'flex items-center gap-1.5 text-xs', hideWhitespace && 'text-accent')}
-        onClick={() => onHideWhitespaceChange(!hideWhitespace)}
-        title={hideWhitespace ? 'Show whitespace' : 'Hide whitespace'}
-      >
-        {hideWhitespace ? <EyeOffIcon className="w-3.5 h-3.5" /> : <EyeIcon className="w-3.5 h-3.5" />}
-        <span className="text-text-secondary">Whitespace</span>
-      </button>
-      <div className="flex items-center gap-0.5">
-        <button
-          className={iconBtn}
-          onClick={onToggleTheme}
-          title={theme === 'light' ? 'Switch to dark mode' : 'Switch to light mode'}
-        >
-          {theme === 'light' ? <MoonIcon className="w-3.5 h-3.5" /> : <SunIcon className="w-3.5 h-3.5" />}
-        </button>
-        <button
-          className={iconBtn}
-          onClick={onShowHelp}
-          title="Keyboard shortcuts (?)"
-        >
-          <KeyboardIcon className="w-3.5 h-3.5" />
-        </button>
-      </div>
-      {unresolvedCount > 0 && (
-        <div className="flex items-center gap-2 ml-auto">
-          <div className="flex items-stretch border border-border rounded-md overflow-hidden bg-bg">
-            <span className="flex items-center text-xs text-text-muted px-2 py-1">
-              {currentIndex >= 0
-                ? `${currentIndex + 1} of ${unresolvedCount} ${unresolvedCount === 1 ? 'comment' : 'comments'}`
-                : `${unresolvedCount} ${unresolvedCount === 1 ? 'comment' : 'comments'}`}
+      <div className="flex items-center gap-2.5 min-w-0 shrink">
+        {repoName && <span className="font-semibold text-text text-sm truncate">{repoName}</span>}
+        {branch && (
+          <span className="inline-flex items-center gap-1 px-1.5 py-0.5 bg-diff-hunk-bg text-diff-hunk-text rounded font-mono text-[11px] shrink-0">
+            <GitBranchIcon className="w-3 h-3" />
+            {branch}
+          </span>
+        )}
+        {description && <span className="text-text-muted truncate hidden lg:inline">{description}</span>}
+        {diff && (
+          <span className="inline-flex items-center bg-bg-tertiary rounded-md overflow-hidden text-text-muted shrink-0">
+            <span className="px-2 py-0.5">{diff.stats.filesChanged} file{diff.stats.filesChanged !== 1 ? 's' : ''} changed</span>
+            <span className="px-2 py-0.5">
+              <DiffStats additions={diff.stats.totalAdditions} deletions={diff.stats.totalDeletions} />
             </span>
-            <button
-              onClick={goToPrevious}
-              className="flex items-center px-1.5 border-l border-border text-text-muted hover:bg-hover hover:text-text transition-colors cursor-pointer"
-              title="Previous comment"
-            >
-              <ChevronUpIcon className="w-3.5 h-3.5" />
-            </button>
-            <button
-              onClick={goToNext}
-              className="flex items-center px-1.5 border-l border-border text-text-muted hover:bg-hover hover:text-text transition-colors cursor-pointer"
-              title="Next comment"
-            >
-              <ChevronDownIcon className="w-3.5 h-3.5" />
-            </button>
-          </div>
-          <div className="flex items-stretch border border-border rounded-md overflow-hidden">
-            <button
-              onClick={() => copy(formatThreadsForCopy(threads, diff, diffRef))}
-              className="flex items-center gap-1.5 px-2.5 py-1 text-xs bg-bg text-text-secondary hover:bg-hover hover:text-text transition-colors cursor-pointer"
-              title="Copy unresolved comments to clipboard"
-            >
-              {copied ? (
-                <>
-                  <CheckIcon className="w-3 h-3 text-added" />
-                  Copied
-                </>
-              ) : (
-                <>
-                  <CopyIcon className="w-3 h-3" />
-                  Copy Comments
-                </>
-              )}
-            </button>
-            <button
-              onClick={() => setShowDeleteConfirm(true)}
-              className="flex items-center px-2 border-l border-border bg-bg text-text-muted hover:bg-hover hover:text-red-500 transition-colors cursor-pointer"
-              title="Delete all comments"
-            >
-              <TrashIcon className="w-3.5 h-3.5" />
-            </button>
-          </div>
+          </span>
+        )}
+      </div>
+      <div className="flex items-center gap-2 ml-auto shrink-0">
+        <div className="flex items-center rounded-md overflow-hidden">
+          <button
+            className={cn(baseBtn, 'flex items-center gap-1.5', viewMode === 'unified' ? activeBtn : inactiveBtn)}
+            onClick={() => onViewModeChange('unified')}
+            title="Unified view (u)"
+          >
+            <UnifiedViewIcon className="w-3.5 h-3.5" />
+            Unified
+          </button>
+          <button
+            className={cn(baseBtn, 'flex items-center gap-1.5', viewMode === 'split' ? activeBtn : inactiveBtn)}
+            onClick={() => onViewModeChange('split')}
+            title="Split view (s)"
+          >
+            <SplitViewIcon className="w-3.5 h-3.5" />
+            Split
+          </button>
         </div>
-      )}
+        {unresolvedCount > 0 && (
+          <>
+            <div className="flex items-stretch bg-bg-tertiary rounded-md overflow-hidden">
+              <span className="flex items-center text-xs text-text-muted px-2 py-1">
+                {currentIndex >= 0
+                  ? `${currentIndex + 1} of ${unresolvedCount} ${unresolvedCount === 1 ? 'comment' : 'comments'}`
+                  : `${unresolvedCount} ${unresolvedCount === 1 ? 'comment' : 'comments'}`}
+              </span>
+              <button
+                onClick={goToPrevious}
+                className="flex items-center px-1.5 text-text-muted hover:bg-hover hover:text-text transition-colors cursor-pointer"
+                title="Previous comment"
+              >
+                <ChevronUpIcon className="w-3.5 h-3.5" />
+              </button>
+              <button
+                onClick={goToNext}
+                className="flex items-center px-1.5 text-text-muted hover:bg-hover hover:text-text transition-colors cursor-pointer"
+                title="Next comment"
+              >
+                <ChevronDownIcon className="w-3.5 h-3.5" />
+              </button>
+            </div>
+            <div className="flex items-stretch bg-bg-tertiary rounded-md overflow-hidden">
+              <button
+                onClick={() => copy(formatThreadsForCopy(threads, diff, diffRef))}
+                className="flex items-center gap-1.5 px-2.5 py-1 text-xs text-text-secondary hover:bg-hover hover:text-text transition-colors cursor-pointer"
+                title="Copy unresolved comments to clipboard"
+              >
+                {copied ? (
+                  <>
+                    <CheckIcon className="w-3 h-3 text-added" />
+                    Copied
+                  </>
+                ) : (
+                  <>
+                    <CopyIcon className="w-3 h-3" />
+                    Copy comments
+                  </>
+                )}
+              </button>
+              <button
+                onClick={() => setShowDeleteConfirm(true)}
+                className="flex items-center px-2 text-text-muted hover:bg-hover hover:text-red-500 transition-colors cursor-pointer"
+                title="Delete all comments"
+              >
+                <TrashIcon className="w-3.5 h-3.5" />
+              </button>
+            </div>
+          </>
+        )}
+        <div className="relative" ref={menuRef}>
+          <button
+            className="p-1.5 rounded-md text-text-muted hover:text-text hover:bg-hover transition-colors cursor-pointer"
+            onClick={() => setShowMenu(!showMenu)}
+            title="More options"
+          >
+            <EllipsisIcon className="w-4 h-4" />
+          </button>
+          {showMenu && (
+            <div className="absolute right-0 top-full mt-1 w-48 py-1 bg-bg-secondary rounded-md shadow-lg ring-1 ring-border z-50">
+              <button
+                className={menuItemClass}
+                onClick={() => {
+                  onHideWhitespaceChange(!hideWhitespace);
+                  setShowMenu(false);
+                }}
+              >
+                {hideWhitespace ? <EyeOffIcon className="w-3.5 h-3.5" /> : <EyeIcon className="w-3.5 h-3.5" />}
+                {hideWhitespace ? 'Show whitespace' : 'Hide whitespace'}
+                {hideWhitespace && <span className="ml-auto text-accent text-[10px]">On</span>}
+              </button>
+              <button
+                className={menuItemClass}
+                onClick={() => {
+                  onToggleTheme();
+                  setShowMenu(false);
+                }}
+              >
+                {theme === 'light' ? <MoonIcon className="w-3.5 h-3.5" /> : <SunIcon className="w-3.5 h-3.5" />}
+                {theme === 'light' ? 'Dark mode' : 'Light mode'}
+              </button>
+              <button
+                className={menuItemClass}
+                onClick={() => {
+                  onShowHelp();
+                  setShowMenu(false);
+                }}
+              >
+                <KeyboardIcon className="w-3.5 h-3.5" />
+                Keyboard shortcuts
+                <span className="ml-auto text-text-muted">?</span>
+              </button>
+            </div>
+          )}
+        </div>
+      </div>
       {showDeleteConfirm && (
         <ConfirmDialog
           title="Delete all comments"

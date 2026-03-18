@@ -42,26 +42,28 @@ export function CommentForm(props: CommentFormProps) {
   };
 
   return (
-    <div className="border border-border rounded-lg overflow-hidden bg-bg">
+    <div className="rounded-lg overflow-hidden bg-bg-tertiary">
       {lineLabel && (
-        <div className="px-3 py-1.5 bg-bg-secondary border-b border-border">
+        <div className="px-3 py-1.5">
           <span className="text-xs text-text-secondary font-medium">{lineLabel}</span>
         </div>
       )}
-      <textarea
-        ref={textareaRef}
-        value={body}
-        onChange={(e) => setBody(e.target.value)}
-        onKeyDown={handleKeyDown}
-        placeholder={placeholder}
-        rows={3}
-        className="w-full px-3 py-2 text-sm bg-bg text-text resize-y outline-none placeholder:text-text-muted min-h-[80px] font-mono"
-      />
-      <div className="flex items-center gap-2 px-3 py-2 bg-bg-secondary border-t border-border">
+      <div className="mx-1.5 mb-1.5 rounded-md overflow-hidden">
+        <textarea
+          ref={textareaRef}
+          value={body}
+          onChange={(e) => setBody(e.target.value)}
+          onKeyDown={handleKeyDown}
+          placeholder={placeholder}
+          rows={3}
+          className="w-full px-3 py-2 text-sm bg-bg text-text resize-y outline-none placeholder:text-text-muted min-h-[80px] font-mono"
+        />
+      </div>
+      <div className="flex items-center gap-2 px-3 py-2">
         <div className="flex-1" />
         <button
           onClick={onCancel}
-          className="px-3 py-1.5 text-xs font-medium rounded-md border border-border text-text-secondary hover:bg-hover transition-colors cursor-pointer"
+          className="px-3 py-1.5 text-xs font-medium rounded-md text-text-secondary hover:bg-hover transition-colors cursor-pointer"
         >
           Cancel
         </button>

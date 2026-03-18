@@ -6,7 +6,6 @@ import { useTheme } from '../hooks/use-theme';
 import { useKeyboard } from '../hooks/use-keyboard';
 import { useReviewThreads } from '../hooks/use-review-threads';
 import { useCommentActions } from '../hooks/use-comment-actions';
-import { SummaryBar } from './summary-bar';
 import { Toolbar } from './toolbar';
 import { DiffView, type DiffViewHandle } from './diff-view';
 import { Sidebar } from './sidebar';
@@ -322,12 +321,6 @@ export function DiffPage(props: DiffPageProps) {
 
   return (
     <div className="flex flex-col h-screen bg-bg text-text font-sans">
-      <SummaryBar
-        diff={diff}
-        repoName={info?.name || null}
-        branch={info?.branch || null}
-        description={info?.description || null}
-      />
       <Toolbar
         viewMode={viewMode}
         onViewModeChange={setViewMode}
@@ -341,6 +334,9 @@ export function DiffPage(props: DiffPageProps) {
         threads={threads}
         onDeleteAllComments={commentActions.deleteAllThreads}
         onScrollToThread={handleScrollToThread}
+        repoName={info?.name || null}
+        branch={info?.branch || null}
+        description={info?.description || null}
       />
       {isStale && <StaleDiffBanner onRefresh={handleRefreshDiff} />}
       <div className="flex flex-1 overflow-hidden">

@@ -95,34 +95,35 @@ export function CommentBubble(props: CommentBubbleProps) {
   };
 
   return (
-    <div className="px-3 py-2 border-b border-border last:border-b-0 group">
-      <div className="flex items-center gap-2 mb-1">
-        <AuthorAvatar name={comment.author.name} avatarUrl={comment.author.avatarUrl} type={comment.author.type} />
-        <span className="text-xs font-semibold text-text">{comment.author.name}</span>
-        {comment.author.type === 'agent' && (
-          <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-accent/15 text-accent font-medium">bot</span>
-        )}
-        <span className="text-[11px] text-text-muted">{formatRelativeTime(comment.createdAt)}</span>
-        {!isEditing && (
-          <div className="ml-auto flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-            <button
-              onClick={() => setIsEditing(true)}
-              className="text-text-muted hover:text-text cursor-pointer"
-              title="Edit comment"
-            >
-              <PencilIcon className="w-3.5 h-3.5" />
-            </button>
-            <button
-              onClick={onDelete}
-              className="text-text-muted hover:text-deleted cursor-pointer"
-              title="Delete comment"
-            >
-              <TrashIcon className="w-3.5 h-3.5" />
-            </button>
-          </div>
-        )}
-      </div>
-      <div className="text-sm text-text pl-7">
+    <div className="p-1.5 first:pt-1.5 last:pb-1.5 group">
+      <div className="bg-bg rounded-lg px-3 py-2.5">
+        <div className="flex items-center gap-2 mb-1.5">
+          <AuthorAvatar name={comment.author.name} avatarUrl={comment.author.avatarUrl} type={comment.author.type} />
+          <span className="text-xs font-semibold text-text">{comment.author.name}</span>
+          {comment.author.type === 'agent' && (
+            <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-accent/15 text-accent font-medium">bot</span>
+          )}
+          <span className="text-[11px] text-text-muted">{formatRelativeTime(comment.createdAt)}</span>
+          {!isEditing && (
+            <div className="ml-auto flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+              <button
+                onClick={() => setIsEditing(true)}
+                className="text-text-muted hover:text-text cursor-pointer"
+                title="Edit comment"
+              >
+                <PencilIcon className="w-3.5 h-3.5" />
+              </button>
+              <button
+                onClick={onDelete}
+                className="text-text-muted hover:text-deleted cursor-pointer"
+                title="Delete comment"
+              >
+                <TrashIcon className="w-3.5 h-3.5" />
+              </button>
+            </div>
+          )}
+        </div>
+        <div className="text-sm text-text pl-7">
         {isEditing ? (
           <div>
             <textarea
@@ -131,13 +132,13 @@ export function CommentBubble(props: CommentBubbleProps) {
               onChange={(e) => setEditBody(e.target.value)}
               onKeyDown={handleKeyDown}
               rows={3}
-              className="w-full px-3 py-2 text-sm bg-bg text-text resize-y outline-none border border-border rounded-md min-h-[60px] font-mono"
+              className="w-full px-3 py-2 text-sm bg-bg-tertiary text-text resize-y outline-none rounded-md min-h-[60px] font-mono"
             />
-            <div className="flex items-center gap-2 mt-1">
+            <div className="flex items-center gap-2 mt-1.5">
               <div className="flex-1" />
               <button
                 onClick={handleCancel}
-                className="px-3 py-1 text-xs font-medium rounded-md border border-border text-text-secondary hover:bg-hover transition-colors cursor-pointer"
+                className="px-3 py-1 text-xs font-medium rounded-md text-text-secondary hover:bg-hover transition-colors cursor-pointer"
               >
                 Cancel
               </button>
@@ -153,6 +154,7 @@ export function CommentBubble(props: CommentBubbleProps) {
         ) : (
           <MarkdownContent content={comment.body} />
         )}
+        </div>
       </div>
     </div>
   );
