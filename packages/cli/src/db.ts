@@ -47,6 +47,9 @@ function migrateDb(db: Database.Database): void {
       body TEXT NOT NULL,
       created_at TEXT NOT NULL DEFAULT (datetime('now'))
     );
+
+    CREATE INDEX IF NOT EXISTS idx_threads_session ON comment_threads(session_id);
+    CREATE INDEX IF NOT EXISTS idx_comments_thread ON comments(thread_id);
   `);
 }
 

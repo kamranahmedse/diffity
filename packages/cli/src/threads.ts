@@ -143,21 +143,48 @@ export function createThread(
   };
 }
 
+interface JoinedRow extends ThreadRow {
+  c_id: string | null;
+  c_author_name: string | null;
+  c_author_type: string | null;
+  c_body: string | null;
+  c_created_at: string | null;
+}
+
 export function getThreadsForSession(sessionId: string, status?: ThreadStatus): Thread[] {
   const db = getDb();
-  let rows: ThreadRow[];
-  if (status) {
-    rows = db.prepare(
-      'SELECT * FROM comment_threads WHERE session_id = ? AND status = ? ORDER BY created_at ASC'
-    ).all(sessionId, status) as ThreadRow[];
-  } else {
-    rows = db.prepare(
-      'SELECT * FROM comment_threads WHERE session_id = ? ORDER BY created_at ASC'
-    ).all(sessionId) as ThreadRow[];
-  }
+  const where = status
+    ? 'WHERE t.session_id = ? AND t.status = ?'
+    : 'WHERE t.session_id = ?';
+  const params = status ? [sessionId, status] : [sessionId];
 
-  const commentsByThread = getCommentsForThreads(rows.map(r => r.id));
-  return rows.map(row => rowToThread(row, commentsByThread.get(row.id) ?? []));
+  const rows = db.prepare(`
+    SELECT t.*,
+           c.id AS c_id, c.author_name AS c_author_name, c.author_type AS c_author_type,
+           c.body AS c_body, c.created_at AS c_created_at
+    FROM comment_threads t
+    LEFT JOIN comments c ON c.thread_id = t.id
+    ${where}
+    ORDER BY t.created_at ASC, c.created_at ASC
+  `).all(...params) as JoinedRow[];
+
+  const threads = new Map<string, Thread>();
+  for (const row of rows) {
+    let thread = threads.get(row.id);
+    if (!thread) {
+      thread = rowToThread(row, []);
+      threads.set(row.id, thread);
+    }
+    if (row.c_id) {
+      thread.comments.push({
+        id: row.c_id,
+        author: { name: row.c_author_name!, type: row.c_author_type as 'user' | 'agent' },
+        body: row.c_body!,
+        createdAt: row.c_created_at!,
+      });
+    }
+  }
+  return Array.from(threads.values());
 }
 
 export function getThread(idOrPrefix: string): Thread | null {

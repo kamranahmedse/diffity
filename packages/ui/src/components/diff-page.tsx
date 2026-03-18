@@ -17,6 +17,7 @@ import { useDiffStaleness } from '../hooks/use-diff-staleness';
 import { type ViewMode, getFilePath, getAutoCollapsedPaths } from '../lib/diff-utils';
 import { buildFirstOpenThreadByFile, buildThreadCountsByFile } from '../lib/comment-navigation';
 import { getHunkHeaders, scrollToElement } from '../lib/dom-utils';
+import { fetchGitHubDetails, type GitHubDetails } from '../lib/api';
 import type { LineSelection } from '../types/comment';
 import { isThreadResolved } from '../types/comment';
 
@@ -49,6 +50,16 @@ export function DiffPage(props: DiffPageProps) {
   const sessionId = info?.sessionId ?? null;
   const canRevert = !!info?.capabilities?.revert;
   const { isStale, resetStaleness } = useDiffStaleness(refParam, !!info?.capabilities?.staleness);
+  const [githubDetails, setGithubDetails] = useState<GitHubDetails | null>(null);
+
+  useEffect(() => {
+    if (!info?.github) {
+      return;
+    }
+    fetchGitHubDetails()
+      .then(data => setGithubDetails(data))
+      .catch(() => {});
+  }, [info?.github]);
 
   const { data: serverThreads, isFetched: threadsFetched } = useReviewThreads(reviewsEnabled ? sessionId : null);
   const threads = reviewsEnabled && serverThreads ? serverThreads : [];
@@ -337,7 +348,9 @@ export function DiffPage(props: DiffPageProps) {
         repoName={info?.name || null}
         branch={info?.branch || null}
         description={info?.description || null}
-        github={info?.github}
+        githubDetails={githubDetails}
+        sessionId={sessionId}
+        onGitHubPulled={() => queryClient.invalidateQueries({ queryKey: ['threads'] })}
       />
       {isStale && <StaleDiffBanner onRefresh={handleRefreshDiff} />}
       <div className="flex flex-1 overflow-hidden">

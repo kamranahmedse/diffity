@@ -15,6 +15,7 @@
     "@tanstack/react-query": "^5.90.21",
     "@tanstack/react-virtual": "^3.13.22",
     "clsx": "^2.1.1",
+    "dayjs": "^1.11.20",
     "react": "latest",
     "react-dom": "latest",
     "react-hotkeys-hook": "^5.2.4",

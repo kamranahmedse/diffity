@@ -1,5 +1,5 @@
 import { exec, execSilent } from './exec.js';
-import type { GitHubInfo } from './types.js';
+import type { GitHubRemote, GitHubDetails } from './types.js';
 
 export function getRemote(): { owner: string; repo: string } | null {
   try {
@@ -22,34 +22,70 @@ export function isAuthenticated(): boolean {
   return execSilent('gh auth status');
 }
 
-export function detect(): GitHubInfo | null {
+export function detectRemote(): GitHubRemote | null {
   const remote = getRemote();
   if (!remote) {
     return null;
   }
+  return remote;
+}
 
+export function fetchDetails(owner: string, repo: string): GitHubDetails | null {
   if (!isCliInstalled() || !isAuthenticated()) {
-    return { ...remote, prNumber: null, prUrl: null, headSha: null };
+    return null;
   }
 
   const pr = getPr();
+  if (!pr) {
+    return null;
+  }
+
+  const commentCount = getReviewCommentCount(owner, repo, pr.number);
+
   return {
-    ...remote,
-    prNumber: pr?.number ?? null,
-    prUrl: pr?.url ?? null,
-    headSha: pr?.headSha ?? null,
+    prNumber: pr.number,
+    prTitle: pr.title,
+    prUrl: pr.url,
+    prCreatedAt: pr.createdAt,
+    headSha: pr.headSha,
+    commentCount,
   };
 }
 
-function getPr(): { number: number; url: string; headSha: string } | null {
+interface PrData {
+  number: number;
+  title: string;
+  url: string;
+  headSha: string;
+  createdAt: string;
+}
+
+function getPr(): PrData | null {
   try {
-    const json = exec('gh pr view --json number,url,headRefOid');
+    const json = exec('gh pr view --json number,title,url,headRefOid,createdAt');
     const data = JSON.parse(json);
     if (data.number && data.url && data.headRefOid) {
-      return { number: data.number, url: data.url, headSha: data.headRefOid };
+      return {
+        number: data.number,
+        title: data.title,
+        url: data.url,
+        headSha: data.headRefOid,
+        createdAt: data.createdAt,
+      };
     }
     return null;
   } catch {
     return null;
+  }
+}
+
+function getReviewCommentCount(owner: string, repo: string, prNumber: number): number {
+  try {
+    const raw = exec(
+      `gh api repos/${owner}/${repo}/pulls/${prNumber}/comments --jq 'length'`,
+    );
+    return parseInt(raw, 10) || 0;
+  } catch {
+    return 0;
   }
 }

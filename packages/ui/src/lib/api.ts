@@ -1,11 +1,18 @@
 import type { ParsedDiff } from '@diffity/parser';
 import type { CommentThread, CommentAuthor, CommentSide, Comment } from '../types/comment';
 
-export interface GitHubInfo {
+export interface GitHubRemote {
   owner: string;
   repo: string;
-  prNumber: number | null;
-  prUrl: string | null;
+}
+
+export interface GitHubDetails {
+  prNumber: number;
+  prTitle: string;
+  prUrl: string;
+  prCreatedAt: string;
+  headSha: string;
+  commentCount: number;
 }
 
 export interface RepoInfo {
@@ -15,7 +22,7 @@ export interface RepoInfo {
   description: string;
   capabilities?: { reviews: boolean; revert: boolean; staleness: boolean };
   sessionId?: string | null;
-  github?: GitHubInfo | null;
+  github?: GitHubRemote | null;
 }
 
 export interface Commit {
@@ -265,11 +272,37 @@ export interface PrCommentPayload {
   body: string;
 }
 
+export async function fetchGitHubDetails(): Promise<GitHubDetails | null> {
+  const res = await fetch('/api/github/details');
+  if (!res.ok) {
+    return null;
+  }
+  return res.json();
+}
+
 export async function pushCommentsToGitHub(comments: PrCommentPayload[]): Promise<PushCommentsResult> {
   const res = await fetch('/api/github/push-comments', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ comments }),
+  });
+  if (!res.ok) {
+    const json = await res.json().catch(() => ({ error: `HTTP ${res.status}` }));
+    throw new Error(json.error || `HTTP ${res.status}`);
+  }
+  return res.json();
+}
+
+export interface PullCommentsResult {
+  pulled: number;
+  skipped: number;
+}
+
+export async function pullCommentsFromGitHub(sessionId: string): Promise<PullCommentsResult> {
+  const res = await fetch('/api/github/pull-comments', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ sessionId }),
   });
   if (!res.ok) {
     const json = await res.json().catch(() => ({ error: `HTTP ${res.status}` }));

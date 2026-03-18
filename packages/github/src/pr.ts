@@ -1,6 +1,6 @@
 import { execSync } from 'node:child_process';
 import { exec } from './exec.js';
-import type { PrComment, PushResult } from './types.js';
+import type { PrComment, PushResult, PulledComment } from './types.js';
 
 export function getFiles(owner: string, repo: string, prNumber: number): Set<string> {
   try {
@@ -38,6 +38,48 @@ export function getComments(owner: string, repo: string, prNumber: number): Exis
       line: c.line,
       side: c.side,
       body: c.body,
+    }));
+  } catch {
+    return [];
+  }
+}
+
+export function getCommentCount(owner: string, repo: string, prNumber: number): number {
+  return getComments(owner, repo, prNumber).length;
+}
+
+interface GitHubCommentRaw {
+  path: string;
+  line: number;
+  start_line: number | null;
+  side: string;
+  body: string;
+  user: { login: string; type: string };
+  created_at: string;
+}
+
+export function pullComments(owner: string, repo: string, prNumber: number): PulledComment[] {
+  try {
+    const json = execSync(
+      `gh api repos/${owner}/${repo}/pulls/${prNumber}/comments --paginate`,
+      { encoding: 'utf-8', stdio: 'pipe', maxBuffer: 10 * 1024 * 1024 },
+    ).trim();
+    if (!json) {
+      return [];
+    }
+    const data = JSON.parse(json) as GitHubCommentRaw[];
+    if (!Array.isArray(data)) {
+      return [];
+    }
+    return data.map(c => ({
+      filePath: c.path,
+      side: c.side === 'LEFT' ? 'old' as const : 'new' as const,
+      startLine: c.start_line ?? c.line,
+      endLine: c.line,
+      body: c.body,
+      authorName: c.user.login,
+      authorType: c.user.type === 'Bot' ? 'agent' as const : 'user' as const,
+      createdAt: c.created_at,
     }));
   } catch {
     return [];
