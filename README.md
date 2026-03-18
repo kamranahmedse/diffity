@@ -57,6 +57,7 @@ Opens the diff viewer in your browser. Accepts the same refs as the CLI, plus na
 
 ```
 /diffity-diff                          # working tree changes
+/diffity-diff main                     # current branch against main
 /diffity-diff main..feature            # branch diff
 /diffity-diff HEAD~1                   # last commit
 /diffity-diff last 3 commits           # natural language works too
@@ -70,8 +71,9 @@ Your agent reviews the diff and leaves inline comments in the viewer. Uses sever
 
 ```
 /diffity-review                             # review working tree changes
+/diffity-review main                        # review what you're merging into main
 /diffity-review main..feature               # review what you're merging into main
-/diffity-review security                    # focus on security issues
+/diffity-review identify security issues    # focus on security issues
 /diffity-review performance in src/lib      # focus on performance in specific dir
 /diffity-review last 3 commits              # natural language works too
 ```
