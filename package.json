@@ -14,7 +14,7 @@
   "scripts": {
     "build": "tsx scripts/build.ts",
     "build:skills": "tsx scripts/build-skills.ts",
-    "test": "npm run test -w @diffity/parser && npm run test -w @diffity/ui",
+    "test": "npm run test -w @diffity/git && npm run test -w @diffity/parser && npm run test -w @diffity/ui",
     "link-dev": "tsx scripts/link-dev.ts",
     "dev": "tsx scripts/dev.ts",
     "release:patch": "npm run build && tsx scripts/release.ts patch && npm publish -w packages/cli",

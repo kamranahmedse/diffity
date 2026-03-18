@@ -4,6 +4,7 @@ import { mkdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { homedir } from 'node:os';
 import { exec } from './exec.js';
+import { WORKING_TREE_REFS } from './diff.js';
 import type { RepoInfo } from './types.js';
 
 export function isGitRepo(): boolean {
@@ -80,8 +81,6 @@ export interface RefCapabilities {
   revert: boolean;
   staleness: boolean;
 }
-
-const WORKING_TREE_REFS = new Set(['work', 'staged', 'unstaged', 'working', 'untracked']);
 
 export function getRefCapabilities(ref?: string): RefCapabilities {
   if (!ref) {

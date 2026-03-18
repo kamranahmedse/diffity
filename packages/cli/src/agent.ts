@@ -1,6 +1,6 @@
 import type { Command } from 'commander';
 import pc from 'picocolors';
-import { isGitRepo } from '@diffity/git';
+import { isGitRepo, getDiffFiles } from '@diffity/git';
 import { getCurrentSession } from './session.js';
 import {
   createThread,
@@ -116,6 +116,18 @@ Examples:
         process.exit(1);
       }
       const session = requireSession();
+      const diffFiles = getDiffFiles(session.ref);
+      if (!diffFiles.includes(opts.file)) {
+        console.error(pc.red(`Error: File "${opts.file}" is not in the current diff.`));
+        console.error(pc.dim(`The diff for ref "${session.ref}" contains ${diffFiles.length} file(s):`));
+        for (const f of diffFiles.slice(0, 20)) {
+          console.error(pc.dim(`  ${f}`));
+        }
+        if (diffFiles.length > 20) {
+          console.error(pc.dim(`  ... and ${diffFiles.length - 20} more`));
+        }
+        process.exit(1);
+      }
       const endLine = opts.endLine ?? opts.line;
       const thread = createThread(
         session.id,

@@ -1,6 +1,37 @@
 import type { ParsedDiff } from '@diffity/parser';
 import type { CommentThread, CommentAuthor, CommentSide, Comment } from '../types/comment';
 
+async function apiFetch<T>(url: string, init?: RequestInit): Promise<T> {
+  const res = await fetch(url, init);
+  if (!res.ok) {
+    const json = await res.json().catch(() => null);
+    throw new Error(json?.error || `HTTP ${res.status}`);
+  }
+  return res.json();
+}
+
+async function apiVoid(url: string, init?: RequestInit): Promise<void> {
+  const res = await fetch(url, init);
+  if (!res.ok) {
+    const json = await res.json().catch(() => null);
+    throw new Error(json?.error || `HTTP ${res.status}`);
+  }
+}
+
+function buildUrl(path: string, params?: Record<string, string | undefined>): string {
+  if (!params) {
+    return path;
+  }
+  const searchParams = new URLSearchParams();
+  for (const [key, value] of Object.entries(params)) {
+    if (value !== undefined) {
+      searchParams.set(key, value);
+    }
+  }
+  const query = searchParams.toString();
+  return query ? `${path}?${query}` : path;
+}
+
 export interface GitHubRemote {
   owner: string;
   repo: string;
@@ -46,70 +77,28 @@ export interface CommitsPage {
   hasMore: boolean;
 }
 
-export async function fetchDiff(hideWhitespace: boolean, ref?: string): Promise<ParsedDiff> {
-  const params = new URLSearchParams();
-  if (hideWhitespace) {
-    params.set('whitespace', 'hide');
-  }
-  if (ref) {
-    params.set('ref', ref);
-  }
-  const query = params.toString();
-  const url = query ? `/api/diff?${query}` : '/api/diff';
-  const res = await fetch(url);
-  if (!res.ok) {
-    throw new Error(`HTTP ${res.status}`);
-  }
-  return res.json();
+export function fetchDiff(hideWhitespace: boolean, ref?: string): Promise<ParsedDiff> {
+  return apiFetch(buildUrl('/api/diff', {
+    whitespace: hideWhitespace ? 'hide' : undefined,
+    ref,
+  }));
 }
 
 export async function fetchDiffFingerprint(ref?: string): Promise<string> {
-  const params = new URLSearchParams();
-  if (ref) {
-    params.set('ref', ref);
-  }
-  const query = params.toString();
-  const url = query ? `/api/diff-fingerprint?${query}` : '/api/diff-fingerprint';
-  const res = await fetch(url);
-  if (!res.ok) {
-    throw new Error(`HTTP ${res.status}`);
-  }
-  const json = await res.json();
+  const json = await apiFetch<{ fingerprint: string }>(buildUrl('/api/diff-fingerprint', { ref }));
   return json.fingerprint;
 }
 
-export async function fetchRepoInfo(ref?: string): Promise<RepoInfo> {
-  const params = new URLSearchParams();
-  if (ref) {
-    params.set('ref', ref);
-  }
-  const query = params.toString();
-  const url = query ? `/api/info?${query}` : '/api/info';
-  const res = await fetch(url);
-  if (!res.ok) {
-    throw new Error(`HTTP ${res.status}`);
-  }
-  return res.json();
+export function fetchRepoInfo(ref?: string): Promise<RepoInfo> {
+  return apiFetch(buildUrl('/api/info', { ref }));
 }
 
-export async function fetchOverview(): Promise<Overview> {
-  const res = await fetch('/api/overview');
-  if (!res.ok) {
-    throw new Error(`HTTP ${res.status}`);
-  }
-  return res.json();
+export function fetchOverview(): Promise<Overview> {
+  return apiFetch('/api/overview');
 }
 
-export async function fetchCommits(skip = 0, count = 10, search?: string): Promise<CommitsPage> {
-  const params = new URLSearchParams({ skip: String(skip), count: String(count) });
-  if (search) {
-    params.set('search', search);
-  }
-  const res = await fetch(`/api/commits?${params}`);
-  if (!res.ok) {
-    throw new Error(`HTTP ${res.status}`);
-  }
-  return res.json();
+export function fetchCommits(skip = 0, count = 10, search?: string): Promise<CommitsPage> {
+  return apiFetch(buildUrl('/api/commits', { skip: String(skip), count: String(count), search }));
 }
 
 export async function fetchSession(): Promise<{ id: string; ref: string; headHash: string } | null> {
@@ -121,18 +110,16 @@ export async function fetchSession(): Promise<{ id: string; ref: string; headHas
 }
 
 export async function fetchThreads(sessionId: string, status?: string): Promise<CommentThread[]> {
-  const params = new URLSearchParams({ session: sessionId });
-  if (status) {
-    params.set('status', status);
-  }
-  const res = await fetch(`/api/threads?${params}`);
+  const res = await fetch(buildUrl('/api/threads', { session: sessionId, status }));
   if (!res.ok) {
     return [];
   }
   return res.json();
 }
 
-export async function createThread(data: {
+const JSON_HEADERS = { 'Content-Type': 'application/json' };
+
+export function createThread(data: {
   sessionId: string;
   filePath: string;
   side: CommentSide;
@@ -142,119 +129,74 @@ export async function createThread(data: {
   author: CommentAuthor;
   anchorContent?: string;
 }): Promise<CommentThread> {
-  const res = await fetch('/api/threads', {
+  return apiFetch('/api/threads', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: JSON_HEADERS,
     body: JSON.stringify(data),
   });
-  if (!res.ok) {
-    throw new Error(`HTTP ${res.status}`);
-  }
-  return res.json();
 }
 
-export async function replyToThread(threadId: string, body: string, author: CommentAuthor): Promise<Comment> {
-  const res = await fetch(`/api/threads/${threadId}/reply`, {
+export function replyToThread(threadId: string, body: string, author: CommentAuthor): Promise<Comment> {
+  return apiFetch(`/api/threads/${threadId}/reply`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: JSON_HEADERS,
     body: JSON.stringify({ body, author }),
   });
-  if (!res.ok) {
-    throw new Error(`HTTP ${res.status}`);
-  }
-  return res.json();
 }
 
-export async function updateThreadStatus(threadId: string, status: string, summary?: string): Promise<void> {
-  const res = await fetch(`/api/threads/${threadId}/status`, {
+export function updateThreadStatus(threadId: string, status: string, summary?: string): Promise<void> {
+  return apiVoid(`/api/threads/${threadId}/status`, {
     method: 'PATCH',
-    headers: { 'Content-Type': 'application/json' },
+    headers: JSON_HEADERS,
     body: JSON.stringify({ status, summary }),
   });
-  if (!res.ok) {
-    throw new Error(`HTTP ${res.status}`);
-  }
 }
 
-export async function deleteAllThreads(sessionId: string): Promise<void> {
-  const res = await fetch('/api/threads', {
+export function deleteAllThreads(sessionId: string): Promise<void> {
+  return apiVoid('/api/threads', {
     method: 'DELETE',
-    headers: { 'Content-Type': 'application/json' },
+    headers: JSON_HEADERS,
     body: JSON.stringify({ sessionId }),
   });
-  if (!res.ok) {
-    throw new Error(`HTTP ${res.status}`);
-  }
 }
 
-export async function deleteThread(threadId: string): Promise<void> {
-  const res = await fetch(`/api/threads/${threadId}`, {
-    method: 'DELETE',
-  });
-  if (!res.ok) {
-    throw new Error(`HTTP ${res.status}`);
-  }
+export function deleteThread(threadId: string): Promise<void> {
+  return apiVoid(`/api/threads/${threadId}`, { method: 'DELETE' });
 }
 
-export async function editComment(commentId: string, body: string): Promise<void> {
-  const res = await fetch(`/api/comments/${commentId}`, {
+export function editComment(commentId: string, body: string): Promise<void> {
+  return apiVoid(`/api/comments/${commentId}`, {
     method: 'PATCH',
-    headers: { 'Content-Type': 'application/json' },
+    headers: JSON_HEADERS,
     body: JSON.stringify({ body }),
   });
-  if (!res.ok) {
-    throw new Error(`HTTP ${res.status}`);
-  }
 }
 
-export async function deleteComment(commentId: string): Promise<void> {
-  const res = await fetch(`/api/comments/${commentId}`, {
-    method: 'DELETE',
-  });
-  if (!res.ok) {
-    throw new Error(`HTTP ${res.status}`);
-  }
+export function deleteComment(commentId: string): Promise<void> {
+  return apiVoid(`/api/comments/${commentId}`, { method: 'DELETE' });
 }
 
-export async function revertFile(filePath: string, isUntracked: boolean): Promise<void> {
-  const res = await fetch('/api/revert-file', {
+export function revertFile(filePath: string, isUntracked: boolean): Promise<void> {
+  return apiVoid('/api/revert-file', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: JSON_HEADERS,
     body: JSON.stringify({ filePath, isUntracked }),
   });
-  if (!res.ok) {
-    const json = await res.json().catch(() => ({ error: `HTTP ${res.status}` }));
-    throw new Error(json.error || `HTTP ${res.status}`);
-  }
 }
 
-export async function revertHunk(patch: string): Promise<void> {
-  const res = await fetch('/api/revert-hunk', {
+export function revertHunk(patch: string): Promise<void> {
+  return apiVoid('/api/revert-hunk', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: JSON_HEADERS,
     body: JSON.stringify({ patch }),
   });
-  if (!res.ok) {
-    const json = await res.json().catch(() => ({ error: `HTTP ${res.status}` }));
-    throw new Error(json.error || `HTTP ${res.status}`);
-  }
 }
 
 export async function fetchFileContent(filePath: string, ref?: string): Promise<string[]> {
-  const params = new URLSearchParams();
-  if (ref) {
-    params.set('ref', ref);
-  }
-  const query = params.toString();
-  const url = query
-    ? `/api/file/${encodeURIComponent(filePath)}?${query}`
-    : `/api/file/${encodeURIComponent(filePath)}`;
-  const res = await fetch(url);
-  if (!res.ok) {
-    throw new Error(`HTTP ${res.status}`);
-  }
-  const json = await res.json();
-  return json.content as string[];
+  const json = await apiFetch<{ content: string[] }>(
+    buildUrl(`/api/file/${encodeURIComponent(filePath)}`, { ref }),
+  );
+  return json.content;
 }
 
 export interface PushCommentsResult {
@@ -280,17 +222,12 @@ export async function fetchGitHubDetails(): Promise<GitHubDetails | null> {
   return res.json();
 }
 
-export async function pushCommentsToGitHub(comments: PrCommentPayload[]): Promise<PushCommentsResult> {
-  const res = await fetch('/api/github/push-comments', {
+export function pushCommentsToGitHub(comments: PrCommentPayload[]): Promise<PushCommentsResult> {
+  return apiFetch('/api/github/push-comments', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: JSON_HEADERS,
     body: JSON.stringify({ comments }),
   });
-  if (!res.ok) {
-    const json = await res.json().catch(() => ({ error: `HTTP ${res.status}` }));
-    throw new Error(json.error || `HTTP ${res.status}`);
-  }
-  return res.json();
 }
 
 export interface PullCommentsResult {
@@ -298,15 +235,10 @@ export interface PullCommentsResult {
   skipped: number;
 }
 
-export async function pullCommentsFromGitHub(sessionId: string): Promise<PullCommentsResult> {
-  const res = await fetch('/api/github/pull-comments', {
+export function pullCommentsFromGitHub(sessionId: string): Promise<PullCommentsResult> {
+  return apiFetch('/api/github/pull-comments', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: JSON_HEADERS,
     body: JSON.stringify({ sessionId }),
   });
-  if (!res.ok) {
-    const json = await res.json().catch(() => ({ error: `HTTP ${res.status}` }));
-    throw new Error(json.error || `HTTP ${res.status}`);
-  }
-  return res.json();
 }

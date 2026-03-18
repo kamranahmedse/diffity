@@ -26,37 +26,82 @@ export function getUntrackedDiff(files: string[]): string {
   return diffs.join('\n');
 }
 
-export function resolveRef(ref: string, extraArgs: string[] = []): string {
+export type RefDiffArgs =
+  | { type: 'args'; args: string[]; includeUntracked: boolean }
+  | { type: 'untracked-only' };
+
+export function resolveDiffArgs(ref: string): RefDiffArgs {
   switch (ref) {
-    case 'staged': {
-      return getDiff(['--staged', ...extraArgs]);
-    }
-    case 'unstaged': {
-      return getDiff(extraArgs);
-    }
-    case 'working': {
-      return getDiff(['HEAD', ...extraArgs]);
-    }
-    case 'untracked': {
-      const files = getUntrackedFiles();
-      if (files.length === 0) {
-        return '';
-      }
-      return getUntrackedDiff(files);
-    }
+    case 'staged':
+      return { type: 'args', args: ['--staged'], includeUntracked: false };
+    case 'unstaged':
+      return { type: 'args', args: [], includeUntracked: false };
+    case 'working':
+      return { type: 'args', args: ['HEAD'], includeUntracked: false };
+    case 'untracked':
+      return { type: 'untracked-only' };
     case '.':
-    case 'work': {
-      let raw = getDiff(['HEAD', ...extraArgs]);
-      const untrackedFiles = getUntrackedFiles();
-      if (untrackedFiles.length > 0) {
-        raw += '\n' + getUntrackedDiff(untrackedFiles);
-      }
-      return raw;
-    }
-    default: {
-      return getDiff([normalizeRef(ref), ...extraArgs]);
+    case 'work':
+      return { type: 'args', args: ['HEAD'], includeUntracked: true };
+    default:
+      return { type: 'args', args: [normalizeRef(ref)], includeUntracked: false };
+  }
+}
+
+export function resolveRef(ref: string, extraArgs: string[] = []): string {
+  const resolved = resolveDiffArgs(ref);
+
+  if (resolved.type === 'untracked-only') {
+    const files = getUntrackedFiles();
+    return files.length === 0 ? '' : getUntrackedDiff(files);
+  }
+
+  let raw = getDiff([...resolved.args, ...extraArgs]);
+  if (resolved.includeUntracked) {
+    const untrackedFiles = getUntrackedFiles();
+    if (untrackedFiles.length > 0) {
+      raw += '\n' + getUntrackedDiff(untrackedFiles);
     }
   }
+  return raw;
+}
+
+export function getDiffFiles(ref: string): string[] {
+  const resolved = resolveDiffArgs(ref);
+
+  if (resolved.type === 'untracked-only') {
+    return getUntrackedFiles();
+  }
+
+  const tracked = execLines(`git diff --name-only ${resolved.args.join(' ')}`.trim());
+  if (resolved.includeUntracked) {
+    const untracked = getUntrackedFiles();
+    return [...new Set([...tracked, ...untracked])];
+  }
+  return tracked;
+}
+
+export function getDiffStat(args: string[] = []): string {
+  const cmd = ['git', 'diff', '--stat', ...args].join(' ');
+  try {
+    return execLarge(cmd);
+  } catch {
+    return '';
+  }
+}
+
+export function getDiffStatForRef(ref: string): string {
+  const resolved = resolveDiffArgs(ref);
+
+  if (resolved.type === 'untracked-only') {
+    return getUntrackedFiles().join('\n');
+  }
+
+  let stat = getDiffStat(resolved.args);
+  if (resolved.includeUntracked) {
+    stat += '\n' + getUntrackedFiles().join('\n');
+  }
+  return stat;
 }
 
 export function revertFile(filePath: string, isUntracked: boolean): void {
@@ -69,15 +114,6 @@ export function revertFile(filePath: string, isUntracked: boolean): void {
 
 export function revertHunk(patch: string): void {
   execWithStdin('git apply --reverse --unidiff-zero', patch);
-}
-
-export function getDiffStat(args: string[] = []): string {
-  const cmd = ['git', 'diff', '--stat', ...args].join(' ');
-  try {
-    return execLarge(cmd);
-  } catch {
-    return '';
-  }
 }
 
 export function getMergeBase(a: string, b: string): string {
@@ -98,8 +134,10 @@ export function normalizeRef(ref: string): string {
   return getMergeBase(ref, 'HEAD');
 }
 
+export const WORKING_TREE_REFS = new Set(['work', '.', 'staged', 'unstaged', 'working', 'untracked']);
+
 export function resolveBaseRef(ref: string): string {
-  if (['staged', 'working', 'work', '.', 'unstaged', 'untracked'].includes(ref)) {
+  if (WORKING_TREE_REFS.has(ref)) {
     return 'HEAD';
   }
 

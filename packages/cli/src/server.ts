@@ -11,6 +11,7 @@ import { dirname } from 'node:path';
 import { parseDiff, type ParsedDiff } from '@diffity/parser';
 import {
   getDiff,
+  getDiffStatForRef,
   getDiffStat,
   getUntrackedFiles,
   getUntrackedDiff,
@@ -20,7 +21,6 @@ import {
   getUnstagedFiles,
   getRecentCommits,
   getFileLineCount,
-  normalizeRef,
   resolveBaseRef,
   resolveRef,
   revertFile,
@@ -28,6 +28,7 @@ import {
   getRefCapabilities,
   getHeadHash,
   isDirty,
+  WORKING_TREE_REFS,
 } from '@diffity/git';
 import {
   detectRemote as detectGitHubRemote,
@@ -39,6 +40,7 @@ import {
 import { findOrCreateSession } from './session.js';
 import { createThread, addReply, getThreadsForSession } from './threads.js';
 import { handleReviewRoute } from './review-routes.js';
+import { sendJson, sendError, readBody } from './http-utils.js';
 import {
   registerInstance,
   deregisterInstance
@@ -69,16 +71,6 @@ interface ServerOptions {
   };
 }
 
-function sendJson(res: ServerResponse, data: unknown) {
-  res.writeHead(200, { 'Content-Type': 'application/json' });
-  res.end(JSON.stringify(data));
-}
-
-function sendError(res: ServerResponse, status: number, message: string) {
-  res.writeHead(status, { 'Content-Type': 'application/json' });
-  res.end(JSON.stringify({ error: message }));
-}
-
 function serveStatic(res: ServerResponse, filePath: string) {
   if (!existsSync(filePath)) {
     sendError(res, 404, 'Not found');
@@ -92,37 +84,26 @@ function serveStatic(res: ServerResponse, filePath: string) {
 }
 
 function descriptionForRef(ref: string): string {
-  switch (ref) {
-    case 'staged':
-      return 'Staged changes';
-    case 'unstaged':
-      return 'Unstaged changes';
-    case 'working':
-      return 'Working tree changes';
-    case 'untracked':
-      return 'Untracked files';
-    case 'work':
-      return 'All changes';
-    default:
-      if (ref.includes('..')) {
-        return ref;
-      }
-      return `Changes from ${ref}`;
+  if (WORKING_TREE_REFS.has(ref)) {
+    const labels: Record<string, string> = {
+      staged: 'Staged changes',
+      unstaged: 'Unstaged changes',
+      working: 'Working tree changes',
+      untracked: 'Untracked files',
+      work: 'All changes',
+      '.': 'All changes',
+    };
+    return labels[ref] || ref;
   }
+  if (ref.includes('..')) {
+    return ref;
+  }
+  return `Changes from ${ref}`;
 }
 
 interface ServerResult {
   port: number;
   close: () => void;
-}
-
-function readBody(req: IncomingMessage): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const chunks: Buffer[] = [];
-    req.on('data', (chunk: Buffer) => chunks.push(chunk));
-    req.on('end', () => resolve(Buffer.concat(chunks).toString()));
-    req.on('error', reject);
-  });
 }
 
 export function startServer(options: ServerOptions): Promise<ServerResult> {
@@ -136,6 +117,7 @@ export function startServer(options: ServerOptions): Promise<ServerResult> {
   } = options;
 
   const includeUntracked = diffArgs.length === 0;
+
   function enrichWithLineCounts(diff: ParsedDiff, baseRef: string): ParsedDiff {
     for (const file of diff.files) {
       if (file.status === 'added' || file.isBinary) {
@@ -260,25 +242,7 @@ export function startServer(options: ServerOptions): Promise<ServerResult> {
           const ref = url.searchParams.get('ref');
           let stat: string;
           if (ref) {
-            switch (ref) {
-              case 'work':
-              case 'working':
-                stat =
-                  getDiffStat(['HEAD']) + '\n' + getUntrackedFiles().join('\n');
-                break;
-              case 'staged':
-                stat = getDiffStat(['--staged']);
-                break;
-              case 'unstaged':
-                stat = getDiffStat([]);
-                break;
-              case 'untracked':
-                stat = getUntrackedFiles().join('\n');
-                break;
-              default:
-                stat = getDiffStat([normalizeRef(ref)]);
-                break;
-            }
+            stat = getDiffStatForRef(ref);
           } else {
             stat = getDiffStat(diffArgs);
             if (includeUntracked) {
@@ -310,19 +274,10 @@ export function startServer(options: ServerOptions): Promise<ServerResult> {
             return;
           }
 
-          if (whitespace === 'hide') {
-            sendJson(
-              res,
-              enrichWithLineCounts(
-                parseDiff(getFullDiff([...diffArgs, '-w'])),
-                baseRef,
-              ),
-            );
-            return;
-          }
+          const args = whitespace === 'hide' ? [...diffArgs, '-w'] : diffArgs;
           sendJson(
             res,
-            enrichWithLineCounts(parseDiff(getFullDiff(diffArgs)), baseRef),
+            enrichWithLineCounts(parseDiff(getFullDiff(args)), baseRef),
           );
           return;
         }

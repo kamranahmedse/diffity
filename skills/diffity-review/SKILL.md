@@ -49,7 +49,12 @@ The review needs a running session to add comments to, but we don't want to open
 
 ### Step 2: Review the diff
 
-1. Read the current diff using `git diff` (or `git diff <ref>` when a ref was provided).
+1. **Fetch the diff from diffity's API** — do NOT use `git diff` directly, as diffity uses merge-base resolution which may produce different results:
+   ```
+   curl -s 'http://localhost:<port>/api/diff?ref=<ref>'
+   ```
+   If no ref was provided, omit the `ref` query parameter. The response is JSON with a `files` array, where each file has `hunks` containing the diff lines.
+   Parse the JSON to extract changed file paths and their diffs. For readability, you can pipe through `python3 -m json.tool` or use `jq`.
 2. For each changed file, read the **entire file** (not just the diff hunks) to understand the full context. This prevents false positives from missing surrounding code.
 3. Analyze the code changes thoroughly. If a `focus` argument was provided, concentrate on that area. Otherwise look for:
    - Bugs, logic errors, off-by-one errors

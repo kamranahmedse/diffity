@@ -11,25 +11,7 @@ import {
   type ThreadStatus,
 } from './threads.js';
 import { getCurrentSession } from './session.js';
-
-function sendJson(res: ServerResponse, data: unknown) {
-  res.writeHead(200, { 'Content-Type': 'application/json' });
-  res.end(JSON.stringify(data));
-}
-
-function sendError(res: ServerResponse, status: number, message: string) {
-  res.writeHead(status, { 'Content-Type': 'application/json' });
-  res.end(JSON.stringify({ error: message }));
-}
-
-function readBody(req: IncomingMessage): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const chunks: Buffer[] = [];
-    req.on('data', (chunk: Buffer) => chunks.push(chunk));
-    req.on('end', () => resolve(Buffer.concat(chunks).toString()));
-    req.on('error', reject);
-  });
-}
+import { sendJson, sendError, withJsonBody } from './http-utils.js';
 
 export function handleReviewRoute(req: IncomingMessage, res: ServerResponse, pathname: string, url: URL): boolean {
   if (pathname === '/api/sessions/current' && req.method === 'GET') {
@@ -51,76 +33,60 @@ export function handleReviewRoute(req: IncomingMessage, res: ServerResponse, pat
   }
 
   if (pathname === '/api/threads' && req.method === 'DELETE') {
-    readBody(req).then((raw) => {
-      try {
-        const body = JSON.parse(raw);
-        const { sessionId: sid } = body;
-        if (!sid) {
-          sendError(res, 400, 'Missing sessionId');
-          return;
-        }
-        deleteAllThreadsForSession(sid);
-        sendJson(res, { ok: true });
-      } catch (err) {
-        sendError(res, 500, `Failed to delete all threads: ${err}`);
+    withJsonBody(res, req, 'Failed to delete all threads', (body) => {
+      const { sessionId: sid } = body;
+      if (!sid) {
+        sendError(res, 400, 'Missing sessionId');
+        return;
       }
+      deleteAllThreadsForSession(sid as string);
+      sendJson(res, { ok: true });
     });
     return true;
   }
 
   if (pathname === '/api/threads' && req.method === 'POST') {
-    readBody(req).then((raw) => {
-      try {
-        const body = JSON.parse(raw);
-        const { sessionId: sid, filePath, side, startLine, endLine, body: commentBody, author, anchorContent } = body;
-        if (!sid || !filePath || !side || typeof startLine !== 'number' || typeof endLine !== 'number' || !commentBody || !author) {
-          sendError(res, 400, 'Missing required fields');
-          return;
-        }
-        const thread = createThread(sid, filePath, side, startLine, endLine, commentBody, author, anchorContent);
-        sendJson(res, thread);
-      } catch (err) {
-        sendError(res, 500, `Failed to create thread: ${err}`);
+    withJsonBody(res, req, 'Failed to create thread', (body) => {
+      const { sessionId: sid, filePath, side, startLine, endLine, body: commentBody, author, anchorContent } = body;
+      if (!sid || !filePath || !side || typeof startLine !== 'number' || typeof endLine !== 'number' || !commentBody || !author) {
+        sendError(res, 400, 'Missing required fields');
+        return;
       }
+      const thread = createThread(
+        sid as string, filePath as string, side as string, startLine, endLine,
+        commentBody as string, author as { name: string; type: string },
+        anchorContent as string | undefined,
+      );
+      sendJson(res, thread);
     });
     return true;
   }
 
   const threadReplyMatch = pathname.match(/^\/api\/threads\/([^/]+)\/reply$/);
   if (threadReplyMatch && req.method === 'POST') {
-    readBody(req).then((raw) => {
-      try {
-        const body = JSON.parse(raw);
-        const { body: commentBody, author } = body;
-        if (!commentBody || !author) {
-          sendError(res, 400, 'Missing body or author');
-          return;
-        }
-        const comment = addReply(threadReplyMatch[1], commentBody, author);
-        sendJson(res, comment);
-      } catch (err) {
-        sendError(res, 500, `Failed to add reply: ${err}`);
+    withJsonBody(res, req, 'Failed to add reply', (body) => {
+      const { body: commentBody, author } = body;
+      if (!commentBody || !author) {
+        sendError(res, 400, 'Missing body or author');
+        return;
       }
+      const comment = addReply(threadReplyMatch[1], commentBody as string, author as { name: string; type: string });
+      sendJson(res, comment);
     });
     return true;
   }
 
   const threadStatusMatch = pathname.match(/^\/api\/threads\/([^/]+)\/status$/);
   if (threadStatusMatch && req.method === 'PATCH') {
-    readBody(req).then((raw) => {
-      try {
-        const body = JSON.parse(raw);
-        const { status, summary } = body;
-        if (!status) {
-          sendError(res, 400, 'Missing status');
-          return;
-        }
-        const summaryAuthor = summary ? { name: 'System', type: 'user' as const } : undefined;
-        updateThreadStatus(threadStatusMatch[1], status, summary, summaryAuthor);
-        sendJson(res, { ok: true });
-      } catch (err) {
-        sendError(res, 500, `Failed to update thread status: ${err}`);
+    withJsonBody(res, req, 'Failed to update thread status', (body) => {
+      const { status, summary } = body;
+      if (!status) {
+        sendError(res, 400, 'Missing status');
+        return;
       }
+      const summaryAuthor = summary ? { name: 'System', type: 'user' as const } : undefined;
+      updateThreadStatus(threadStatusMatch[1], status as string, summary as string | undefined, summaryAuthor);
+      sendJson(res, { ok: true });
     });
     return true;
   }
@@ -138,19 +104,14 @@ export function handleReviewRoute(req: IncomingMessage, res: ServerResponse, pat
 
   const commentEditMatch = pathname.match(/^\/api\/comments\/([^/]+)$/);
   if (commentEditMatch && req.method === 'PATCH') {
-    readBody(req).then((raw) => {
-      try {
-        const body = JSON.parse(raw);
-        const { body: commentBody } = body;
-        if (!commentBody) {
-          sendError(res, 400, 'Missing body');
-          return;
-        }
-        editComment(commentEditMatch[1], commentBody);
-        sendJson(res, { ok: true });
-      } catch (err) {
-        sendError(res, 500, `Failed to edit comment: ${err}`);
+    withJsonBody(res, req, 'Failed to edit comment', (body) => {
+      const { body: commentBody } = body;
+      if (!commentBody) {
+        sendError(res, 400, 'Missing body');
+        return;
       }
+      editComment(commentEditMatch[1], commentBody as string);
+      sendJson(res, { ok: true });
     });
     return true;
   }
