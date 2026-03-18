@@ -1,4 +1,4 @@
-import { useMemo, useState, useCallback, useRef } from 'react';
+import { useEffect, useMemo, useState, useCallback, useRef, useImperativeHandle, forwardRef } from 'react';
 import type { DiffFile } from '@diffity/parser';
 import {
   buildFileTree,
@@ -18,9 +18,15 @@ interface FileTreeProps {
   commentCountsByFile: Map<string, number>;
   commentedFilesOnly: boolean;
   onFileClick: (path: string) => void;
+  onExpandedStateChange?: (allExpanded: boolean) => void;
 }
 
-export function FileTree(props: FileTreeProps) {
+export interface FileTreeHandle {
+  expandAll: () => void;
+  collapseAll: () => void;
+}
+
+export const FileTree = forwardRef<FileTreeHandle, FileTreeProps>(function FileTree(props, ref) {
   const {
     files,
     search,
@@ -29,6 +35,7 @@ export function FileTree(props: FileTreeProps) {
     commentCountsByFile,
     commentedFilesOnly,
     onFileClick,
+    onExpandedStateChange,
   } = props;
 
   const tree = useMemo(() => {
@@ -69,6 +76,20 @@ export function FileTree(props: FileTreeProps) {
     return expandedDirs;
   }, [search, commentedFilesOnly, displayTree, expandedDirs]);
 
+  const allDirPaths = useMemo(() => collectAllDirPaths(tree), [tree]);
+
+  useImperativeHandle(ref, () => ({
+    expandAll: () => setExpandedDirs(new Set(allDirPaths)),
+    collapseAll: () => setExpandedDirs(new Set()),
+  }), [allDirPaths]);
+
+  useEffect(() => {
+    if (!onExpandedStateChange || allDirPaths.length === 0) {
+      return;
+    }
+    onExpandedStateChange(expandedDirs.size >= allDirPaths.length);
+  }, [expandedDirs, allDirPaths, onExpandedStateChange]);
+
   const handleToggleDir = useCallback((path: string) => {
     setExpandedDirs(prev => {
       const next = new Set(prev);
@@ -108,4 +129,4 @@ export function FileTree(props: FileTreeProps) {
       )}
     </div>
   );
-}
+});

@@ -27,6 +27,8 @@ import {
   revertHunk,
   getRefCapabilities,
   getGitHubInfo,
+  pushPrComments,
+  type PrComment,
 } from '@diffity/git';
 import { findOrCreateSession } from './session.js';
 import { handleReviewRoute } from './review-routes.js';
@@ -354,6 +356,28 @@ export function startServer(options: ServerOptions): Promise<ServerResult> {
             sessionId,
             github,
           });
+          return;
+        }
+
+        if (pathname === '/api/github/push-comments' && req.method === 'POST') {
+          if (!github?.prNumber || !github.headSha) {
+            sendError(res, 400, 'No GitHub PR detected');
+            return;
+          }
+          const body = JSON.parse(await readBody(req));
+          const comments = body.comments as PrComment[];
+          if (!Array.isArray(comments) || comments.length === 0) {
+            sendError(res, 400, 'No comments provided');
+            return;
+          }
+          const result = pushPrComments(
+            github.owner,
+            github.repo,
+            github.prNumber,
+            github.headSha,
+            comments,
+          );
+          sendJson(res, result);
           return;
         }
 

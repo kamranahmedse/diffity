@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import type { ParsedDiff } from '@diffity/parser';
+import { toast } from 'sonner';
 import { cn } from '../lib/cn';
 import { useCopy } from '../hooks/use-copy';
 import { useThreadNavigation } from '../hooks/use-thread-navigation';
@@ -19,8 +20,10 @@ import { KeyboardIcon } from './icons/keyboard-icon';
 import { EllipsisIcon } from './icons/ellipsis-icon';
 import { GitBranchIcon } from './icons/git-branch-icon';
 import { GitHubIcon } from './icons/github-icon';
+import { UploadIcon } from './icons/upload-icon';
 import { DiffStats } from './diff-stats';
 import { ConfirmDialog } from './ui/confirm-dialog';
+import { pushCommentsToGitHub, type PrCommentPayload } from '../lib/api';
 import { GENERAL_THREAD_FILE_PATH } from '../types/comment';
 import type { ViewMode } from '../lib/diff-utils';
 import type { CommentThread } from '../types/comment';
@@ -138,9 +141,51 @@ export function Toolbar(props: ToolbarProps) {
   } = props;
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [showMenu, setShowMenu] = useState(false);
+  const [pushState, setPushState] = useState<'idle' | 'pushing'>('idle');
   const menuRef = useRef<HTMLDivElement>(null);
   const { copied, copy } = useCopy();
   const { currentIndex, count: unresolvedCount, goToPrevious, goToNext } = useThreadNavigation(threads, onScrollToThread);
+
+  const handlePushToGitHub = async () => {
+    const unresolvedThreads = threads.filter(t => !isThreadResolved(t) && t.filePath !== GENERAL_THREAD_FILE_PATH);
+    if (unresolvedThreads.length === 0) {
+      return;
+    }
+    setPushState('pushing');
+    try {
+      const comments: PrCommentPayload[] = unresolvedThreads.map(t => ({
+        filePath: t.filePath,
+        side: t.side === 'old' ? 'LEFT' as const : 'RIGHT' as const,
+        startLine: t.startLine !== t.endLine ? t.startLine : null,
+        endLine: t.endLine,
+        body: t.comments.map(c => {
+          if (t.comments.length === 1) {
+            return c.body;
+          }
+          const name = c.author.name === 'You' ? 'User' : c.author.name;
+          return `**${name}:** ${c.body}`;
+        }).join('\n\n'),
+      }));
+      const result = await pushCommentsToGitHub(comments);
+      if (result.failed > 0 && result.pushed > 0) {
+        toast.warning(`Pushed ${result.pushed}, ${result.failed} failed`, {
+          description: result.errors.join('\n'),
+        });
+      } else if (result.failed > 0) {
+        toast.error(`Failed to push comments`, {
+          description: result.errors.join('\n'),
+        });
+      } else {
+        toast.success(`Pushed ${result.pushed} comment${result.pushed !== 1 ? 's' : ''} to PR`);
+      }
+      setPushState('idle');
+    } catch (err) {
+      toast.error('Failed to push comments', {
+        description: err instanceof Error ? err.message : 'Unknown error',
+      });
+      setPushState('idle');
+    }
+  };
 
   useEffect(() => {
     if (!showMenu) {
@@ -172,23 +217,39 @@ export function Toolbar(props: ToolbarProps) {
           </span>
         )}
         {description && <span className="text-text-muted truncate hidden lg:inline">{description}</span>}
-        {github?.prNumber && github.prUrl && (
-          <a
-            href={github.prUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex items-center gap-1 px-1.5 py-0.5 bg-bg-tertiary rounded font-mono text-[11px] text-text-muted hover:text-text transition-colors shrink-0"
-          >
-            <GitHubIcon className="w-3 h-3" />
-            #{github.prNumber}
-          </a>
-        )}
         {diff && (
           <span className="inline-flex items-center bg-bg-tertiary rounded-md overflow-hidden text-text-muted shrink-0">
             <span className="px-2 py-0.5">{diff.stats.filesChanged} file{diff.stats.filesChanged !== 1 ? 's' : ''} changed</span>
             <span className="px-2 py-0.5">
               <DiffStats additions={diff.stats.totalAdditions} deletions={diff.stats.totalDeletions} />
             </span>
+          </span>
+        )}
+        {github?.prNumber && github.prUrl && (
+          <span className="inline-flex items-center bg-bg-tertiary rounded-md overflow-hidden shrink-0">
+            <a
+              href={github.prUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1 px-1.5 py-0.5 font-mono text-[11px] text-text-muted hover:text-text transition-colors"
+            >
+              <GitHubIcon className="w-3 h-3" />
+              #{github.prNumber}
+            </a>
+            {unresolvedCount > 0 && (
+              <button
+                onClick={handlePushToGitHub}
+                disabled={pushState === 'pushing'}
+                className="inline-flex items-center gap-1 px-1.5 py-0.5 text-[11px] text-text-muted hover:text-text transition-colors cursor-pointer disabled:opacity-50"
+                title="Push comments to GitHub PR"
+              >
+                {pushState === 'pushing' ? (
+                  <span className="w-3 h-3 border border-current border-t-transparent rounded-full animate-spin" />
+                ) : (
+                  <UploadIcon className="w-3 h-3" />
+                )}
+              </button>
+            )}
           </span>
         )}
       </div>
@@ -304,6 +365,17 @@ export function Toolbar(props: ToolbarProps) {
                 Keyboard shortcuts
                 <span className="ml-auto text-text-muted">?</span>
               </button>
+              <div className="border-t border-border my-1" />
+              <a
+                href="https://github.com/kamranahmedse/diffity"
+                target="_blank"
+                rel="noopener noreferrer"
+                className={menuItemClass}
+                onClick={() => setShowMenu(false)}
+              >
+                <GitHubIcon className="w-3.5 h-3.5" />
+                GitHub
+              </a>
             </div>
           )}
         </div>

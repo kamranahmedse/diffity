@@ -1,10 +1,13 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import type { DiffFile } from '@diffity/parser';
 import { FileTree } from './file-tree';
+import type { FileTreeHandle } from './file-tree';
 import { SidebarIcon } from './icons/sidebar-icon';
 import { SearchIcon } from './icons/search-icon';
 import { XIcon } from './icons/x-icon';
 import { CommentIcon } from './icons/comment-icon';
+import { CollapseAllIcon } from './icons/collapse-all-icon';
+import { ExpandAllIcon } from './icons/expand-all-icon';
 
 interface SidebarProps {
   files: DiffFile[];
@@ -24,9 +27,11 @@ export function Sidebar(props: SidebarProps) {
     onFileClick,
     onCommentedFileClick,
   } = props;
+  const fileTreeRef = useRef<FileTreeHandle>(null);
   const [search, setSearch] = useState('');
   const [collapsed, setCollapsed] = useState(false);
   const [commentedFilesOnly, setCommentedFilesOnly] = useState(false);
+  const [allExpanded, setAllExpanded] = useState(true);
 
   const commentedFileCount = commentCountsByFile.size;
   const commentedFileCountLabel = commentedFileCount > 99 ? '99+' : String(commentedFileCount);
@@ -77,13 +82,32 @@ export function Sidebar(props: SidebarProps) {
             {countLabel}
           </span>
         </span>
-        <button
-          className="p-1 rounded-md text-text-muted hover:text-text hover:bg-hover cursor-pointer"
-          onClick={() => setCollapsed(true)}
-          title="Hide sidebar"
-        >
-          <SidebarIcon className="w-3.5 h-3.5" />
-        </button>
+        <div className="flex items-center gap-0.5">
+          <button
+            className="p-1 rounded-md text-text-muted hover:text-text hover:bg-hover cursor-pointer"
+            onClick={() => {
+              if (allExpanded) {
+                fileTreeRef.current?.collapseAll();
+              } else {
+                fileTreeRef.current?.expandAll();
+              }
+            }}
+            title={allExpanded ? 'Collapse all' : 'Expand all'}
+          >
+            {allExpanded ? (
+              <CollapseAllIcon className="w-3.5 h-3.5" />
+            ) : (
+              <ExpandAllIcon className="w-3.5 h-3.5" />
+            )}
+          </button>
+          <button
+            className="p-1 rounded-md text-text-muted hover:text-text hover:bg-hover cursor-pointer"
+            onClick={() => setCollapsed(true)}
+            title="Hide sidebar"
+          >
+            <SidebarIcon className="w-3.5 h-3.5" />
+          </button>
+        </div>
       </div>
       <div className="flex items-center gap-2 px-3 py-2">
         <div className="relative flex-1">
@@ -130,6 +154,7 @@ export function Sidebar(props: SidebarProps) {
         )}
       </div>
       <FileTree
+        ref={fileTreeRef}
         files={files}
         search={search}
         activeFile={activeFile}
@@ -137,6 +162,7 @@ export function Sidebar(props: SidebarProps) {
         commentCountsByFile={commentCountsByFile}
         commentedFilesOnly={commentedFilesOnly}
         onFileClick={handleTreeFileClick}
+        onExpandedStateChange={setAllExpanded}
       />
     </aside>
   );

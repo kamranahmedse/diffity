@@ -249,3 +249,30 @@ export async function fetchFileContent(filePath: string, ref?: string): Promise<
   const json = await res.json();
   return json.content as string[];
 }
+
+export interface PushCommentsResult {
+  pushed: number;
+  failed: number;
+  errors: string[];
+}
+
+export interface PrCommentPayload {
+  filePath: string;
+  side: 'LEFT' | 'RIGHT';
+  startLine: number | null;
+  endLine: number;
+  body: string;
+}
+
+export async function pushCommentsToGitHub(comments: PrCommentPayload[]): Promise<PushCommentsResult> {
+  const res = await fetch('/api/github/push-comments', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ comments }),
+  });
+  if (!res.ok) {
+    const json = await res.json().catch(() => ({ error: `HTTP ${res.status}` }));
+    throw new Error(json.error || `HTTP ${res.status}`);
+  }
+  return res.json();
+}

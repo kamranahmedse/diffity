@@ -167,7 +167,7 @@ export function HunkBlock(props: HunkBlockProps) {
           {currentRows}
           <tr className="relative z-10">
             <td colSpan={4} className="relative h-0">
-              <div className="absolute right-3 -top-3 z-10 flex items-center gap-1.5 opacity-0 group-hover/undo:opacity-100 pointer-events-none group-hover/undo:pointer-events-auto">
+              <div className="absolute right-3 bottom-0 z-10 flex items-center gap-1.5 opacity-0 group-hover/undo:opacity-100 pointer-events-none group-hover/undo:pointer-events-auto">
                 <button
                   onClick={() => onRevertChange(hunk, group.startIndex, group.endIndex)}
                   className="flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium rounded-md border border-deleted/40 bg-bg text-deleted hover:bg-deleted hover:text-white transition-colors cursor-pointer shadow-md"
