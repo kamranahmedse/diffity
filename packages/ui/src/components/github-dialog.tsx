@@ -29,6 +29,8 @@ export function GitHubDialog(props: GitHubDialogProps) {
   const unresolvedFileThreads = threads.filter(
     t => !isThreadResolved(t) && t.filePath !== GENERAL_THREAD_FILE_PATH,
   );
+  const pushableThreads = unresolvedFileThreads.filter(t => t.comments.length === 1);
+  const multiCommentCount = unresolvedFileThreads.length - pushableThreads.length;
   const localCount = unresolvedFileThreads.length;
 
   useEffect(() => {
@@ -42,23 +44,17 @@ export function GitHubDialog(props: GitHubDialogProps) {
   }, [onClose]);
 
   const handlePush = async () => {
-    if (localCount === 0) {
+    if (pushableThreads.length === 0) {
       return;
     }
     setPushing(true);
     try {
-      const comments: PrCommentPayload[] = unresolvedFileThreads.map(t => ({
+      const comments: PrCommentPayload[] = pushableThreads.map(t => ({
         filePath: t.filePath,
         side: t.side === 'old' ? 'LEFT' as const : 'RIGHT' as const,
         startLine: t.startLine !== t.endLine ? t.startLine : null,
         endLine: t.endLine,
-        body: t.comments.map(c => {
-          if (t.comments.length === 1) {
-            return c.body;
-          }
-          const name = c.author.name === 'You' ? 'User' : c.author.name;
-          return `**${name}:** ${c.body}`;
-        }).join('\n\n'),
+        body: t.comments[0].body,
       }));
       const result = await pushCommentsToGitHub(comments);
       if (result.failed > 0) {
@@ -134,13 +130,21 @@ export function GitHubDialog(props: GitHubDialogProps) {
           <div className="flex items-center justify-between py-2.5 px-3 bg-bg-secondary rounded-lg">
             <div>
               <div className="text-xs font-medium text-text">
-                {localCount} local comment{localCount !== 1 ? 's' : ''}
+                {pushableThreads.length > 0
+                  ? `${pushableThreads.length} comment${pushableThreads.length !== 1 ? 's' : ''} to push`
+                  : `${localCount} local comment${localCount !== 1 ? 's' : ''}`}
               </div>
               <div className="text-[11px] text-text-muted mt-0.5">
-                {localCount > 0 ? 'Unresolved, ready to push' : 'No comments to push'}
+                {pushableThreads.length > 0 && multiCommentCount > 0
+                  ? `${multiCommentCount} thread${multiCommentCount !== 1 ? 's' : ''} with replies can't be pushed`
+                  : pushableThreads.length > 0
+                    ? 'Single comments, ready to push'
+                    : localCount > 0
+                      ? 'Threads with replies can\'t be pushed'
+                      : 'No comments to push'}
               </div>
             </div>
-            {localCount > 0 && (
+            {pushableThreads.length > 0 && (
               <button
                 onClick={handlePush}
                 disabled={pushing}

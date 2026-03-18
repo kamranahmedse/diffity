@@ -37,7 +37,7 @@ import {
   type PrComment,
 } from '@diffity/github';
 import { findOrCreateSession } from './session.js';
-import { createThread, getThreadsForSession } from './threads.js';
+import { createThread, addReply, getThreadsForSession } from './threads.js';
 import { handleReviewRoute } from './review-routes.js';
 import {
   registerInstance,
@@ -435,27 +435,35 @@ export function startServer(options: ServerOptions): Promise<ServerResult> {
             return;
           }
 
-          const remoteComments = pullGitHubComments(githubRemote.owner, githubRemote.repo, details.prNumber);
+          const remoteThreads = pullGitHubComments(githubRemote.owner, githubRemote.repo, details.prNumber);
           const localThreads = getThreadsForSession(sid);
 
           let pulled = 0;
           let skipped = 0;
-          for (const rc of remoteComments) {
+          for (const rt of remoteThreads) {
+            const firstComment = rt.comments[0];
             const alreadyExists = localThreads.some(t =>
-              t.filePath === rc.filePath &&
-              t.side === rc.side &&
-              t.startLine === rc.startLine &&
-              t.endLine === rc.endLine &&
-              t.comments.some(c => c.body === rc.body),
+              t.filePath === rt.filePath &&
+              t.side === rt.side &&
+              t.startLine === rt.startLine &&
+              t.endLine === rt.endLine &&
+              t.comments.some(c => c.body === firstComment.body),
             );
             if (alreadyExists) {
               skipped++;
               continue;
             }
-            createThread(sid, rc.filePath, rc.side, rc.startLine, rc.endLine, rc.body, {
-              name: rc.authorName,
-              type: rc.authorType,
+            const thread = createThread(sid, rt.filePath, rt.side, rt.startLine, rt.endLine, firstComment.body, {
+              name: firstComment.authorName,
+              type: firstComment.authorType,
             });
+            for (let i = 1; i < rt.comments.length; i++) {
+              const reply = rt.comments[i];
+              addReply(thread.id, reply.body, {
+                name: reply.authorName,
+                type: reply.authorType,
+              });
+            }
             pulled++;
           }
           sendJson(res, { pulled, skipped });

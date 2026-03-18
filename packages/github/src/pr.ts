@@ -1,6 +1,6 @@
 import { execSync } from 'node:child_process';
 import { exec } from './exec.js';
-import type { PrComment, PushResult, PulledComment } from './types.js';
+import type { PrComment, PushResult, PulledThread } from './types.js';
 
 export function getFiles(owner: string, repo: string, prNumber: number): Set<string> {
   try {
@@ -49,16 +49,18 @@ export function getCommentCount(owner: string, repo: string, prNumber: number): 
 }
 
 interface GitHubCommentRaw {
+  id: number;
   path: string;
   line: number;
   start_line: number | null;
   side: string;
   body: string;
+  in_reply_to_id: number | null;
   user: { login: string; type: string };
   created_at: string;
 }
 
-export function pullComments(owner: string, repo: string, prNumber: number): PulledComment[] {
+export function pullComments(owner: string, repo: string, prNumber: number): PulledThread[] {
   try {
     const json = execSync(
       `gh api repos/${owner}/${repo}/pulls/${prNumber}/comments --paginate`,
@@ -71,18 +73,33 @@ export function pullComments(owner: string, repo: string, prNumber: number): Pul
     if (!Array.isArray(data)) {
       return [];
     }
-    return data
-      .filter(c => c.line !== null)
-      .map(c => ({
-        filePath: c.path,
-        side: c.side === 'LEFT' ? 'old' as const : 'new' as const,
-        startLine: c.start_line ?? c.line,
-        endLine: c.line,
-        body: c.body,
-        authorName: c.user.login,
-        authorType: c.user.type === 'Bot' ? 'agent' as const : 'user' as const,
-        createdAt: c.created_at,
-      }));
+
+    const rootComments = data.filter(c => c.line !== null && !c.in_reply_to_id);
+    const repliesByRoot = new Map<number, GitHubCommentRaw[]>();
+    for (const c of data) {
+      if (c.in_reply_to_id) {
+        const list = repliesByRoot.get(c.in_reply_to_id) ?? [];
+        list.push(c);
+        repliesByRoot.set(c.in_reply_to_id, list);
+      }
+    }
+
+    return rootComments.map(root => {
+      const replies = repliesByRoot.get(root.id) ?? [];
+      const allComments = [root, ...replies];
+      return {
+        filePath: root.path,
+        side: root.side === 'LEFT' ? 'old' as const : 'new' as const,
+        startLine: root.start_line ?? root.line,
+        endLine: root.line,
+        comments: allComments.map(c => ({
+          body: c.body,
+          authorName: c.user.login,
+          authorType: c.user.type === 'Bot' ? 'agent' as const : 'user' as const,
+          createdAt: c.created_at,
+        })),
+      };
+    });
   } catch {
     return [];
   }
