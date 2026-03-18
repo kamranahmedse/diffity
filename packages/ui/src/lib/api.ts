@@ -1,6 +1,13 @@
 import type { ParsedDiff } from '@diffity/parser';
 import type { CommentThread, CommentAuthor, CommentSide, Comment } from '../types/comment';
 
+export interface GitHubInfo {
+  owner: string;
+  repo: string;
+  prNumber: number | null;
+  prUrl: string | null;
+}
+
 export interface RepoInfo {
   name: string;
   branch: string;
@@ -8,6 +15,7 @@ export interface RepoInfo {
   description: string;
   capabilities?: { reviews: boolean; revert: boolean; staleness: boolean };
   sessionId?: string | null;
+  github?: GitHubInfo | null;
 }
 
 export interface Commit {

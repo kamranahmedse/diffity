@@ -337,6 +337,7 @@ export function DiffPage(props: DiffPageProps) {
         repoName={info?.name || null}
         branch={info?.branch || null}
         description={info?.description || null}
+        github={info?.github}
       />
       {isStale && <StaleDiffBanner onRefresh={handleRefreshDiff} />}
       <div className="flex flex-1 overflow-hidden">

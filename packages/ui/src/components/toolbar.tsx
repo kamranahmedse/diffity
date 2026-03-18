@@ -18,6 +18,7 @@ import { EyeOffIcon } from './icons/eye-off-icon';
 import { KeyboardIcon } from './icons/keyboard-icon';
 import { EllipsisIcon } from './icons/ellipsis-icon';
 import { GitBranchIcon } from './icons/git-branch-icon';
+import { GitHubIcon } from './icons/github-icon';
 import { DiffStats } from './diff-stats';
 import { ConfirmDialog } from './ui/confirm-dialog';
 import { GENERAL_THREAD_FILE_PATH } from '../types/comment';
@@ -41,6 +42,7 @@ interface ToolbarProps {
   repoName: string | null;
   branch: string | null;
   description: string | null;
+  github?: { owner: string; repo: string; prNumber: number | null; prUrl: string | null } | null;
 }
 
 function extractCodeContext(diff: ParsedDiff | undefined, filePath: string, side: 'old' | 'new', startLine: number, endLine: number): string[] {
@@ -132,6 +134,7 @@ export function Toolbar(props: ToolbarProps) {
     repoName,
     branch,
     description,
+    github,
   } = props;
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [showMenu, setShowMenu] = useState(false);
@@ -169,6 +172,17 @@ export function Toolbar(props: ToolbarProps) {
           </span>
         )}
         {description && <span className="text-text-muted truncate hidden lg:inline">{description}</span>}
+        {github?.prNumber && github.prUrl && (
+          <a
+            href={github.prUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-1 px-1.5 py-0.5 bg-bg-tertiary rounded font-mono text-[11px] text-text-muted hover:text-text transition-colors shrink-0"
+          >
+            <GitHubIcon className="w-3 h-3" />
+            #{github.prNumber}
+          </a>
+        )}
         {diff && (
           <span className="inline-flex items-center bg-bg-tertiary rounded-md overflow-hidden text-text-muted shrink-0">
             <span className="px-2 py-0.5">{diff.stats.filesChanged} file{diff.stats.filesChanged !== 1 ? 's' : ''} changed</span>

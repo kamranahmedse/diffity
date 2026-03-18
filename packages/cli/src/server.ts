@@ -26,6 +26,7 @@ import {
   revertFile,
   revertHunk,
   getRefCapabilities,
+  getGitHubInfo,
 } from '@diffity/git';
 import { findOrCreateSession } from './session.js';
 import { handleReviewRoute } from './review-routes.js';
@@ -151,6 +152,7 @@ export function startServer(options: ServerOptions): Promise<ServerResult> {
     return raw;
   }
 
+  const github = getGitHubInfo();
   const uiDir = join(__dirname, 'ui');
 
   const server = createServer(
@@ -350,6 +352,7 @@ export function startServer(options: ServerOptions): Promise<ServerResult> {
             description: refDescription,
             capabilities,
             sessionId,
+            github,
           });
           return;
         }
