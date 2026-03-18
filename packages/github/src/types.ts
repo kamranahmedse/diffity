@@ -12,20 +12,19 @@ export interface GitHubDetails {
   commentCount: number;
 }
 
-export interface PulledComment {
-  filePath: string;
-  side: 'old' | 'new';
-  startLine: number;
-  endLine: number;
+export interface PulledThreadComment {
   body: string;
   authorName: string;
   authorType: 'user' | 'agent';
   createdAt: string;
 }
 
-export interface PullResult {
-  pulled: number;
-  skipped: number;
+export interface PulledThread {
+  filePath: string;
+  side: 'old' | 'new';
+  startLine: number;
+  endLine: number;
+  comments: PulledThreadComment[];
 }
 
 export interface PrComment {
