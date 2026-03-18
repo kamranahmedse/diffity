@@ -26,10 +26,12 @@ import {
   revertFile,
   revertHunk,
   getRefCapabilities,
-  getGitHubInfo,
-  pushPrComments,
-  type PrComment,
 } from '@diffity/git';
+import {
+  detect as detectGitHub,
+  pushComments as pushGitHubComments,
+  type PrComment,
+} from '@diffity/github';
 import { findOrCreateSession } from './session.js';
 import { handleReviewRoute } from './review-routes.js';
 import {
@@ -154,7 +156,7 @@ export function startServer(options: ServerOptions): Promise<ServerResult> {
     return raw;
   }
 
-  const github = getGitHubInfo();
+  const github = detectGitHub();
   const uiDir = join(__dirname, 'ui');
 
   const server = createServer(
@@ -370,7 +372,7 @@ export function startServer(options: ServerOptions): Promise<ServerResult> {
             sendError(res, 400, 'No comments provided');
             return;
           }
-          const result = pushPrComments(
+          const result = pushGitHubComments(
             github.owner,
             github.repo,
             github.prNumber,

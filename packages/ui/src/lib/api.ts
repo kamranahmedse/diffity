@@ -252,6 +252,7 @@ export async function fetchFileContent(filePath: string, ref?: string): Promise<
 
 export interface PushCommentsResult {
   pushed: number;
+  skipped: number;
   failed: number;
   errors: string[];
 }

@@ -167,16 +167,16 @@ export function Toolbar(props: ToolbarProps) {
         }).join('\n\n'),
       }));
       const result = await pushCommentsToGitHub(comments);
-      if (result.failed > 0 && result.pushed > 0) {
-        toast.warning(`Pushed ${result.pushed}, ${result.failed} failed`, {
+      if (result.failed > 0) {
+        const pushedMsg = result.pushed > 0 ? `${result.pushed} pushed, ` : '';
+        toast.error(`${pushedMsg}${result.failed} failed`, {
           description: result.errors.join('\n'),
         });
-      } else if (result.failed > 0) {
-        toast.error(`Failed to push comments`, {
-          description: result.errors.join('\n'),
-        });
+      } else if (result.pushed === 0 && result.skipped > 0) {
+        toast.info('All comments already exist on the PR');
       } else {
-        toast.success(`Pushed ${result.pushed} comment${result.pushed !== 1 ? 's' : ''} to PR`);
+        const skippedMsg = result.skipped > 0 ? ` (${result.skipped} already existed)` : '';
+        toast.success(`Pushed ${result.pushed} comment${result.pushed !== 1 ? 's' : ''} to PR${skippedMsg}`);
       }
       setPushState('idle');
     } catch (err) {
