@@ -100,6 +100,7 @@ const LANG_MAP: Record<string, BundledLanguage> = {
   jl: 'julia',
   v: 'v',
   sol: 'solidity',
+  luau: 'luau',
   glsl: 'glsl',
   hlsl: 'hlsl',
   wgsl: 'wgsl',
