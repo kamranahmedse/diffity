@@ -2,10 +2,10 @@ import { useState, useRef, useEffect } from 'react';
 import type { CommentThread as CommentThreadType, CommentAuthor } from '../types/comment';
 import { isThreadResolved } from '../types/comment';
 import type { CommentActions } from '../hooks/use-comment-actions';
-import { CommentBubble } from './comment-bubble';
 import { CommentForm } from './comment-form';
 import { CommentIcon } from './icons/comment-icon';
 import { TrashIcon } from './icons/trash-icon';
+import { MarkdownContent } from './markdown-content';
 import { ThreadBadge } from './ui/thread-badge';
 
 const DEFAULT_AUTHOR: CommentAuthor = { name: 'You', type: 'user' };
@@ -63,39 +63,37 @@ export function PathComments(props: PathCommentsProps) {
       </button>
 
       {open && (
-        <div className="absolute left-0 top-full mt-1 w-96 max-h-[420px] overflow-y-auto bg-bg-secondary rounded-lg shadow-lg ring-1 ring-border z-50">
-          <div className="flex items-center gap-2 px-3 py-2 border-b border-border">
-            <CommentIcon className="w-3.5 h-3.5 text-text-muted" />
-            <span className="text-xs text-text-secondary">
-              Comments on <span className="font-medium">{label}</span>
+        <div className="absolute left-0 top-full mt-1 w-80 max-h-[400px] overflow-y-auto bg-bg-secondary rounded-lg shadow-lg ring-1 ring-border z-50">
+          <div className="flex items-center gap-2 px-3 py-1.5 border-b border-border">
+            <span className="text-[11px] text-text-muted">
+              {label}
             </span>
-            {threads.length > 0 && (
-              <span className="text-[10px] font-semibold bg-accent/15 text-accent px-1.5 py-0.5 rounded-full">{threads.length}</span>
-            )}
             <div className="flex-1" />
             {!showForm && (
               <button
                 onClick={() => setShowForm(true)}
                 className="text-[11px] text-accent hover:text-accent-hover transition-colors cursor-pointer"
               >
-                Add
+                Add comment
               </button>
             )}
           </div>
 
-          <div className="p-2 space-y-2">
+          <div className="p-1.5 space-y-1">
             {showForm && (
-              <CommentForm
-                onSubmit={handleSubmit}
-                onCancel={() => {
-                  setShowForm(false);
-                  if (threads.length === 0) {
-                    setOpen(false);
-                  }
-                }}
-                placeholder={`Comment on ${label}...`}
-                submitLabel="Comment"
-              />
+              <div className="p-1">
+                <CommentForm
+                  onSubmit={handleSubmit}
+                  onCancel={() => {
+                    setShowForm(false);
+                    if (threads.length === 0) {
+                      setOpen(false);
+                    }
+                  }}
+                  placeholder={`Comment on ${label}...`}
+                  submitLabel="Comment"
+                />
+              </div>
             )}
             {threads.map(thread => (
               <PathThreadCard
@@ -110,7 +108,7 @@ export function PathComments(props: PathCommentsProps) {
               />
             ))}
             {threads.length === 0 && !showForm && (
-              <div className="py-3 text-center text-xs text-text-muted">No comments yet</div>
+              <div className="py-2 text-center text-xs text-text-muted">No comments yet</div>
             )}
           </div>
         </div>
@@ -135,68 +133,98 @@ function PathThreadCard(props: PathThreadCardProps) {
   const resolved = isThreadResolved(thread);
 
   return (
-    <div className="rounded-lg overflow-hidden bg-bg" data-thread-id={thread.id}>
-      <div className="flex items-center justify-between px-3 py-1.5">
-        <div className="flex items-center gap-2">
-          {resolved && <ThreadBadge variant="resolved" />}
+    <div className="rounded-md bg-bg p-2 group/card" data-thread-id={thread.id}>
+      {thread.comments.map((comment, i) => (
+        <div key={comment.id} className={i > 0 ? 'mt-2 pt-2 border-t border-border' : ''}>
+          <div className="flex items-center gap-1.5 mb-0.5">
+            <span className="text-[11px] font-semibold text-text">{comment.author.name}</span>
+            {comment.author.type === 'agent' && (
+              <span className="text-[9px] px-1 py-px rounded-full bg-accent/15 text-accent font-medium">bot</span>
+            )}
+            <span className="text-[10px] text-text-muted">{formatTime(comment.createdAt)}</span>
+            {i === 0 && (
+              <div className="ml-auto flex items-center gap-1">
+                {resolved && <ThreadBadge variant="resolved" />}
+              </div>
+            )}
+          </div>
+          <div className="text-[13px] text-text">
+            <MarkdownContent content={comment.body} />
+          </div>
         </div>
-        <div className="flex items-center gap-1">
-          {resolved ? (
+      ))}
+      <div className="flex items-center gap-2 mt-1.5 pt-1.5 border-t border-border">
+        {showReply ? (
+          <div className="w-full">
+            <CommentForm
+              onSubmit={(body) => {
+                onReply(body);
+                setShowReply(false);
+              }}
+              onCancel={() => setShowReply(false)}
+              placeholder="Reply..."
+              submitLabel="Reply"
+            />
+          </div>
+        ) : (
+          <>
             <button
-              onClick={onUnresolve}
-              className="text-[11px] text-text-muted hover:text-text-secondary transition-colors cursor-pointer"
+              onClick={() => setShowReply(true)}
+              className="text-[11px] text-accent hover:text-accent-hover transition-colors cursor-pointer"
             >
-              Reopen
+              Reply
             </button>
-          ) : (
-            <button
-              onClick={onResolve}
-              className="text-[11px] text-text-muted hover:text-text-secondary transition-colors cursor-pointer"
-            >
-              Resolve
-            </button>
-          )}
-          <button
-            onClick={onDeleteThread}
-            className="text-text-muted hover:text-deleted transition-colors cursor-pointer ml-1"
-            title="Delete thread"
-          >
-            <TrashIcon className="w-3.5 h-3.5" />
-          </button>
-        </div>
+            <div className="flex-1" />
+            <div className="flex items-center gap-1 opacity-0 group-hover/card:opacity-100 transition-opacity">
+              {resolved ? (
+                <button
+                  onClick={onUnresolve}
+                  className="text-[11px] text-text-muted hover:text-text-secondary transition-colors cursor-pointer"
+                >
+                  Reopen
+                </button>
+              ) : (
+                <button
+                  onClick={onResolve}
+                  className="text-[11px] text-text-muted hover:text-text-secondary transition-colors cursor-pointer"
+                >
+                  Resolve
+                </button>
+              )}
+              <button
+                onClick={onDeleteThread}
+                className="text-text-muted hover:text-deleted transition-colors cursor-pointer"
+                title="Delete"
+              >
+                <TrashIcon className="w-3 h-3" />
+              </button>
+            </div>
+          </>
+        )}
       </div>
-      <div className="px-0.5">
-        {thread.comments.map(comment => (
-          <CommentBubble
-            key={comment.id}
-            comment={comment}
-            onEdit={(body) => onEditComment(comment.id, body)}
-            onDelete={() => onDeleteComment(comment.id)}
-          />
-        ))}
-      </div>
-      {showReply ? (
-        <div className="px-3 py-2">
-          <CommentForm
-            onSubmit={(body) => {
-              onReply(body);
-              setShowReply(false);
-            }}
-            onCancel={() => setShowReply(false)}
-            placeholder="Reply..."
-            submitLabel="Reply"
-          />
-        </div>
-      ) : (
-        <div className="px-3 py-1.5">
-          <button
-            onClick={() => setShowReply(true)}
-            className="text-xs text-accent hover:text-accent-hover transition-colors cursor-pointer"
-          >
-            Reply
-          </button>
-        </div>
-      )}
     </div>
   );
+}
+
+function formatTime(dateStr: string): string {
+  const date = new Date(dateStr);
+  const now = new Date();
+  const diffMs = now.getTime() - date.getTime();
+  const diffMin = Math.floor(diffMs / 60000);
+  const diffHr = Math.floor(diffMin / 60);
+  const diffDays = Math.floor(diffHr / 24);
+
+  if (diffMin < 1) {
+    return 'just now';
+  }
+  if (diffMin < 60) {
+    return `${diffMin}m ago`;
+  }
+  if (diffHr < 24) {
+    return `${diffHr}h ago`;
+  }
+  if (diffDays < 30) {
+    return `${diffDays}d ago`;
+  }
+  return date.toLocaleDateString();
 }
