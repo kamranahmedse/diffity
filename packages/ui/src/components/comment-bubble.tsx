@@ -95,7 +95,7 @@ export function CommentBubble(props: CommentBubbleProps) {
   };
 
   return (
-    <div className="p-1.5 first:pt-1.5 last:pb-1.5 group">
+    <div className="px-1.5 py-1 first:pt-1.5 last:pb-1.5 group">
       <div className="bg-bg rounded-lg px-3 py-2.5">
         <div className="flex items-center gap-2 mb-1.5">
           <AuthorAvatar name={comment.author.name} avatarUrl={comment.author.avatarUrl} type={comment.author.type} />
@@ -132,7 +132,7 @@ export function CommentBubble(props: CommentBubbleProps) {
               onChange={(e) => setEditBody(e.target.value)}
               onKeyDown={handleKeyDown}
               rows={3}
-              className="w-full px-3 py-2 text-sm bg-bg-tertiary text-text resize-y outline-none rounded-md min-h-[60px] font-mono"
+              className="w-full px-3 py-2 text-sm bg-bg-tertiary text-text resize-y outline-none rounded-md min-h-[60px]"
             />
             <div className="flex items-center gap-2 mt-1.5">
               <div className="flex-1" />

@@ -15,6 +15,7 @@ You are reading open review comments and resolving them by making the requested 
 ## CLI Reference
 
 ```
+{{binary}} agent diff
 {{binary}} agent list [--status open|resolved|dismissed] [--json]
 {{binary}} agent comment --file <path> --line <n> [--end-line <n>] [--side new|old] --body "<text>"
 {{binary}} agent general-comment --body "<text>"

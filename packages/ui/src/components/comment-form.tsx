@@ -44,11 +44,11 @@ export function CommentForm(props: CommentFormProps) {
   return (
     <div className="rounded-lg overflow-hidden bg-bg-tertiary pt-2">
       {lineLabel && (
-        <div className="px-3 py-1.5">
+        <div className="px-3 pb-1.5 -mt-0.5">
           <span className="text-xs text-text-secondary font-medium">{lineLabel}</span>
         </div>
       )}
-      <div className="mx-1.5 mb-1.5 rounded-md overflow-hidden">
+      <div className="mx-1.5 mb-0.5 rounded-md overflow-hidden">
         <textarea
           ref={textareaRef}
           value={body}
@@ -59,7 +59,7 @@ export function CommentForm(props: CommentFormProps) {
           className="w-full px-3 py-2 text-sm bg-bg text-text resize-y outline-none placeholder:text-text-muted min-h-[80px]"
         />
       </div>
-      <div className="flex items-center gap-2 px-3 py-2">
+      <div className="flex items-center gap-2 px-1.5 pb-1.5">
         <div className="flex-1" />
         <button
           onClick={onCancel}

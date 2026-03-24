@@ -30,6 +30,8 @@ export interface CommentThread {
   sessionId?: string;
 }
 
+export const DEFAULT_AUTHOR: CommentAuthor = { name: 'You', type: 'user' };
+
 export function isThreadResolved(thread: CommentThread): boolean {
   return thread.status === 'resolved' || thread.status === 'dismissed';
 }

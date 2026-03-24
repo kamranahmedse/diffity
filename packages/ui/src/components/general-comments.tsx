@@ -1,14 +1,11 @@
 import { useState } from 'react';
-import { GENERAL_THREAD_FILE_PATH, isThreadResolved } from '../types/comment';
-import type { CommentAuthor, CommentThread as CommentThreadType } from '../types/comment';
+import { GENERAL_THREAD_FILE_PATH, isThreadResolved, DEFAULT_AUTHOR } from '../types/comment';
+import type { CommentThread as CommentThreadType } from '../types/comment';
 import type { CommentActions } from '../hooks/use-comment-actions';
-import { CommentBubble } from './comment-bubble';
 import { CommentForm } from './comment-form';
 import { CommentIcon } from './icons/comment-icon';
-import { TrashIcon } from './icons/trash-icon';
 import { ThreadBadge } from './ui/thread-badge';
-
-const DEFAULT_AUTHOR: CommentAuthor = { name: 'You', type: 'user' };
+import { ThreadCard } from './thread-card';
 
 interface GeneralCommentsProps {
   threads: CommentThreadType[];
@@ -71,7 +68,7 @@ export function GeneralComments(props: GeneralCommentsProps) {
           {threads.length > 0 ? (
             <div className="p-3 space-y-3">
               {threads.map((thread) => (
-                <GeneralThreadCard
+                <ThreadCard
                   key={thread.id}
                   thread={thread}
                   onReply={(body) => commentActions.addReply(thread.id, body, DEFAULT_AUTHOR)}
@@ -80,6 +77,8 @@ export function GeneralComments(props: GeneralCommentsProps) {
                   onEditComment={(commentId, body) => commentActions.editComment(commentId, body)}
                   onDeleteComment={(commentId) => commentActions.deleteComment(thread.id, commentId)}
                   onDeleteThread={() => commentActions.deleteThread(thread.id)}
+                  className="bg-bg-secondary"
+                  headerLeft={isThreadResolved(thread) && <ThreadBadge variant="resolved" />}
                 />
               ))}
             </div>
@@ -88,88 +87,6 @@ export function GeneralComments(props: GeneralCommentsProps) {
               No general comments yet
             </div>
           )}
-        </div>
-      )}
-    </div>
-  );
-}
-
-interface GeneralThreadCardProps {
-  thread: CommentThreadType;
-  onReply: (body: string) => void;
-  onResolve: () => void;
-  onUnresolve: () => void;
-  onEditComment: (commentId: string, body: string) => void;
-  onDeleteComment: (commentId: string) => void;
-  onDeleteThread: () => void;
-}
-
-function GeneralThreadCard(props: GeneralThreadCardProps) {
-  const { thread, onReply, onResolve, onUnresolve, onEditComment, onDeleteComment, onDeleteThread } = props;
-  const [showReply, setShowReply] = useState(false);
-  const resolved = isThreadResolved(thread);
-
-  return (
-    <div className="rounded-lg overflow-hidden bg-bg-secondary">
-      <div className="flex items-center justify-between px-3 py-1.5">
-        <div className="flex items-center gap-2">
-          {resolved && <ThreadBadge variant="resolved" />}
-        </div>
-        <div className="flex items-center gap-1">
-          {resolved ? (
-            <button
-              onClick={onUnresolve}
-              className="text-[11px] text-text-muted hover:text-text-secondary transition-colors cursor-pointer"
-            >
-              Reopen
-            </button>
-          ) : (
-            <button
-              onClick={onResolve}
-              className="text-[11px] text-text-muted hover:text-text-secondary transition-colors cursor-pointer"
-            >
-              Resolve
-            </button>
-          )}
-          <button
-            onClick={onDeleteThread}
-            className="text-text-muted hover:text-deleted transition-colors cursor-pointer ml-1"
-            title="Delete thread"
-          >
-            <TrashIcon className="w-3.5 h-3.5" />
-          </button>
-        </div>
-      </div>
-      <div className="px-0.5">
-        {thread.comments.map((comment) => (
-          <CommentBubble
-            key={comment.id}
-            comment={comment}
-            onEdit={(body) => onEditComment(comment.id, body)}
-            onDelete={() => onDeleteComment(comment.id)}
-          />
-        ))}
-      </div>
-      {showReply ? (
-        <div className="px-3 py-2">
-          <CommentForm
-            onSubmit={(body) => {
-              onReply(body);
-              setShowReply(false);
-            }}
-            onCancel={() => setShowReply(false)}
-            placeholder="Reply..."
-            submitLabel="Reply"
-          />
-        </div>
-      ) : (
-        <div className="px-3 py-1.5">
-          <button
-            onClick={() => setShowReply(true)}
-            className="text-xs text-accent hover:text-accent-hover transition-colors cursor-pointer"
-          >
-            Reply
-          </button>
         </div>
       )}
     </div>

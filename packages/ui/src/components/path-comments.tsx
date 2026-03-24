@@ -1,14 +1,11 @@
 import { useState, useRef, useEffect } from 'react';
-import type { CommentThread as CommentThreadType, CommentAuthor } from '../types/comment';
-import { isThreadResolved } from '../types/comment';
+import type { CommentThread as CommentThreadType } from '../types/comment';
+import { isThreadResolved, DEFAULT_AUTHOR } from '../types/comment';
 import type { CommentActions } from '../hooks/use-comment-actions';
-import { CommentBubble } from './comment-bubble';
 import { CommentForm } from './comment-form';
 import { CommentIcon } from './icons/comment-icon';
-import { TrashIcon } from './icons/trash-icon';
 import { ThreadBadge } from './ui/thread-badge';
-
-const DEFAULT_AUTHOR: CommentAuthor = { name: 'You', type: 'user' };
+import { ThreadCard } from './thread-card';
 
 interface PathCommentsProps {
   pathKey: string;
@@ -63,7 +60,7 @@ export function PathComments(props: PathCommentsProps) {
       </button>
 
       {open && (
-        <div className="absolute left-0 top-full mt-1 w-80 max-h-[400px] overflow-y-auto bg-bg-secondary rounded-lg shadow-lg border border-border z-50">
+        <div className="absolute left-0 top-full mt-1 w-80 max-h-100 overflow-y-auto bg-bg-secondary rounded-lg shadow-lg border border-border z-50">
           <div className="flex items-center gap-2 px-3 py-1.5 border-b border-border">
             <span className="text-[11px] text-text-muted truncate">{label}</span>
             <div className="flex-1" />
@@ -78,7 +75,7 @@ export function PathComments(props: PathCommentsProps) {
           </div>
 
           {showForm && (
-            <div className="border-b border-border">
+            <div className="px-2 py-2">
               <CommentForm
                 onSubmit={handleSubmit}
                 onCancel={() => {
@@ -95,7 +92,7 @@ export function PathComments(props: PathCommentsProps) {
 
           <div className="p-1.5 space-y-1.5">
             {threads.map(thread => (
-              <PathThreadCard
+              <ThreadCard
                 key={thread.id}
                 thread={thread}
                 onReply={(body) => commentActions.addReply(thread.id, body, DEFAULT_AUTHOR)}
@@ -104,81 +101,14 @@ export function PathComments(props: PathCommentsProps) {
                 onEditComment={(commentId, body) => commentActions.editComment(commentId, body)}
                 onDeleteComment={(commentId) => commentActions.deleteComment(thread.id, commentId)}
                 onDeleteThread={() => commentActions.deleteThread(thread.id)}
+                className="bg-bg-tertiary"
+                headerLeft={isThreadResolved(thread) && <ThreadBadge variant="resolved" />}
               />
             ))}
             {threads.length === 0 && !showForm && (
               <div className="py-2 text-center text-xs text-text-muted">No comments yet</div>
             )}
           </div>
-        </div>
-      )}
-    </div>
-  );
-}
-
-interface PathThreadCardProps {
-  thread: CommentThreadType;
-  onReply: (body: string) => void;
-  onResolve: () => void;
-  onUnresolve: () => void;
-  onEditComment: (commentId: string, body: string) => void;
-  onDeleteComment: (commentId: string) => void;
-  onDeleteThread: () => void;
-}
-
-function PathThreadCard(props: PathThreadCardProps) {
-  const { thread, onReply, onResolve, onUnresolve, onEditComment, onDeleteComment, onDeleteThread } = props;
-  const [showReply, setShowReply] = useState(false);
-  const resolved = isThreadResolved(thread);
-
-  return (
-    <div className="rounded-md overflow-hidden bg-bg-tertiary" data-thread-id={thread.id}>
-      <div className="flex items-center justify-between px-2.5 py-1">
-        <div className="flex items-center gap-1.5">
-          {resolved && <ThreadBadge variant="resolved" />}
-        </div>
-        <div className="flex items-center gap-1">
-          {resolved ? (
-            <button onClick={onUnresolve} className="text-[10px] text-text-muted hover:text-text-secondary transition-colors cursor-pointer">
-              Reopen
-            </button>
-          ) : (
-            <button onClick={onResolve} className="text-[10px] text-text-muted hover:text-text-secondary transition-colors cursor-pointer">
-              Resolve
-            </button>
-          )}
-          <button onClick={onDeleteThread} className="text-text-muted hover:text-deleted transition-colors cursor-pointer ml-0.5" title="Delete">
-            <TrashIcon className="w-3 h-3" />
-          </button>
-        </div>
-      </div>
-      <div className="px-0.5 [&_.group]:py-0 [&_.group:first-child]:pt-0 [&_.group:last-child]:pb-0.5 [&_.bg-bg]:text-xs [&_.text-sm]:text-xs [&_.mb-1\.5]:mb-1 [&_.py-2\.5]:py-1.5 [&_.px-3]:px-2.5 [&_.w-5]:w-4 [&_.h-5]:h-4 [&_.text-\[10px\]]:text-[9px] [&_.pl-7]:pl-6">
-        {thread.comments.map(comment => (
-          <CommentBubble
-            key={comment.id}
-            comment={comment}
-            onEdit={(body) => onEditComment(comment.id, body)}
-            onDelete={() => onDeleteComment(comment.id)}
-          />
-        ))}
-      </div>
-      {showReply ? (
-        <div className="px-2 py-1.5">
-          <CommentForm
-            onSubmit={(body) => {
-              onReply(body);
-              setShowReply(false);
-            }}
-            onCancel={() => setShowReply(false)}
-            placeholder="Reply..."
-            submitLabel="Reply"
-          />
-        </div>
-      ) : (
-        <div className="px-2.5 py-1">
-          <button onClick={() => setShowReply(true)} className="text-[11px] text-accent hover:text-accent-hover transition-colors cursor-pointer">
-            Reply
-          </button>
         </div>
       )}
     </div>

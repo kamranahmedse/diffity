@@ -15,6 +15,7 @@ You are reading open review comments and resolving them by making the requested 
 ## CLI Reference
 
 ```
+diffity agent diff
 diffity agent list [--status open|resolved|dismissed] [--json]
 diffity agent comment --file <path> --line <n> [--end-line <n>] [--side new|old] --body "<text>"
 diffity agent general-comment --body "<text>"

@@ -16,6 +16,7 @@ You are reviewing a diff and leaving inline comments using the `diffity agent` C
 ## CLI Reference
 
 ```
+diffity agent diff
 diffity agent list [--status open|resolved|dismissed] [--json]
 diffity agent comment --file <path> --line <n> [--end-line <n>] [--side new|old] --body "<text>"
 diffity agent general-comment --body "<text>"
@@ -53,11 +54,11 @@ The review needs a running session whose ref matches the requested ref. A ref mi
 
 ### Step 2: Review the diff
 
-1. **Get the resolved diff args from diffity's API**, then run `git diff` yourself — do NOT construct the diff ref manually, as diffity uses merge-base resolution:
+1. **Get the unified diff** directly from diffity — this handles merge-base resolution, untracked files, and all ref types automatically:
    ```
-   curl -s 'http://localhost:<port>/api/diff/ref?ref=<ref>'
+   diffity agent diff
    ```
-   If no ref was provided, omit the `ref` query parameter. The response is JSON with an `args` field (e.g. `"abc123def"`). Run `git diff <args>` to get the unified diff. Line numbers are in the `@@` hunk headers.
+   This outputs the full unified diff for the current session. Line numbers are in the `@@` hunk headers.
 2. Find and read all relevant CLAUDE.md files — the root CLAUDE.md and any CLAUDE.md files in directories containing modified files. These define project-specific rules that the diff must follow.
 
 #### Understand the change before reviewing it

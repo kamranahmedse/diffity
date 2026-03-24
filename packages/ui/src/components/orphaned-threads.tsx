@@ -1,11 +1,10 @@
 import { useEffect, useState } from 'react';
 import type { CommentThread as CommentThreadType } from '../types/comment';
 import { isThreadResolved } from '../types/comment';
-import { CommentBubble } from './comment-bubble';
 import { CommentIcon } from './icons/comment-icon';
 import { ChevronIcon } from './icons/chevron-icon';
-import { TrashIcon } from './icons/trash-icon';
 import { ThreadBadge } from './ui/thread-badge';
+import { ThreadCard } from './thread-card';
 
 interface OrphanedThreadsProps {
   threads: CommentThreadType[];
@@ -49,41 +48,27 @@ export function OrphanedThreads(props: OrphanedThreadsProps) {
               : `Lines ${thread.startLine}–${thread.endLine}`;
 
             return (
-              <div
+              <ThreadCard
                 key={thread.id}
-                data-thread-id={thread.id}
-                className="border border-border rounded-lg overflow-hidden max-w-[700px]"
-              >
-                <div className="flex items-center justify-between px-3 py-1.5 bg-bg-secondary border-b border-border">
-                  <div className="flex items-center gap-2">
+                thread={thread}
+                onEditComment={(commentId, body) => onEditComment(commentId, body)}
+                onDeleteComment={(commentId) => onDeleteComment(thread.id, commentId)}
+                onDeleteThread={() => onDeleteThread(thread.id)}
+                className="border border-border max-w-[700px]"
+                headerLeft={
+                  <>
                     <span className="text-[11px] text-text-muted font-mono">{lineLabel}</span>
                     <ThreadBadge variant="outdated" />
                     {(thread.status === 'resolved' || thread.status === 'dismissed') && (
                       <ThreadBadge variant={thread.status} />
                     )}
-                  </div>
-                  <button
-                    onClick={() => onDeleteThread(thread.id)}
-                    className="text-text-muted hover:text-deleted transition-colors cursor-pointer"
-                    title="Delete thread"
-                  >
-                    <TrashIcon className="w-3.5 h-3.5" />
-                  </button>
-                </div>
+                  </>
+                }
+              >
                 {thread.anchorContent && (
                   <pre className="px-3 py-2 text-xs font-mono text-text-muted bg-bg-tertiary/50 border-b border-border overflow-x-auto whitespace-pre max-h-24 overflow-y-auto">{thread.anchorContent}</pre>
                 )}
-                <div>
-                  {thread.comments.map((comment) => (
-                    <CommentBubble
-                      key={comment.id}
-                      comment={comment}
-                      onEdit={(body) => onEditComment(comment.id, body)}
-                      onDelete={() => onDeleteComment(thread.id, comment.id)}
-                    />
-                  ))}
-                </div>
-              </div>
+              </ThreadCard>
             );
           })}
         </div>

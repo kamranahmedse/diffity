@@ -12,7 +12,7 @@ import { computeGaps, createContextLines, getExpandRange, type ExpandableGap } f
 import { fileContentOptions } from '../queries/file';
 import type { CommentActions } from '../hooks/use-comment-actions';
 import type { CommentThread } from '../types/comment';
-import { GENERAL_THREAD_FILE_PATH } from '../types/comment';
+import { GENERAL_THREAD_FILE_PATH, DEFAULT_AUTHOR } from '../types/comment';
 import { useLineSelection } from '../hooks/use-line-selection';
 import { useCopy } from '../hooks/use-copy';
 import { CopyIcon } from './icons/copy-icon';
@@ -30,7 +30,6 @@ import { ExpandRow } from './expand-row';
 
 export const LARGE_DIFF_LINE_THRESHOLD = 200;
 
-const DEFAULT_AUTHOR = { name: 'You', type: 'user' as const };
 
 function getTotalLineCount(file: DiffFile): number {
   let count = 0;

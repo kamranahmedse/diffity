@@ -1,6 +1,6 @@
 import type { Command } from 'commander';
 import pc from 'picocolors';
-import { isGitRepo, getDiffFiles } from '@diffity/git';
+import { isGitRepo, getDiffFiles, resolveRef } from '@diffity/git';
 import { getCurrentSession } from './session.js';
 import {
   createThread,
@@ -197,5 +197,19 @@ Examples:
         { name: 'Agent', type: 'agent' },
       );
       console.log(pc.green(`Created general comment ${thread.id.slice(0, 8)}`));
+    });
+
+  agent
+    .command('diff')
+    .description('Output the unified diff for the current session (includes untracked files)')
+    .action(() => {
+      const session = requireSession();
+      const ref = session.ref === '__tree__' ? 'work' : session.ref;
+      const raw = resolveRef(ref);
+      if (!raw.trim()) {
+        console.error(pc.dim('No diff content for current session.'));
+        process.exit(0);
+      }
+      process.stdout.write(raw);
     });
 }

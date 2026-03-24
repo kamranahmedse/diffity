@@ -2,12 +2,9 @@ import { useState } from 'react';
 import type { CommentThread as CommentThreadType } from '../types/comment';
 import type { CommentAuthor, CommentSide } from '../types/comment';
 import { isThreadResolved } from '../types/comment';
-import { CommentForm } from './comment-form';
-import { CommentBubble } from './comment-bubble';
-import { TrashIcon } from './icons/trash-icon';
 import { CommentIcon } from './icons/comment-icon';
 import { ThreadBadge } from './ui/thread-badge';
-import { cn } from '../lib/cn';
+import { ThreadCard } from './thread-card';
 
 interface CommentThreadProps {
   thread: CommentThreadType;
@@ -52,7 +49,6 @@ export function CommentThread(props: CommentThreadProps) {
     side,
     currentCode,
   } = props;
-  const [showReply, setShowReply] = useState(false);
   const [isCollapsed, setIsCollapsed] = useState(isThreadResolved(thread));
 
   const isOutdated =
@@ -102,91 +98,42 @@ export function CommentThread(props: CommentThreadProps) {
       ? `Line ${thread.startLine}`
       : `Lines ${thread.startLine}–${thread.endLine}`;
 
-  const resolved = isThreadResolved(thread);
-
   const threadContent = (
-    <td
-      colSpan={colSpan}
-      className="px-4 py-3"
-    >
-      <div className='thread-card rounded-lg overflow-hidden max-w-[700px] bg-bg-secondary'>
-        <div className='flex items-center justify-between px-3 py-1.5'>
-          <div className='flex items-center gap-2'>
+    <td colSpan={colSpan} className="px-4 py-3">
+      <ThreadCard
+        thread={thread}
+        onReply={(body) => onReply(thread.id, body, currentAuthor)}
+        onResolve={() => {
+          onResolve(thread.id);
+          setIsCollapsed(true);
+        }}
+        onUnresolve={() => onUnresolve(thread.id)}
+        onEditComment={(commentId, body) => onEditComment(commentId, body)}
+        onDeleteComment={(commentId) => onDeleteComment(thread.id, commentId)}
+        onDeleteThread={() => onDeleteThread(thread.id)}
+        className="thread-card max-w-[700px] bg-bg-secondary"
+        headerLeft={
+          <>
             <span className='text-[11px] text-text-muted font-mono'>
               {lineLabel}
             </span>
             <StatusBadge status={thread.status} />
             {isOutdated && <ThreadBadge variant='outdated' />}
-          </div>
-          <div className='flex items-center gap-1'>
-            {resolved ? (
-              <button
-                onClick={() => onUnresolve(thread.id)}
-                className='text-[11px] text-text-muted hover:text-text-secondary transition-colors cursor-pointer'
-              >
-                Reopen
-              </button>
-            ) : (
-              <button
-                onClick={() => {
-                  onResolve(thread.id);
-                  setIsCollapsed(true);
-                }}
-                className='text-[11px] text-text-muted hover:text-text-secondary transition-colors cursor-pointer'
-              >
-                Resolve
-              </button>
-            )}
-            <button
-              onClick={() => setIsCollapsed(true)}
-              className='text-[11px] text-text-muted hover:text-text-secondary transition-colors cursor-pointer ml-2'
-            >
-              Collapse
-            </button>
-            <button
-              onClick={() => onDeleteThread(thread.id)}
-              className='text-text-muted hover:text-deleted transition-colors cursor-pointer ml-1'
-              title='Delete thread'
-            >
-              <TrashIcon className='w-3.5 h-3.5' />
-            </button>
-          </div>
-        </div>
-        <div className='px-0.5'>
-          {thread.comments.map((comment) => (
-            <CommentBubble
-              key={comment.id}
-              comment={comment}
-              onEdit={(body) => onEditComment(comment.id, body)}
-              onDelete={() => onDeleteComment(thread.id, comment.id)}
-            />
-          ))}
-        </div>
-        {showReply ? (
-          <div className='px-3 py-2'>
-            <CommentForm
-              onSubmit={(body) => {
-                onReply(thread.id, body, currentAuthor);
-                setShowReply(false);
-              }}
-              onCancel={() => setShowReply(false)}
-              placeholder='Reply...'
-              submitLabel='Reply'
-            />
-          </div>
-        ) : (
-          <div className='px-3 py-1.5'>
-            <button
-              onClick={() => setShowReply(true)}
-              className='text-xs text-accent hover:text-accent-hover transition-colors cursor-pointer'
-            >
-              Reply
-            </button>
-          </div>
-        )}
-      </div>
+          </>
+        }
+        headerRight={
+          <button
+            onClick={() => setIsCollapsed(true)}
+            className='text-[11px] text-text-muted hover:text-text-secondary transition-colors cursor-pointer ml-2'
+          >
+            Collapse
+          </button>
+        }
+      />
     </td>
   );
+
+
 
   if (viewMode === 'split') {
     return (
