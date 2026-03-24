@@ -162,8 +162,15 @@ export function TreePage(props: TreePageProps) {
       if (isThreadResolved(thread)) {
         continue;
       }
-      const count = map.get(thread.filePath) ?? 0;
-      map.set(thread.filePath, count + 1);
+      let key = thread.filePath;
+      if (key.startsWith('__path__:')) {
+        key = key.slice('__path__:'.length);
+        if (key === '__root__') {
+          continue;
+        }
+      }
+      const count = map.get(key) ?? 0;
+      map.set(key, count + 1);
     }
     return map;
   }, [threads]);
@@ -190,29 +197,49 @@ export function TreePage(props: TreePageProps) {
     }
   }, [handleFileClick, handleDirClick]);
 
-  const handleScrollToThread = useCallback((threadId: string, filePath: string) => {
-    if (filePath !== nav.path || nav.type !== 'file') {
-      queryClient.prefetchQuery(treeFileContentOptions(filePath));
-      updateUrl(filePath, 'file');
-      setNav({ path: filePath, type: 'file' });
-      // Scroll after file loads — use a short delay to let React render
-      setTimeout(() => {
-        const el = document.querySelector(`[data-thread-id="${threadId}"]`);
-        if (el) {
-          el.scrollIntoView({ behavior: 'smooth', block: 'center' });
-          el.classList.add('flash-thread');
-          setTimeout(() => el.classList.remove('flash-thread'), 1500);
-        }
-      }, 300);
-      return;
-    }
+  const scrollToThreadElement = useCallback((threadId: string) => {
     const el = document.querySelector(`[data-thread-id="${threadId}"]`);
     if (el) {
       el.scrollIntoView({ behavior: 'smooth', block: 'center' });
       el.classList.add('flash-thread');
       setTimeout(() => el.classList.remove('flash-thread'), 1500);
     }
-  }, [nav, queryClient]);
+  }, []);
+
+  const handleScrollToThread = useCallback(async (threadId: string, filePath: string) => {
+    const isPathComment = filePath.startsWith('__path__:');
+    let targetPath = filePath;
+    let targetType: 'file' | 'dir' = 'file';
+
+    if (isPathComment) {
+      const rawPath = filePath.slice('__path__:'.length);
+      targetPath = rawPath === '__root__' ? '' : rawPath;
+      // Determine if this path is a file or directory
+      const isFile = paths.includes(targetPath);
+      targetType = isFile ? 'file' : 'dir';
+    }
+
+    const needsNavigation = targetPath !== nav.path || (targetType === 'file' && nav.type !== 'file') || (targetType === 'dir' && nav.type !== 'dir');
+
+    if (needsNavigation) {
+      if (targetType === 'file') {
+        await queryClient.ensureQueryData(treeFileContentOptions(targetPath));
+      } else {
+        await queryClient.ensureQueryData(treeEntriesOptions(targetPath || undefined));
+      }
+      updateUrl(targetPath, targetType);
+      setNav({ path: targetPath, type: targetType });
+      // Wait for React to render with the new data
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          scrollToThreadElement(threadId);
+        });
+      });
+      return;
+    }
+
+    scrollToThreadElement(threadId);
+  }, [nav, queryClient, paths, scrollToThreadElement]);
 
   const formatForCopy = useCallback(() => {
     return formatTreeThreadsForCopy(threads);
