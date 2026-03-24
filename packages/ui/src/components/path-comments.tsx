@@ -77,8 +77,8 @@ export function PathComments(props: PathCommentsProps) {
             )}
           </div>
 
-          <div className="p-1.5 space-y-1.5">
-            {showForm && (
+          {showForm && (
+            <div className="border-b border-border">
               <CommentForm
                 onSubmit={handleSubmit}
                 onCancel={() => {
@@ -90,7 +90,10 @@ export function PathComments(props: PathCommentsProps) {
                 placeholder={`Comment on ${label}...`}
                 submitLabel="Comment"
               />
-            )}
+            </div>
+          )}
+
+          <div className="p-1.5 space-y-1.5">
             {threads.map(thread => (
               <PathThreadCard
                 key={thread.id}
