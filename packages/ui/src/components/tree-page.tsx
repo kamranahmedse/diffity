@@ -1,5 +1,5 @@
 import { useState, useMemo, useCallback, useEffect, useRef } from 'react';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useQueryClient, keepPreviousData } from '@tanstack/react-query';
 import NProgress from 'nprogress';
 import { treePathsOptions, treeInfoOptions, treeFileContentOptions, treeEntriesOptions } from '../queries/tree';
 import { useTheme } from '../hooks/use-theme';
@@ -128,11 +128,13 @@ export function TreePage(props: TreePageProps) {
   const { data: fileContent, isFetching: fileFetching } = useQuery({
     ...treeFileContentOptions(nav.path),
     enabled: isFileMode,
+    placeholderData: keepPreviousData,
   });
 
   const { data: entriesData, isFetching: entriesFetching } = useQuery({
     ...treeEntriesOptions(nav.path || undefined),
     enabled: isDirMode,
+    placeholderData: keepPreviousData,
   });
 
   const contentFetching = isFileMode ? fileFetching : entriesFetching;
@@ -162,13 +164,13 @@ export function TreePage(props: TreePageProps) {
   const paths = treeData?.paths ?? [];
 
   const handleFileClick = useCallback((path: string) => {
-    queryClient.prefetchQuery(treeFileContentOptions(path));
+    queryClient.ensureQueryData(treeFileContentOptions(path));
     updateUrl(path, 'file');
     setNav({ path, type: 'file' });
   }, [queryClient]);
 
   const handleDirClick = useCallback((path: string) => {
-    queryClient.prefetchQuery(treeEntriesOptions(path || undefined));
+    queryClient.ensureQueryData(treeEntriesOptions(path || undefined));
     updateUrl(path, 'dir');
     setNav({ path, type: 'dir' });
   }, [queryClient]);
@@ -221,12 +223,7 @@ export function TreePage(props: TreePageProps) {
     }));
   }, [nav.path]);
 
-  const initialLoading = treeLoading || infoLoading;
-  const isInitialContentLoad = isFileMode
-    ? !fileContent && fileFetching
-    : !entriesData && entriesFetching;
-
-  if (initialLoading || isInitialContentLoad) {
+  if (treeLoading || infoLoading) {
     return <PageLoader />;
   }
 
