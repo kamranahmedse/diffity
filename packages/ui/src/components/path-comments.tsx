@@ -78,7 +78,7 @@ export function PathComments(props: PathCommentsProps) {
           </div>
 
           {showForm && (
-            <div className="border-b border-border [&_.rounded-lg]:rounded-none [&_.pt-2]:pt-1.5 [&_.mx-1\.5]:mx-0 [&_.mb-1\.5]:mb-0 [&_.rounded-md]:rounded-none">
+            <div className="border-b border-border">
               <CommentForm
                 onSubmit={handleSubmit}
                 onCancel={() => {
