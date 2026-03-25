@@ -1,6 +1,6 @@
 {
   "name": "diffity",
-  "version": "0.6.1",
+  "version": "0.6.2",
   "description": "GitHub-style git diff viewer in the browser",
   "type": "module",
   "bin": {
