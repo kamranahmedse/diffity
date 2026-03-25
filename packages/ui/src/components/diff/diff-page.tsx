@@ -1,7 +1,6 @@
 import { useState, useCallback, useRef, useEffect, useMemo } from 'react';
 import { useLoaderData } from 'react-router';
 import { useQueryClient } from '@tanstack/react-query';
-import type { DiffLoaderData } from '../../loaders/diff-loader';
 import { useDiff } from '../../hooks/use-diff';
 import { useInfo } from '../../hooks/use-info';
 import { useTheme } from '../../hooks/use-theme';
@@ -24,14 +23,18 @@ import type { LineSelection } from '../comments/types';
 import { isThreadResolved } from '../comments/types';
 
 export function DiffPage() {
-  const { ref: refParam, theme: initialTheme, view: initialViewMode } = useLoaderData<DiffLoaderData>();
+  const { ref: refParam, theme: initialTheme, view: initialViewMode } = useLoaderData<{
+    ref: string;
+    theme: 'light' | 'dark' | null;
+    view: 'split' | 'unified' | null;
+  }>();
 
   const [viewMode, setViewMode] = useState<ViewMode>(initialViewMode || 'split');
   const [hideWhitespace, setHideWhitespace] = useState(false);
   const [showHelp, setShowHelp] = useState(false);
   const { theme, toggleTheme } = useTheme(initialTheme);
-  const { data: diff, loading: diffLoading, error } = useDiff(hideWhitespace, refParam);
-  const { data: info, loading: infoLoading } = useInfo(refParam);
+  const { data: diff, error } = useDiff(hideWhitespace, refParam);
+  const { data: info } = useInfo(refParam);
   const [activeFile, setActiveFile] = useState<string | null>(null);
   const [reviewedFiles, setReviewedFiles] = useState<Set<string>>(new Set());
   const [collapsedFiles, setCollapsedFiles] = useState<Set<string>>(new Set());
@@ -297,15 +300,11 @@ export function DiffPage() {
   }
 
   const threadsLoading = reviewsEnabled && !threadsFetched;
-  if ((diffLoading || infoLoading || threadsLoading) && !diff) {
+  if (threadsLoading) {
     return <PageLoader />;
   }
 
-  if (!info || threadsLoading) {
-    return <PageLoader />;
-  }
-
-  if (diff && diff.files.length === 0 && !diffLoading) {
+  if (diff.files.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen bg-bg text-text font-sans gap-2">
         <div className="text-added opacity-40 mb-1">

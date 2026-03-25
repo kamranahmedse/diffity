@@ -73,7 +73,7 @@ export function TourPanel(props: TourPanelProps) {
         )}
       </div>
 
-      <div className="flex-1 overflow-y-auto py-1">
+      <div className="flex-1 overflow-y-auto">
         {steps.map((step, index) => {
           const isActive = index === currentStepIndex;
           const lineRange = step.startLine === step.endLine

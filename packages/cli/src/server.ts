@@ -159,7 +159,7 @@ export function startServer(options: ServerOptions): Promise<ServerResult> {
   }
 
   const githubRemote = detectGitHubRemote();
-  const uiDir = join(__dirname, 'ui');
+  const uiDir = join(__dirname, 'ui/client');
 
   const server = createServer(
     async (req: IncomingMessage, res: ServerResponse) => {

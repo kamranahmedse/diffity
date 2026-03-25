@@ -1,7 +1,6 @@
 import { useState, useMemo, useCallback, useEffect, useRef } from 'react';
-import { useSearchParams as useRouterSearchParams, useNavigation, useNavigate, useLoaderData } from 'react-router';
-import { useQuery, useQueryClient, keepPreviousData } from '@tanstack/react-query';
-import NProgress from 'nprogress';
+import { useSearchParams as useRouterSearchParams, useNavigate, useLoaderData } from 'react-router';
+import { useQuery, useSuspenseQuery, useQueryClient, keepPreviousData } from '@tanstack/react-query';
 import { treePathsOptions, treeInfoOptions, treeFileContentOptions, treeEntriesOptions, tourOptions } from '../../queries/tree';
 import { useTheme } from '../../hooks/use-theme';
 import { useReviewThreads } from '../../hooks/use-review-threads';
@@ -15,7 +14,6 @@ import { MarkdownPreview } from './markdown-preview';
 import { SvgPreview } from './svg-preview';
 import { PathComments } from '../comments/path-comments';
 import { CommentToolbarActions } from '../comments/comment-toolbar-actions';
-import { PageLoader } from '../layout/skeleton';
 import { OptionsMenu } from '../layout/options-menu';
 import { GitBranchIcon } from '../icons/git-branch-icon';
 import { StaleDiffBanner } from '../layout/stale-diff-banner';
@@ -27,6 +25,7 @@ import { TourPanel } from './tour-panel';
 
 interface TreePageProps {
   tourId?: string;
+  tourStepIndex?: number;
   initialTheme?: 'light' | 'dark' | null;
 }
 
@@ -73,42 +72,39 @@ function formatTreeThreadsForCopy(threads: CommentThread[]): string {
 }
 
 export function TreePage(props: TreePageProps) {
-  const { tourId, initialTheme } = props;
+  const { tourId, tourStepIndex: tourStepIndexProp, initialTheme } = props;
 
   const loaderData = useLoaderData<{ theme?: 'light' | 'dark' | null }>();
   const [searchParams, setSearchParams] = useRouterSearchParams();
-  const navigation = useNavigation();
   const navigate = useNavigate();
   const { theme, toggleTheme } = useTheme(initialTheme ?? loaderData?.theme ?? null);
   const queryClient = useQueryClient();
   const { isStale, resetStaleness } = useTreeStaleness();
 
-  const navPath = searchParams.get('path') || '';
-  const navType = (searchParams.get('type') || 'dir') as 'file' | 'dir';
+  const [internalNav, setInternalNav] = useState<{ path: string; type: 'file' | 'dir' }>({ path: '', type: 'dir' });
+  const isTourMode = !!tourId;
+
+  const navPath = isTourMode ? internalNav.path : (searchParams.get('path') || '');
+  const navType = isTourMode ? internalNav.type : ((searchParams.get('type') || 'dir') as 'file' | 'dir');
+
+  const setNav = useCallback((path: string, type: 'file' | 'dir') => {
+    if (isTourMode) {
+      setInternalNav({ path, type });
+    } else if (type === 'file') {
+      setSearchParams({ path, type: 'file' });
+    } else if (path) {
+      setSearchParams({ path });
+    } else {
+      setSearchParams({});
+    }
+  }, [isTourMode, setSearchParams]);
 
   const [focusedThreadId, setFocusedThreadId] = useState<string | null>(null);
   const [previewMode, setPreviewMode] = useState<'preview' | 'code'>('preview');
-  const [tourStepIndex, setTourStepIndex] = useState(0);
+  const tourStepIndex = tourStepIndexProp ?? 0;
   const [tourScrollTick, setTourScrollTick] = useState(0);
   const searchInputRef = useRef<HTMLInputElement>(null);
   const mainRef = useRef<HTMLElement>(null);
-  const nprogressActive = useRef(false);
-
-  const isNavigating = navigation.state === 'loading';
-
-  useEffect(() => {
-    NProgress.configure({ showSpinner: false, minimum: 0.2, trickleSpeed: 100 });
-  }, []);
-
-  useEffect(() => {
-    if (isNavigating && !nprogressActive.current) {
-      nprogressActive.current = true;
-      NProgress.start();
-    } else if (!isNavigating && nprogressActive.current) {
-      nprogressActive.current = false;
-      NProgress.done();
-    }
-  }, [isNavigating]);
 
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
@@ -124,8 +120,8 @@ export function TreePage(props: TreePageProps) {
     return () => window.removeEventListener('keydown', handler);
   }, []);
 
-  const { data: treeData, isLoading: treeLoading } = useQuery(treePathsOptions());
-  const { data: info, isLoading: infoLoading } = useQuery(treeInfoOptions());
+  const { data: treeData } = useSuspenseQuery(treePathsOptions());
+  const { data: info } = useSuspenseQuery(treeInfoOptions());
   const sessionId = info?.sessionId ?? null;
   const { data: threads = [] } = useReviewThreads(sessionId);
   const commentActions = useCommentActions(sessionId, !!sessionId);
@@ -152,16 +148,6 @@ export function TreePage(props: TreePageProps) {
 
   const contentFetching = isFileMode ? fileFetching : entriesFetching;
 
-  useEffect(() => {
-    if (!isNavigating && contentFetching && !nprogressActive.current) {
-      nprogressActive.current = true;
-      NProgress.start();
-    } else if (!contentFetching && !isNavigating && nprogressActive.current) {
-      nprogressActive.current = false;
-      NProgress.done();
-    }
-  }, [contentFetching, isNavigating]);
-
   const commentCountsByFile = useMemo(() => {
     const map = new Map<string, number>();
     for (const thread of threads) {
@@ -184,17 +170,13 @@ export function TreePage(props: TreePageProps) {
   const paths = treeData?.paths ?? [];
 
   const handleFileClick = useCallback((path: string) => {
-    setSearchParams({ path, type: 'file' });
+    setNav(path, 'file');
     setPreviewMode('preview');
-  }, [setSearchParams]);
+  }, [setNav]);
 
   const handleDirClick = useCallback((path: string) => {
-    if (path) {
-      setSearchParams({ path });
-    } else {
-      setSearchParams({});
-    }
-  }, [setSearchParams]);
+    setNav(path, 'dir');
+  }, [setNav]);
 
   const handleNavigate = useCallback((path: string, type: 'file' | 'dir') => {
     if (type === 'file') {
@@ -232,15 +214,10 @@ export function TreePage(props: TreePageProps) {
     if (needsNavigation) {
       if (targetType === 'file') {
         await queryClient.ensureQueryData(treeFileContentOptions(targetPath));
-        setSearchParams({ path: targetPath, type: 'file' });
       } else {
         await queryClient.ensureQueryData(treeEntriesOptions(targetPath || undefined));
-        if (targetPath) {
-          setSearchParams({ path: targetPath });
-        } else {
-          setSearchParams({});
-        }
       }
+      setNav(targetPath, targetType);
       requestAnimationFrame(() => {
         requestAnimationFrame(() => {
           scrollToThreadElement(threadId);
@@ -250,7 +227,7 @@ export function TreePage(props: TreePageProps) {
     }
 
     scrollToThreadElement(threadId);
-  }, [navPath, navType, queryClient, paths, scrollToThreadElement, setSearchParams]);
+  }, [navPath, navType, queryClient, paths, scrollToThreadElement, setNav]);
 
   const handleRefreshTree = useCallback(() => {
     queryClient.invalidateQueries({ queryKey: ['tree-paths'] });
@@ -259,26 +236,13 @@ export function TreePage(props: TreePageProps) {
     resetStaleness();
   }, [queryClient, resetStaleness]);
 
-  const handleTourStepChange = useCallback(async (index: number) => {
-    if (!tourData) {
+  const handleTourStepChange = useCallback((index: number) => {
+    if (!tourId) {
       return;
     }
-    const step = tourData.steps[index];
-    if (!step) {
-      return;
-    }
-    const isSameFile = step.filePath === navPath && navType === 'file';
-    if (isSameFile) {
-      setTourStepIndex(index);
-      setTourScrollTick(t => t + 1);
-      return;
-    }
-    await queryClient.ensureQueryData(treeFileContentOptions(step.filePath));
-    setSearchParams({ path: step.filePath, type: 'file' });
-    setPreviewMode('preview');
-    setTourStepIndex(index);
     setTourScrollTick(t => t + 1);
-  }, [tourData, navPath, navType, queryClient, setSearchParams]);
+    navigate(`/tour/${tourId}/${index}`);
+  }, [tourId, navigate]);
 
   const handleTourClose = useCallback(() => {
     navigate('/tree');
@@ -305,9 +269,12 @@ export function TreePage(props: TreePageProps) {
     if (!tourData || tourData.steps.length === 0) {
       return;
     }
-    const firstStep = tourData.steps[0];
-    handleFileClick(firstStep.filePath);
-  }, [tourData]);
+    const step = tourData.steps[tourStepIndex];
+    if (step) {
+      setInternalNav({ path: step.filePath, type: 'file' });
+      setPreviewMode('preview');
+    }
+  }, [tourData, tourStepIndex]);
 
   const formatForCopy = useCallback(() => {
     return formatTreeThreadsForCopy(threads);
@@ -324,10 +291,6 @@ export function TreePage(props: TreePageProps) {
       isLast: i === parts.length - 1,
     }));
   }, [navPath]);
-
-  if (treeLoading || infoLoading) {
-    return <PageLoader />;
-  }
 
   const pathKey = navPath || '__root__';
   const fileThreads = threads.filter(t => t.filePath === navPath);
@@ -382,12 +345,7 @@ export function TreePage(props: TreePageProps) {
           onDirClick={handleDirClick}
         />
 
-        <main ref={mainRef} className="relative flex-1 overflow-y-auto p-6">
-          {isNavigating && (
-            <div className="absolute inset-0 z-10 flex items-center justify-center bg-bg/60">
-              <div className="w-5 h-5 border-2 border-accent/30 border-t-accent rounded-full animate-spin" />
-            </div>
-          )}
+        <main ref={mainRef} className="flex-1 overflow-y-auto p-6">
           <PathComments
             pathKey={pathKey}
             threads={pathThreads}

@@ -1,12 +1,11 @@
-import { useQuery } from '@tanstack/react-query';
+import { useSuspenseQuery } from '@tanstack/react-query';
 import { repoInfoOptions } from '../queries/info';
 
 export function useInfo(ref?: string) {
-  const { data, isLoading, error } = useQuery(repoInfoOptions(ref));
+  const { data, error } = useSuspenseQuery(repoInfoOptions(ref));
 
   return {
-    data: data ?? null,
-    loading: isLoading,
+    data,
     error: error?.message ?? null,
   };
 }

@@ -1,23 +1,21 @@
-import { defineConfig } from 'vite';
-import react from '@vitejs/plugin-react';
-import tailwindcss from '@tailwindcss/vite';
+import { reactRouter } from "@react-router/dev/vite";
+import tailwindcss from "@tailwindcss/vite";
+import { defineConfig } from "vite";
 
 export default defineConfig({
-  plugins: [tailwindcss(), react()],
+  plugins: [tailwindcss(), reactRouter()],
   test: {
-    include: ['tests/**/*.test.ts'],
+    include: ["tests/**/*.test.ts"],
   },
   server: {
     proxy: {
-      '/api': {
-        target: 'http://localhost:5391',
+      "/api": {
+        target: "http://localhost:5391",
         changeOrigin: true,
       },
     },
   },
   build: {
-    outDir: '../cli/dist/ui',
-    emptyOutDir: true,
     chunkSizeWarningLimit: 1000,
   },
 });
