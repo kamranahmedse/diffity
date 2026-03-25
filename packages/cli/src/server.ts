@@ -46,6 +46,7 @@ import {
 import { findOrCreateSession } from './session.js';
 import { createThread, addReply, getThreadsForSession } from './threads.js';
 import { handleReviewRoute } from './review-routes.js';
+import { handleTourRoute } from './tour-routes.js';
 import { sendJson, sendError, readBody } from './http-utils.js';
 import {
   registerInstance,
@@ -530,6 +531,10 @@ export function startServer(options: ServerOptions): Promise<ServerResult> {
         }
 
         if (handleReviewRoute(req, res, pathname, url)) {
+          return;
+        }
+
+        if (handleTourRoute(req, res, pathname, url)) {
           return;
         }
 

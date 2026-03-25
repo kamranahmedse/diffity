@@ -1,4 +1,4 @@
-import { useMemo, useState, useCallback } from 'react';
+import { useMemo, useState, useCallback, useEffect, useRef } from 'react';
 import { useHighlighter } from '../../hooks/use-highlighter';
 import { useLineSelection } from '../../hooks/use-line-selection';
 import type { CommentThread as CommentThreadType, CommentAuthor, LineSelection } from '../comments/types';
@@ -8,6 +8,14 @@ import { CommentForm } from '../comments/comment-form';
 import { CommentLineNumber } from '../comments/comment-line-number';
 import { cn } from '../../lib/cn';
 
+interface TourHighlight {
+  filePath: string;
+  startLine: number;
+  endLine: number;
+  annotation: string;
+  scrollTick: number;
+}
+
 interface FileViewerProps {
   filePath: string;
   content: string[];
@@ -15,6 +23,7 @@ interface FileViewerProps {
   threads: CommentThreadType[];
   commentActions: CommentActions;
   sessionId: string | null;
+  tourHighlight?: TourHighlight | null;
 }
 
 const CURRENT_AUTHOR: CommentAuthor = { name: 'You', type: 'user' };
@@ -27,10 +36,49 @@ export function FileViewer(props: FileViewerProps) {
     threads,
     commentActions,
     sessionId,
+    tourHighlight,
   } = props;
 
   const [pendingSelection, setPendingSelection] = useState<LineSelection | null>(null);
   const { highlight, ready } = useHighlighter();
+  const tableRef = useRef<HTMLTableElement>(null);
+
+  const activeTourHighlight = tourHighlight && tourHighlight.filePath === filePath ? tourHighlight : null;
+
+  useEffect(() => {
+    if (!activeTourHighlight) {
+      return;
+    }
+
+    const scrollToHighlight = () => {
+      if (!tableRef.current) {
+        return;
+      }
+      const scrollParent = tableRef.current.closest('main');
+      if (scrollParent) {
+        // Reset first so getBoundingClientRect is measured from a clean state
+        scrollParent.scrollTop = 0;
+      }
+      const targetLine = Math.max(1, activeTourHighlight.startLine - 6);
+      const row = tableRef.current.querySelector(`tr:nth-child(${targetLine})`);
+      if (!row) {
+        return;
+      }
+      if (scrollParent) {
+        const rowTop = row.getBoundingClientRect().top;
+        const parentTop = scrollParent.getBoundingClientRect().top;
+        scrollParent.scrollTop = rowTop - parentTop;
+      } else {
+        row.scrollIntoView({ block: 'start' });
+      }
+    };
+
+    // Double rAF: first fires before paint, second fires after
+    // the browser has flushed layout with the new file content.
+    requestAnimationFrame(() => {
+      requestAnimationFrame(scrollToHighlight);
+    });
+  }, [activeTourHighlight]);
 
   const tokens = useMemo(() => {
     if (!ready) {
@@ -64,6 +112,9 @@ export function FileViewer(props: FileViewerProps) {
   }, [fileThreads]);
 
   const isLineSelected = useCallback((lineNum: number) => {
+    if (activeTourHighlight && lineNum >= activeTourHighlight.startLine && lineNum <= activeTourHighlight.endLine) {
+      return true;
+    }
     if (isLineInSelection(lineNum, 'new')) {
       return true;
     }
@@ -78,7 +129,7 @@ export function FileViewer(props: FileViewerProps) {
       }
     }
     return false;
-  }, [isLineInSelection, pendingSelection, filePath, fileThreads]);
+  }, [isLineInSelection, pendingSelection, filePath, fileThreads, activeTourHighlight]);
 
   const handleAddThread = useCallback((body: string) => {
     if (!pendingSelection || !sessionId) {
@@ -120,6 +171,18 @@ export function FileViewer(props: FileViewerProps) {
     const lineNum = i + 1;
     const lineTokens = tokens?.[i]?.tokens;
     const selected = isLineSelected(lineNum);
+
+    if (activeTourHighlight && activeTourHighlight.annotation && lineNum === activeTourHighlight.startLine) {
+      rows.push(
+        <tr key="tour-annotation">
+          <td colSpan={2} className="px-4 py-1.5">
+            <div className="inline-flex items-center px-2 py-1 bg-diff-comment-bg rounded text-[11px] font-medium text-text-secondary">
+              {activeTourHighlight.annotation}
+            </div>
+          </td>
+        </tr>
+      );
+    }
 
     rows.push(
       <tr
@@ -195,7 +258,7 @@ export function FileViewer(props: FileViewerProps) {
 
   return (
     <div className="border border-border rounded-lg overflow-x-auto">
-      <table className="w-full border-collapse">
+      <table ref={tableRef} className="w-full border-collapse">
         <tbody>
           {rows}
         </tbody>

@@ -1,7 +1,7 @@
 import { useState, useMemo, useCallback, useEffect, useRef } from 'react';
 import { useQuery, useQueryClient, keepPreviousData } from '@tanstack/react-query';
 import NProgress from 'nprogress';
-import { treePathsOptions, treeInfoOptions, treeFileContentOptions, treeEntriesOptions } from '../../queries/tree';
+import { treePathsOptions, treeInfoOptions, treeFileContentOptions, treeEntriesOptions, tourOptions } from '../../queries/tree';
 import { useTheme } from '../../hooks/use-theme';
 import { useReviewThreads } from '../../hooks/use-review-threads';
 import { useCommentActions } from '../../hooks/use-comment-actions';
@@ -23,6 +23,7 @@ import { useTreeStaleness } from '../../hooks/use-tree-staleness';
 import { isRenderableFile, isMarkdownFile } from '../../lib/file-types';
 import { CodeIcon } from '../icons/code-icon';
 import { FileIcon } from '../icons/file-icon';
+import { TourPanel } from './tour-panel';
 
 interface TreePageProps {
   initialTheme?: 'light' | 'dark' | null;
@@ -102,9 +103,16 @@ export function TreePage(props: TreePageProps) {
   const [nav, setNav] = useState(getPathFromUrl);
   const [focusedThreadId, setFocusedThreadId] = useState<string | null>(null);
   const [previewMode, setPreviewMode] = useState<'preview' | 'code'>('preview');
+  const [tourStepIndex, setTourStepIndex] = useState(0);
+  const [tourScrollTick, setTourScrollTick] = useState(0);
+  const [tourLoading, setTourLoading] = useState(false);
   const searchInputRef = useRef<HTMLInputElement>(null);
   const mainRef = useRef<HTMLElement>(null);
   const nprogressActive = useRef(false);
+
+  const tourId = useMemo(() => {
+    return new URLSearchParams(window.location.search).get('tour');
+  }, []);
 
   useEffect(() => {
     const handler = () => {
@@ -137,6 +145,11 @@ export function TreePage(props: TreePageProps) {
   const sessionId = info?.sessionId ?? null;
   const { data: threads = [] } = useReviewThreads(sessionId);
   const commentActions = useCommentActions(sessionId, !!sessionId);
+
+  const { data: tourData } = useQuery({
+    ...tourOptions(tourId!),
+    enabled: !!tourId,
+  });
 
   const isFileMode = nav.type === 'file' && !!nav.path;
   const isDirMode = !isFileMode;
@@ -258,6 +271,63 @@ export function TreePage(props: TreePageProps) {
     resetStaleness();
   }, [queryClient, resetStaleness]);
 
+  const handleTourStepChange = useCallback(async (index: number) => {
+    if (!tourData) {
+      return;
+    }
+    const step = tourData.steps[index];
+    if (!step) {
+      return;
+    }
+    const isSameFile = step.filePath === nav.path && nav.type === 'file';
+    if (isSameFile) {
+      setTourStepIndex(index);
+      setTourScrollTick(t => t + 1);
+      return;
+    }
+    setTourLoading(true);
+    await queryClient.ensureQueryData(treeFileContentOptions(step.filePath));
+    updateUrl(step.filePath, 'file');
+    setNav({ path: step.filePath, type: 'file' });
+    setPreviewMode('preview');
+    setTourStepIndex(index);
+    setTourScrollTick(t => t + 1);
+    setTourLoading(false);
+  }, [tourData, nav, queryClient]);
+
+  const handleTourClose = useCallback(() => {
+    const params = new URLSearchParams(window.location.search);
+    params.delete('tour');
+    const url = `${window.location.pathname}?${params.toString()}`;
+    window.history.pushState({}, '', url);
+    window.location.reload();
+  }, []);
+
+  const tourHighlight = useMemo(() => {
+    if (!tourData) {
+      return null;
+    }
+    const step = tourData.steps[tourStepIndex];
+    if (!step) {
+      return null;
+    }
+    return {
+      filePath: step.filePath,
+      startLine: step.startLine,
+      endLine: step.endLine,
+      annotation: step.annotation,
+      scrollTick: tourScrollTick,
+    };
+  }, [tourData, tourStepIndex, tourScrollTick]);
+
+  useEffect(() => {
+    if (!tourData || tourData.steps.length === 0) {
+      return;
+    }
+    const firstStep = tourData.steps[0];
+    handleFileClick(firstStep.filePath);
+  }, [tourData]);
+
   const formatForCopy = useCallback(() => {
     return formatTreeThreadsForCopy(threads);
   }, [threads]);
@@ -331,7 +401,12 @@ export function TreePage(props: TreePageProps) {
           onDirClick={handleDirClick}
         />
 
-        <main ref={mainRef} className="flex-1 overflow-y-auto p-6">
+        <main ref={mainRef} className="relative flex-1 overflow-y-auto p-6">
+          {tourLoading && (
+            <div className="absolute inset-0 z-10 flex items-center justify-center bg-bg/60">
+              <div className="w-5 h-5 border-2 border-accent/30 border-t-accent rounded-full animate-spin" />
+            </div>
+          )}
           <PathComments
             pathKey={pathKey}
             threads={pathThreads}
@@ -396,6 +471,7 @@ export function TreePage(props: TreePageProps) {
                   threads={fileThreads}
                   commentActions={commentActions}
                   sessionId={sessionId}
+                  tourHighlight={tourHighlight}
                 />
               )
             ) : fileFetching ? null : (
@@ -414,6 +490,15 @@ export function TreePage(props: TreePageProps) {
             </div>
           )}
         </main>
+
+        {tourData && (
+          <TourPanel
+            tour={tourData}
+            currentStepIndex={tourStepIndex}
+            onStepChange={handleTourStepChange}
+            onClose={handleTourClose}
+          />
+        )}
       </div>
     </div>
   );

@@ -11,6 +11,7 @@ import {
   type ThreadStatus,
   type Thread,
 } from './threads.js';
+import { createTour, addTourStep, updateTourStatus } from './tours.js';
 
 function requireSession() {
   if (!isGitRepo()) {
@@ -71,7 +72,10 @@ Examples:
   $ diffity agent comment --file src/app.ts --line 42 --body "Missing null check"
   $ diffity agent resolve abc123 --summary "Added null check"
   $ diffity agent reply abc123 --body "Good catch, fixed"
-  $ diffity agent general-comment --body "Overall this looks good, just a few nits"`);
+  $ diffity agent general-comment --body "Overall this looks good, just a few nits"
+  $ diffity agent tour-start --topic "How does auth work?" --body "Overview of the auth flow"
+  $ diffity agent tour-step --tour <id> --file src/auth.ts --line 10 --body "Entry point"
+  $ diffity agent tour-done --tour <id>`);
 
   agent
     .command('list')
@@ -211,5 +215,57 @@ Examples:
         process.exit(0);
       }
       process.stdout.write(raw);
+    });
+
+  agent
+    .command('tour-start')
+    .description('Start a new guided tour of the codebase')
+    .requiredOption('--topic <text>', 'The question or topic for the tour')
+    .option('--body <text>', 'Introductory text for the tour', '')
+    .option('--json', 'Output as JSON')
+    .action((opts) => {
+      const session = requireSession();
+      const tour = createTour(session.id, opts.topic, opts.body);
+      if (opts.json) {
+        console.log(JSON.stringify(tour, null, 2));
+        return;
+      }
+      console.log(pc.green(`Created tour ${tour.id}`));
+    });
+
+  agent
+    .command('tour-step')
+    .description('Add a step to a guided tour')
+    .requiredOption('--tour <id>', 'Tour ID')
+    .requiredOption('--file <path>', 'File path (relative to repo root)')
+    .requiredOption('--line <n>', 'Start line number (1-indexed)', parseInt)
+    .option('--end-line <n>', 'End line number (1-indexed)', parseInt)
+    .option('--body <text>', 'Narrative text shown in sidebar', '')
+    .option('--annotation <text>', 'Short inline annotation on highlighted code', '')
+    .option('--json', 'Output as JSON')
+    .action((opts) => {
+      requireSession();
+      const endLine = opts.endLine ?? opts.line;
+      const step = addTourStep(opts.tour, opts.file, opts.line, endLine, opts.body, opts.annotation);
+      if (opts.json) {
+        console.log(JSON.stringify(step, null, 2));
+        return;
+      }
+      console.log(pc.green(`Added step ${step.sortOrder} to tour`));
+    });
+
+  agent
+    .command('tour-done')
+    .description('Mark a tour as ready for viewing')
+    .requiredOption('--tour <id>', 'Tour ID')
+    .option('--json', 'Output as JSON')
+    .action((opts) => {
+      requireSession();
+      updateTourStatus(opts.tour, 'ready');
+      if (opts.json) {
+        console.log(JSON.stringify({ ok: true }));
+        return;
+      }
+      console.log(pc.green('Tour marked as ready'));
     });
 }

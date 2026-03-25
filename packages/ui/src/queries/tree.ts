@@ -1,5 +1,5 @@
 import { queryOptions } from '@tanstack/react-query';
-import { fetchTreePaths, fetchTreeEntries, fetchTreeInfo, fetchTreeFileContent } from '../lib/api';
+import { fetchTreePaths, fetchTreeEntries, fetchTreeInfo, fetchTreeFileContent, fetchTour } from '../lib/api';
 
 export function treePathsOptions() {
   return queryOptions({
@@ -30,5 +30,13 @@ export function treeFileContentOptions(filePath: string) {
     queryKey: ['tree-file-content', filePath],
     queryFn: () => fetchTreeFileContent(filePath),
     staleTime: 30_000,
+  });
+}
+
+export function tourOptions(tourId: string) {
+  return queryOptions({
+    queryKey: ['tour', tourId],
+    queryFn: () => fetchTour(tourId),
+    staleTime: 60_000,
   });
 }

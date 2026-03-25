@@ -243,6 +243,32 @@ export function pullCommentsFromGitHub(sessionId: string): Promise<PullCommentsR
   });
 }
 
+export interface TourStep {
+  id: string;
+  tourId: string;
+  sortOrder: number;
+  filePath: string;
+  startLine: number;
+  endLine: number;
+  body: string;
+  annotation: string;
+  createdAt: string;
+}
+
+export interface Tour {
+  id: string;
+  sessionId: string;
+  topic: string;
+  body: string;
+  status: string;
+  createdAt: string;
+  steps: TourStep[];
+}
+
+export function fetchTour(tourId: string): Promise<Tour> {
+  return apiFetch(`/api/tours/${tourId}`);
+}
+
 export interface TreeEntryResponse {
   type: 'blob' | 'tree';
   path: string;
