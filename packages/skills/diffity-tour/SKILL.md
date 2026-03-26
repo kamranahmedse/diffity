@@ -91,6 +91,20 @@ The tour UI has a dedicated explanation panel. The intro (from `tour-start --bod
    - Use tables for mappings (input → output, ref → git command)
    - Use code blocks for data structures or command outputs
    - Connect each step to the bigger picture from the intro
+   - For large highlighted ranges, use **sub-highlight links** to focus on specific sub-sections within the step. Syntax: `[label](focus:startLine-endLine)`. These render as clickable chips that shift the highlight to the specified lines. Example:
+
+     ```markdown
+     First, the function validates its parameters:
+     [Parameter validation](focus:15-22)
+
+     Then the core transform processes each entry:
+     [Core transform](focus:25-40)
+
+     Finally, results are cached before returning:
+     [Result caching](focus:42-48)
+     ```
+
+     Use sub-highlights when a step covers 30+ lines and the narrative naturally breaks into distinct sections. The line ranges must be within the step's `--line` / `--end-line` range.
 
    **Don't:**
    - Write a wall of bullet points — use prose paragraphs with formatting

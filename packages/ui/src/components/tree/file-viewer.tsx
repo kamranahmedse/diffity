@@ -14,6 +14,8 @@ interface TourHighlight {
   endLine: number;
   annotation: string;
   scrollTick: number;
+  baseStartLine?: number;
+  baseEndLine?: number;
 }
 
 interface FileViewerProps {
@@ -114,25 +116,32 @@ export function FileViewer(props: FileViewerProps) {
     return map;
   }, [fileThreads]);
 
-  const isLineSelected = useCallback((lineNum: number) => {
-    if (activeTourHighlight && !isFullFileHighlight && lineNum >= activeTourHighlight.startLine && lineNum <= activeTourHighlight.endLine) {
-      return true;
+  const hasSubHighlight = activeTourHighlight && activeTourHighlight.baseStartLine != null;
+
+  const getLineHighlightType = useCallback((lineNum: number): 'focus' | 'base' | 'selected' | null => {
+    if (activeTourHighlight && !isFullFileHighlight) {
+      if (lineNum >= activeTourHighlight.startLine && lineNum <= activeTourHighlight.endLine) {
+        return 'focus';
+      }
+      if (hasSubHighlight && lineNum >= activeTourHighlight.baseStartLine! && lineNum <= activeTourHighlight.baseEndLine!) {
+        return 'base';
+      }
     }
     if (isLineInSelection(lineNum, 'new')) {
-      return true;
+      return 'selected';
     }
     if (pendingSelection && pendingSelection.filePath === filePath && pendingSelection.side === 'new') {
       if (lineNum >= pendingSelection.startLine && lineNum <= pendingSelection.endLine) {
-        return true;
+        return 'selected';
       }
     }
     for (const thread of fileThreads) {
       if (thread.status === 'open' && lineNum >= thread.startLine && lineNum <= thread.endLine) {
-        return true;
+        return 'selected';
       }
     }
-    return false;
-  }, [isLineInSelection, pendingSelection, filePath, fileThreads, activeTourHighlight, isFullFileHighlight]);
+    return null;
+  }, [isLineInSelection, pendingSelection, filePath, fileThreads, activeTourHighlight, isFullFileHighlight, hasSubHighlight]);
 
   const handleAddThread = useCallback((body: string) => {
     if (!pendingSelection || !sessionId) {
@@ -173,7 +182,8 @@ export function FileViewer(props: FileViewerProps) {
   for (let i = 0; i < content.length; i++) {
     const lineNum = i + 1;
     const lineTokens = tokens?.[i]?.tokens;
-    const selected = isLineSelected(lineNum);
+    const highlightType = getLineHighlightType(lineNum);
+    const selected = highlightType !== null;
 
     if (activeTourHighlight && activeTourHighlight.annotation && lineNum === activeTourHighlight.startLine) {
       rows.push(
@@ -194,7 +204,8 @@ export function FileViewer(props: FileViewerProps) {
       >
         <CommentLineNumber
           lineNumber={lineNum}
-          isSelected={selected}
+          isSelected={highlightType === 'focus' || highlightType === 'selected'}
+          className={highlightType === 'base' ? 'bg-diff-comment-gutter/40' : undefined}
           onMouseDown={() => handleLineMouseDown(lineNum, 'new')}
           onMouseEnter={() => handleLineMouseEnter(lineNum, 'new')}
           onCommentClick={() => handleCommentClick(lineNum)}
@@ -203,7 +214,9 @@ export function FileViewer(props: FileViewerProps) {
         <td
           className={cn(
             'px-4 py-0 font-mono text-[13px] leading-6 whitespace-pre',
-            selected && 'bg-diff-comment-bg',
+            highlightType === 'base' && 'bg-diff-comment-bg/40',
+            highlightType === 'focus' && 'bg-diff-comment-bg',
+            highlightType === 'selected' && 'bg-diff-comment-bg',
           )}
         >
           {lineTokens ? (

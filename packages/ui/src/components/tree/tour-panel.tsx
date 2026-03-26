@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, useMemo, useCallback } from 'react';
-import ReactMarkdown from 'react-markdown';
+import ReactMarkdown, { defaultUrlTransform } from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import type { Tour } from '../../lib/api';
 import { CompassIcon } from '../icons/compass-icon';
@@ -13,6 +13,7 @@ interface TourPanelProps {
   onClose: () => void;
   onNavigateToFile?: (path: string) => void;
   onScrollToHighlight?: () => void;
+  onSubHighlight?: (startLine: number, endLine: number, label: string) => void;
   filePaths?: string[];
 }
 
@@ -32,12 +33,28 @@ function resolveFilePath(text: string, filePaths: Set<string> | undefined): stri
   return null;
 }
 
-function TourMarkdown(props: { content: string; onNavigateToFile?: (path: string) => void; filePaths?: Set<string> }) {
-  const { onNavigateToFile, filePaths } = props;
+function parseFocusHref(href: string): { startLine: number; endLine: number } | null {
+  const match = href.match(/^focus:(\d+)(?:-(\d+))?$/);
+  if (!match) {
+    return null;
+  }
+  const startLine = parseInt(match[1], 10);
+  const endLine = match[2] ? parseInt(match[2], 10) : startLine;
+  return { startLine, endLine };
+}
+
+function TourMarkdown(props: { content: string; onNavigateToFile?: (path: string) => void; onSubHighlight?: (startLine: number, endLine: number, label: string) => void; filePaths?: Set<string> }) {
+  const { onNavigateToFile, onSubHighlight, filePaths } = props;
 
   return (
     <ReactMarkdown
       remarkPlugins={[remarkGfm]}
+      urlTransform={(url) => {
+        if (url.startsWith('focus:')) {
+          return url;
+        }
+        return defaultUrlTransform(url);
+      }}
       components={{
         p: ({ children }) => <p className="mb-3 last:mb-0">{children}</p>,
         strong: ({ children }) => <strong className="font-semibold text-text">{children}</strong>,
@@ -70,9 +87,24 @@ function TourMarkdown(props: { content: string; onNavigateToFile?: (path: string
         ul: ({ children }) => <ul className="mb-2 pl-4 space-y-1 list-disc">{children}</ul>,
         ol: ({ children }) => <ol className="mb-2 pl-4 space-y-1 list-decimal">{children}</ol>,
         li: ({ children }) => <li className="text-text">{children}</li>,
-        a: ({ href, children }) => (
-          <a href={href} className="text-accent hover:underline" target="_blank" rel="noopener noreferrer">{children}</a>
-        ),
+        a: ({ href, children }) => {
+          const focus = href ? parseFocusHref(href) : null;
+          if (focus && onSubHighlight) {
+            const label = typeof children === 'string' ? children : String(children ?? '');
+            return (
+              <button
+                className="inline-flex items-center gap-1 px-1.5 py-0.5 bg-accent/10 border border-accent/20 rounded text-[10px] font-medium text-accent hover:bg-accent/20 cursor-pointer transition-colors"
+                onClick={() => onSubHighlight(focus.startLine, focus.endLine, label)}
+              >
+                <svg viewBox="0 0 25 25" fill="currentColor" className="w-2.5 h-2.5 shrink-0"><path d="M22.3281 5.11816C22.3281 4.70395 21.9923 4.36816 21.5781 4.36816C21.1639 4.36816 20.8281 4.70395 20.8281 5.11816V12.7874C20.8281 13.2016 20.4923 13.5374 20.0781 13.5374L10.4197 13.5374L10.4197 8.69196C10.4197 8.38857 10.2369 8.11506 9.95658 7.999C9.67626 7.88295 9.35363 7.94721 9.13917 8.16182L3.54761 13.7573C3.25496 14.0501 3.25496 14.5247 3.54763 14.8176L9.13919 20.4127C9.35365 20.6273 9.67627 20.6916 9.95659 20.5755C10.2369 20.4594 10.4197 20.1859 10.4197 19.8825L10.4197 15.0374L20.0781 15.0374C21.3208 15.0374 22.3281 14.0301 22.3281 12.7874V5.11816Z" /></svg>
+                {children}
+              </button>
+            );
+          }
+          return (
+            <a href={href} className="text-accent hover:underline" target="_blank" rel="noopener noreferrer">{children}</a>
+          );
+        },
         h1: ({ children }) => <h3 className="font-semibold text-text mb-1">{children}</h3>,
         h2: ({ children }) => <h3 className="font-semibold text-text mb-1">{children}</h3>,
         h3: ({ children }) => <h3 className="font-semibold text-text mb-1">{children}</h3>,
@@ -109,7 +141,7 @@ const MAX_WIDTH = 700;
 const DEFAULT_WIDTH = 384;
 
 export function TourPanel(props: TourPanelProps) {
-  const { tour, currentStepIndex, onStepChange, onClose, onNavigateToFile, onScrollToHighlight, filePaths } = props;
+  const { tour, currentStepIndex, onStepChange, onClose, onNavigateToFile, onScrollToHighlight, onSubHighlight, filePaths } = props;
 
   const [collapsed, setCollapsed] = useState(false);
   const [width, setWidth] = useState(DEFAULT_WIDTH);
@@ -270,7 +302,7 @@ export function TourPanel(props: TourPanelProps) {
             </div>
 
             <div className="text-xs text-text leading-relaxed">
-              <TourMarkdown content={currentStep.body} onNavigateToFile={onNavigateToFile} filePaths={filePathSet} />
+              <TourMarkdown content={currentStep.body} onNavigateToFile={onNavigateToFile} onSubHighlight={onSubHighlight} filePaths={filePathSet} />
             </div>
 
             <div className="mt-4 pt-2">

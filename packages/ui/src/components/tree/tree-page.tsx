@@ -104,6 +104,7 @@ export function TreePage(props: TreePageProps) {
   const [previewMode, setPreviewMode] = useState<'preview' | 'code'>('preview');
   const tourStepIndex = tourStepIndexProp ?? 0;
   const [tourScrollTick, setTourScrollTick] = useState(0);
+  const [tourSubHighlight, setTourSubHighlight] = useState<{ startLine: number; endLine: number; label: string } | null>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
   const mainRef = useRef<HTMLElement>(null);
 
@@ -252,6 +253,12 @@ export function TreePage(props: TreePageProps) {
   }, [tourId, navigate]);
 
   const handleTourScrollToHighlight = useCallback(() => {
+    setTourSubHighlight(null);
+    setTourScrollTick(t => t + 1);
+  }, []);
+
+  const handleTourSubHighlight = useCallback((startLine: number, endLine: number, label: string) => {
+    setTourSubHighlight({ startLine, endLine, label });
     setTourScrollTick(t => t + 1);
   }, []);
 
@@ -267,6 +274,17 @@ export function TreePage(props: TreePageProps) {
     if (!step) {
       return null;
     }
+    if (tourSubHighlight) {
+      return {
+        filePath: step.filePath,
+        startLine: tourSubHighlight.startLine,
+        endLine: tourSubHighlight.endLine,
+        annotation: tourSubHighlight.label,
+        scrollTick: tourScrollTick,
+        baseStartLine: step.startLine,
+        baseEndLine: step.endLine,
+      };
+    }
     return {
       filePath: step.filePath,
       startLine: step.startLine,
@@ -274,9 +292,10 @@ export function TreePage(props: TreePageProps) {
       annotation: step.annotation,
       scrollTick: tourScrollTick,
     };
-  }, [tourData, tourStepIndex, tourScrollTick]);
+  }, [tourData, tourStepIndex, tourScrollTick, tourSubHighlight]);
 
   useEffect(() => {
+    setTourSubHighlight(null);
     if (!tourData || tourData.steps.length === 0 || tourStepIndex === 0) {
       return;
     }
@@ -442,6 +461,7 @@ export function TreePage(props: TreePageProps) {
             onClose={handleTourClose}
             onNavigateToFile={handleFileClick}
             onScrollToHighlight={handleTourScrollToHighlight}
+            onSubHighlight={handleTourSubHighlight}
             filePaths={paths}
           />
         )}
