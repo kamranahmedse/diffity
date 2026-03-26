@@ -12,6 +12,7 @@ interface TourPanelProps {
   onStepChange: (index: number) => void;
   onClose: () => void;
   onNavigateToFile?: (path: string) => void;
+  onNavigateToFileLine?: (path: string, startLine: number, endLine: number) => void;
   onScrollToHighlight?: () => void;
   onSubHighlight?: (startLine: number, endLine: number, label: string) => void;
   filePaths?: string[];
@@ -43,14 +44,25 @@ function parseFocusHref(href: string): { startLine: number; endLine: number } | 
   return { startLine, endLine };
 }
 
-function TourMarkdown(props: { content: string; onNavigateToFile?: (path: string) => void; onSubHighlight?: (startLine: number, endLine: number, label: string) => void; filePaths?: Set<string> }) {
-  const { onNavigateToFile, onSubHighlight, filePaths } = props;
+function parseGotoHref(href: string): { filePath: string; startLine: number; endLine: number } | null {
+  const match = href.match(/^goto:(.+):(\d+)(?:-(\d+))?$/);
+  if (!match) {
+    return null;
+  }
+  const filePath = match[1];
+  const startLine = parseInt(match[2], 10);
+  const endLine = match[3] ? parseInt(match[3], 10) : startLine;
+  return { filePath, startLine, endLine };
+}
+
+function TourMarkdown(props: { content: string; onNavigateToFile?: (path: string) => void; onNavigateToFileLine?: (path: string, startLine: number, endLine: number) => void; onSubHighlight?: (startLine: number, endLine: number, label: string) => void; filePaths?: Set<string> }) {
+  const { onNavigateToFile, onNavigateToFileLine, onSubHighlight, filePaths } = props;
 
   return (
     <ReactMarkdown
       remarkPlugins={[remarkGfm]}
       urlTransform={(url) => {
-        if (url.startsWith('focus:')) {
+        if (url.startsWith('focus:') || url.startsWith('goto:')) {
           return url;
         }
         return defaultUrlTransform(url);
@@ -101,6 +113,17 @@ function TourMarkdown(props: { content: string; onNavigateToFile?: (path: string
               </button>
             );
           }
+          const goto = href ? parseGotoHref(href) : null;
+          if (goto && onNavigateToFileLine) {
+            return (
+              <code
+                className="px-1.5 py-0.5 bg-bg-tertiary rounded text-[10px] font-mono text-accent hover:underline cursor-pointer"
+                onClick={() => onNavigateToFileLine(goto.filePath, goto.startLine, goto.endLine)}
+              >
+                {children}
+              </code>
+            );
+          }
           return (
             <a href={href} className="text-accent hover:underline" target="_blank" rel="noopener noreferrer">{children}</a>
           );
@@ -141,7 +164,7 @@ const MAX_WIDTH = 700;
 const DEFAULT_WIDTH = 384;
 
 export function TourPanel(props: TourPanelProps) {
-  const { tour, currentStepIndex, onStepChange, onClose, onNavigateToFile, onScrollToHighlight, onSubHighlight, filePaths } = props;
+  const { tour, currentStepIndex, onStepChange, onClose, onNavigateToFile, onNavigateToFileLine, onScrollToHighlight, onSubHighlight, filePaths } = props;
 
   const [collapsed, setCollapsed] = useState(false);
   const [width, setWidth] = useState(DEFAULT_WIDTH);
@@ -286,7 +309,7 @@ export function TourPanel(props: TourPanelProps) {
             <h2 className="text-sm font-semibold text-text leading-snug mb-3">{tour.topic}</h2>
             {tour.body && (
               <div className="text-xs text-text leading-relaxed">
-                <TourMarkdown content={tour.body} onNavigateToFile={onNavigateToFile} filePaths={filePathSet} />
+                <TourMarkdown content={tour.body} onNavigateToFile={onNavigateToFile} onNavigateToFileLine={onNavigateToFileLine} filePaths={filePathSet} />
               </div>
             )}
           </>
@@ -302,7 +325,7 @@ export function TourPanel(props: TourPanelProps) {
             </div>
 
             <div className="text-xs text-text leading-relaxed">
-              <TourMarkdown content={currentStep.body} onNavigateToFile={onNavigateToFile} onSubHighlight={onSubHighlight} filePaths={filePathSet} />
+              <TourMarkdown content={currentStep.body} onNavigateToFile={onNavigateToFile} onNavigateToFileLine={onNavigateToFileLine} onSubHighlight={onSubHighlight} filePaths={filePathSet} />
             </div>
 
             <div className="mt-4 pt-2">

@@ -105,6 +105,7 @@ export function TreePage(props: TreePageProps) {
   const tourStepIndex = tourStepIndexProp ?? 0;
   const [tourScrollTick, setTourScrollTick] = useState(0);
   const [tourSubHighlight, setTourSubHighlight] = useState<{ startLine: number; endLine: number; label: string } | null>(null);
+  const [gotoHighlight, setGotoHighlight] = useState<{ filePath: string; startLine: number; endLine: number } | null>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
   const mainRef = useRef<HTMLElement>(null);
 
@@ -254,6 +255,7 @@ export function TreePage(props: TreePageProps) {
 
   const handleTourScrollToHighlight = useCallback(() => {
     setTourSubHighlight(null);
+    setGotoHighlight(null);
     setTourScrollTick(t => t + 1);
   }, []);
 
@@ -262,11 +264,27 @@ export function TreePage(props: TreePageProps) {
     setTourScrollTick(t => t + 1);
   }, []);
 
+  const handleGotoFileLine = useCallback((path: string, startLine: number, endLine: number) => {
+    setInternalNav({ path, type: 'file' });
+    setPreviewMode('preview');
+    setGotoHighlight({ filePath: path, startLine, endLine });
+    setTourScrollTick(t => t + 1);
+  }, []);
+
   const handleTourClose = useCallback(() => {
     navigate('/tree');
   }, [navigate]);
 
   const tourHighlight = useMemo(() => {
+    if (gotoHighlight) {
+      return {
+        filePath: gotoHighlight.filePath,
+        startLine: gotoHighlight.startLine,
+        endLine: gotoHighlight.endLine,
+        annotation: '',
+        scrollTick: tourScrollTick,
+      };
+    }
     if (!tourData || tourStepIndex === 0) {
       return null;
     }
@@ -292,10 +310,11 @@ export function TreePage(props: TreePageProps) {
       annotation: step.annotation,
       scrollTick: tourScrollTick,
     };
-  }, [tourData, tourStepIndex, tourScrollTick, tourSubHighlight]);
+  }, [tourData, tourStepIndex, tourScrollTick, tourSubHighlight, gotoHighlight]);
 
   useEffect(() => {
     setTourSubHighlight(null);
+    setGotoHighlight(null);
     if (!tourData || tourData.steps.length === 0 || tourStepIndex === 0) {
       return;
     }
@@ -460,6 +479,7 @@ export function TreePage(props: TreePageProps) {
             onStepChange={handleTourStepChange}
             onClose={handleTourClose}
             onNavigateToFile={handleFileClick}
+            onNavigateToFileLine={handleGotoFileLine}
             onScrollToHighlight={handleTourScrollToHighlight}
             onSubHighlight={handleTourSubHighlight}
             filePaths={paths}

@@ -84,7 +84,7 @@ The tour UI has a dedicated explanation panel. The intro (from `tour-start --bod
 
    **Do:**
    - Write in prose paragraphs, supplemented by structured content where it helps
-   - Use `code` for function names, variables, refs, commands
+   - Use `code` for function names, variables, refs, commands. When referencing a function, class, or code symbol that lives in a **known file and line**, make it a **goto link** so the reader can click to jump there. Syntax: `` [`symbolName`](goto:path/to/file.ts:startLine-endLine) `` or `` [`symbolName`](goto:path/to/file.ts:line) `` for a single line. These render as clickable inline code that navigates to the file and highlights the target lines. Example: `` [`handleDragEnd`](goto:src/KanbanContent.jsx:42-58) ``. Use plain backtick code for generic terms, CLI commands, or symbols you haven't located in the codebase.
    - Use **bold** for key concepts being introduced
    - Explain *why* the code exists and the design decisions behind it, not just what it does
    - Use concrete examples: "When you run `diffity main`, this line calls `normalizeRef('main')` which computes `git merge-base main HEAD`"
