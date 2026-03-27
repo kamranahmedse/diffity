@@ -20,7 +20,7 @@ import {
   getStagedFiles,
   getUnstagedFiles,
   getRecentCommits,
-  getFileLineCount,
+  getFileLineCounts,
   resolveBaseRef,
   resolveDiffArgs,
   resolveRef,
@@ -132,13 +132,17 @@ export function startServer(options: ServerOptions): Promise<ServerResult> {
   const includeUntracked = diffArgs.length === 0;
 
   function enrichWithLineCounts(diff: ParsedDiff, baseRef: string): ParsedDiff {
+    const paths = diff.files
+      .filter((f) => f.status !== 'added' && !f.isBinary)
+      .map((f) => f.oldPath || f.newPath)
+      .filter((path): path is string => Boolean(path));
+    const counts = getFileLineCounts(paths, baseRef);
     for (const file of diff.files) {
-      if (file.status === 'added' || file.isBinary) {
-        continue;
-      }
+      if (file.status === 'added' || file.isBinary) continue;
       const path = file.oldPath || file.newPath;
-      const count = getFileLineCount(path, baseRef);
-      if (count !== null) {
+      if (!path) continue;
+      const count = counts.get(path);
+      if (count !== undefined) {
         file.oldFileLineCount = count;
       }
     }
@@ -290,21 +294,16 @@ export function startServer(options: ServerOptions): Promise<ServerResult> {
           const baseRef = ref ? resolveBaseRef(ref) : 'HEAD';
 
           if (ref) {
-            sendJson(
-              res,
-              enrichWithLineCounts(
-                parseDiff(resolveRef(ref, extraArgs)),
-                baseRef,
-              ),
-            );
+            const raw = resolveRef(ref, extraArgs);
+            const parsed = parseDiff(raw);
+            sendJson(res, enrichWithLineCounts(parsed, baseRef));
             return;
           }
 
           const args = whitespace === 'hide' ? [...diffArgs, '-w'] : diffArgs;
-          sendJson(
-            res,
-            enrichWithLineCounts(parseDiff(getFullDiff(args)), baseRef),
-          );
+          const raw = getFullDiff(args);
+          const parsed = parseDiff(raw);
+          sendJson(res, enrichWithLineCounts(parsed, baseRef));
           return;
         }
 

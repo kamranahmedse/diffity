@@ -73,7 +73,7 @@ describe('getDiffFiles', () => {
     expect(files).toContain('staged-file.txt');
 
     git('reset HEAD staged-file.txt');
-    execSync(`rm "${join(repoDir, 'staged-file.txt')}"`, { stdio: 'pipe' });
+    rmSync(join(repoDir, 'staged-file.txt'), { force: true });
   });
 
   it('returns unstaged files for unstaged ref', async () => {
@@ -98,6 +98,6 @@ describe('getDiffFiles', () => {
 
     git('reset HEAD base.txt');
     git('checkout -- base.txt');
-    execSync(`rm "${join(repoDir, 'untracked-file.txt')}"`, { stdio: 'pipe' });
+    rmSync(join(repoDir, 'untracked-file.txt'), { force: true });
   });
 });

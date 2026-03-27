@@ -151,3 +151,31 @@ export function getFileLineCount(path: string, ref = 'HEAD'): number | null {
     return null;
   }
 }
+
+export function getFileLineCounts(paths: string[], ref = 'HEAD'): Map<string, number> {
+  if (paths.length === 0) return new Map();
+  const input = paths.map((p) => `${ref}:${p}`).join('\n') + '\n';
+  try {
+    const output = execWithStdin('git cat-file --batch', input);
+    const result = new Map<string, number>();
+    let pos = 0;
+    for (const path of paths) {
+      const headerEnd = output.indexOf('\n', pos);
+      if (headerEnd === -1) break;
+      const header = output.substring(pos, headerEnd);
+      const parts = header.split(' ');
+      if (parts[1] === 'missing') {
+        pos = headerEnd + 1;
+        continue;
+      }
+      const size = parseInt(parts[2], 10);
+      const contentStart = headerEnd + 1;
+      const content = output.substring(contentStart, contentStart + size);
+      result.set(path, content.split('\n').length);
+      pos = contentStart + size + 1; // skip trailing newline after content
+    }
+    return result;
+  } catch {
+    return new Map();
+  }
+}
