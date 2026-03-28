@@ -38,7 +38,7 @@ export function resolveDiffArgs(ref: string): RefDiffArgs {
     case 'work':
       return { type: 'args', args: ['HEAD'], includeUntracked: true };
     default:
-      return { type: 'args', args: [normalizeRef(ref)], includeUntracked: false };
+      return { type: 'args', args: [normalizeRef(ref)], includeUntracked: true };
   }
 }
 
