@@ -27,11 +27,6 @@ import { OrphanedThreads } from '../comments/orphaned-threads';
 import { ThreadBadge } from '../ui/thread-badge';
 import { buildExpansionSyntaxMap, renderExpansionRows } from './render-expansion-rows';
 import { ExpandRow } from './expand-row';
-import { RichDiffViewer } from './rich-diff-viewer';
-import { SegmentedToggle } from '../ui/segmented-toggle';
-import { CodeIcon } from '../icons/code-icon';
-import { FileIcon } from '../icons/file-icon';
-import { isRenderableFile } from '../../lib/file-types';
 
 export const LARGE_DIFF_LINE_THRESHOLD = 200;
 
@@ -97,8 +92,6 @@ export function FileBlock(props: FileBlockProps) {
   const { copied: pathCopied, copy: copyPath } = useCopy();
 
   const [confirmRevertChange, setConfirmRevertChange] = useState<{ hunk: DiffHunk; startIndex: number; endIndex: number } | null>(null);
-  const [showRichDiff, setShowRichDiff] = useState(false);
-  const renderable = isRenderableFile(filePath);
 
   const handleRevertChange = useCallback(async (info: { hunk: DiffHunk; startIndex: number; endIndex: number }) => {
     setConfirmRevertChange(null);
@@ -438,16 +431,6 @@ export function FileBlock(props: FileBlockProps) {
               )}
             </span>
           )}
-          {renderable && (
-            <SegmentedToggle
-              options={[
-                { value: 'source', label: 'Source', icon: <CodeIcon className="w-3 h-3" /> },
-                { value: 'rendered', label: 'Rendered', icon: <FileIcon className="w-3 h-3" /> },
-              ]}
-              value={showRichDiff ? 'rendered' : 'source'}
-              onChange={(v) => setShowRichDiff(v === 'rendered')}
-            />
-          )}
           <div className="flex items-center gap-1.5">
             <DiffStats additions={file.additions} deletions={file.deletions} />
             <div className="flex gap-px">
@@ -475,14 +458,7 @@ export function FileBlock(props: FileBlockProps) {
       </div>
       {!collapsed && (
         <div>
-          {showRichDiff && renderable ? (
-            <RichDiffViewer
-              filePath={filePath}
-              oldPath={file.oldPath}
-              status={file.status}
-              baseRef={baseRef}
-            />
-          ) : file.isBinary ? (
+          {file.isBinary ? (
             <div className="p-4 text-center text-text-muted italic">Binary file not shown</div>
           ) : file.hunks.length === 0 ? (
             <div className="p-4 text-center text-text-muted italic">

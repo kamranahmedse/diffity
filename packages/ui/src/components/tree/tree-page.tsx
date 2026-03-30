@@ -266,7 +266,7 @@ export function TreePage(props: TreePageProps) {
 
   const handleGotoFileLine = useCallback((path: string, startLine: number, endLine: number) => {
     setInternalNav({ path, type: 'file' });
-    setPreviewMode('preview');
+    setPreviewMode('code');
     setGotoHighlight({ filePath: path, startLine, endLine });
     setTourScrollTick(t => t + 1);
   }, []);
@@ -321,7 +321,7 @@ export function TreePage(props: TreePageProps) {
     const step = tourData.steps[tourStepIndex - 1];
     if (step) {
       setInternalNav({ path: step.filePath, type: 'file' });
-      setPreviewMode('preview');
+      setPreviewMode('code');
     }
   }, [tourData, tourStepIndex]);
 
