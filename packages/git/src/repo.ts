@@ -90,6 +90,6 @@ export function getRefCapabilities(ref?: string): RefCapabilities {
   return {
     reviews: true,
     revert: isWorkingTree,
-    staleness: isWorkingTree || ref.includes('..'),
+    staleness: true,
   };
 }
