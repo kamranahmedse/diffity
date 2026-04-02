@@ -148,7 +148,18 @@ Include 3-5 key lines and the tour ID.
 
 ## Challenge mode (user projects)
 
-Create a project scaffold for the user to complete. No tour for challenges — the user writes the code.
+Create a project for the user to complete. No tour for challenges — the user writes the code.
+
+### Challenge styles
+
+Pick the style that best fits the concepts and the learner's progress. Vary styles across challenges — don't always use the same one.
+
+- **Build from scratch** — User gets a scaffolded starter file with TODO comments and writes the implementation. Best for early lessons or when introducing new concepts.
+- **Fix broken code** — User gets working-looking code with 3-5 bugs. The code runs but produces wrong results or fails to compile. Comments mark where bugs might be (e.g., `// BUG: something is wrong here`). Best for reinforcing concepts the user has already learned or practicing debugging skills.
+- **Complete partial implementation** — User gets a partially working codebase with some functions/sections left as TODOs. The existing code provides context and patterns the user should follow. Best for mid-to-late lessons where the user can learn from reading existing code while still doing meaningful work.
+- **Extend a feature** — User gets a small working program and must add a new feature. Requirements describe what to add. Best for practicing reading existing code and making changes, which mirrors real-world development.
+
+For "fix broken code" and "complete partial implementation" styles, the provided code should be well-written (aside from intentional bugs) so the user learns good patterns from reading it.
 
 ### Create these files
 
@@ -187,10 +198,11 @@ Create a project scaffold for the user to complete. No tour for challenges — t
 </details>
 ```
 
-**Starter files** — Minimal boilerplate:
+**Starter files** — Scaffolded with task context:
 - Proper project init for the topic
-- Empty entry point or skeleton
-- Nothing else. The user does the work.
+- The entry point / main file MUST contain a comment block at the top describing the challenge — what to build, what the requirements are, and how to run/test it. The user should understand the task without opening the README.
+- Below the comment block, mark where code should go (e.g., `// TODO: implement temperature conversion`) but do NOT include hints about how to solve it — no type signatures, no suggested patterns, no approach guidance. The hints stay in the README.
+- The README still has the full description and progressive hints for users who get stuck
 
 **Test/validation file** (preferred) — 3-5 tests covering happy path, edge case, and a prior concept. If the program reads from stdin, write tests that call functions directly.
 
@@ -204,6 +216,7 @@ Check `{{struggles}}` and `{{priorConcepts}}`:
 
 ```
 Created: user-N/
+Style: build from scratch | fix broken code | complete partial | extend feature
 Task: Build a temperature converter CLI
 Concepts tested: variables, types, functions, error-handling (from struggles)
 Has tests: yes (4 tests — call functions directly, no stdin dependency)

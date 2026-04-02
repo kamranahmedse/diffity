@@ -84,7 +84,7 @@ learn-<topic>/
 │   │   └── src/utils.rs
 │   ├── user-1/
 │   │   ├── README.md           ← task description + hints
-│   │   ├── src/main.rs         ← starter code (minimal)
+│   │   ├── src/main.rs         ← starter code with TODO comments
 │   │   └── REVIEW.md           ← written by verify agent after review
 │   └── user-2/
 │       └── ...
@@ -114,7 +114,8 @@ Short folder names. The README inside each project gives the human-readable cont
       "userProjects": 0,
       "projectIdeas": {
         "agent": "A greeting generator that builds personalized messages",
-        "user": "Build a temperature converter CLI"
+        "user": "Build a temperature converter CLI",
+        "userStyle": "build-from-scratch"
       }
     }
   ],
@@ -249,7 +250,7 @@ The rule: **if concept B can't be demonstrated without concept A, they belong in
 
 **6. Give a challenge.** Spawn the build agent in challenge mode to create a user project. Pass `projectIdeas.user` from the lesson plan as `{{description}}` if available. Tell the user what to do — be specific:
 
-   > Your turn. Open `lesson-01/user-1/README.md` for the requirements. Run `cargo test` to check your solution as you go. When you're done, say "done" and I'll review it.
+   > Your turn. Open `lesson-01/user-1/src/main.rs` — the TODO comments will guide you through what to build. Run `cargo test` to check your solution as you go. Check `README.md` if you need more detail or hints. When you're done, say "done" and I'll review it.
 
 **7. When they say "done"**, spawn the verify agent. The verify agent reviews the code, leaves Diffity inline comments, and writes REVIEW.md. Then open the user's code in Diffity so they see the feedback in the browser:
    ```
@@ -283,7 +284,8 @@ Tell the build agent to follow these when creating challenges:
 - **README.md with clear requirements.** The user should know exactly what "done" looks like.
 - **2-3 collapsible hints.** Progressive: vague → specific.
 - **Optional test file** so the user can self-check with the language's test runner.
-- **Minimal starter code.** Just the boilerplate (package declaration, empty main) to avoid friction. Not a template to fill in.
+- **Guided starter code.** The main file should contain TODO comments and scaffolding so the user knows what to implement without reading the README. Not a template with the answer — just enough structure to guide them.
+- **Varied challenge styles.** Don't always use "build from scratch." Pass `projectIdeas.userStyle` from the plan to the build agent. Mix in "fix broken code", "complete partial", and "extend feature" styles as the user progresses.
 - **Weave in earlier concepts.** Check `completedConcepts` and `struggles` in learn.json — include requirements that reuse them. Especially `struggles` — the user needs more practice.
 - **10-30 minutes to complete.** If bigger, split into multiple user projects.
 
