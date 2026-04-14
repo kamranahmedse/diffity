@@ -27,7 +27,7 @@
     "cli"
   ],
   "author": "",
-  "license": "PolyForm-Shield-1.0.0",
+  "license": "MIT",
   "devDependencies": {
     "concurrently": "^9.2.1",
     "gray-matter": "^4.0.3",

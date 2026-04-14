@@ -30,7 +30,7 @@
     "github"
   ],
   "author": "Kamran Ahmed <kamranahmed.se@gmail.com> (https://kamranahmed.se)",
-  "license": "PolyForm-Shield-1.0.0",
+  "license": "MIT",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/kamranahmedse/diffity.git"
