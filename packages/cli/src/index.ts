@@ -80,6 +80,26 @@ range syntax (main..feature, main...feature) also work.`)
       process.exit(1);
     }
 
+    // When the first positional is a PR URL, `passThroughOptions()` above slurps any
+    // trailing flags (e.g. `diffity <url> --no-open`) into `refs` as positional args.
+    // Without this reparse, `refs.length === 1` would be false and the PR URL path
+    // would be skipped, producing a confusing "not a valid git reference" error.
+    if (refs.length > 1 && isGitHubPrUrl(refs[0])) {
+      const extras = refs.splice(1);
+      for (const arg of extras) {
+        switch (arg) {
+          case '--no-open': opts.open = false; break;
+          case '--quiet': opts.quiet = true; break;
+          case '--dark': opts.dark = true; break;
+          case '--unified': opts.unified = true; break;
+          case '--new': opts.new = true; break;
+          default:
+            console.error(pc.red(`Error: Unexpected argument after PR URL: ${arg}`));
+            process.exit(1);
+        }
+      }
+    }
+
     if (refs.length === 1 && isGitHubPrUrl(refs[0])) {
       const parsed = parseGitHubPrUrl(refs[0]);
       if (!parsed) {

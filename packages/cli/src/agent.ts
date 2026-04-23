@@ -1,6 +1,8 @@
+import { existsSync, statSync } from 'node:fs';
+import { join, isAbsolute } from 'node:path';
 import type { Command } from 'commander';
 import pc from 'picocolors';
-import { isGitRepo, getDiffFiles, resolveRef } from '@diffity/git';
+import { isGitRepo, getDiffFiles, resolveRef, getRepoRoot } from '@diffity/git';
 import { getCurrentSession } from './session.js';
 import {
   createThread,
@@ -26,6 +28,24 @@ function requireSession() {
     process.exit(1);
   }
   return session;
+}
+
+function assertFileExists(filePath: string): void {
+  if (isAbsolute(filePath)) {
+    console.error(pc.red(`Error: --file must be relative to the repo root, got absolute path: ${filePath}`));
+    process.exit(1);
+  }
+  const abs = join(getRepoRoot(), filePath);
+  if (!existsSync(abs) || !statSync(abs).isFile()) {
+    console.error(pc.red(`Error: File not found at repo root: ${filePath}`));
+    console.error(pc.dim(`  Checked: ${abs}`));
+    if (filePath.includes('..')) {
+      console.error(pc.dim(`  Tip: consecutive dots suggest a shell variable expanded to empty.`));
+      console.error(pc.dim(`  If your path contains "$" (e.g. "teams.$teamId.tsx"), single-quote the --file value`));
+      console.error(pc.dim(`  or escape it: --file 'apps/routes/teams.$teamId.tsx'`));
+    }
+    process.exit(1);
+  }
 }
 
 function resolveThreadId(shortId: string, sessionId: string): Thread {
@@ -120,6 +140,7 @@ Examples:
         process.exit(1);
       }
       const session = requireSession();
+      assertFileExists(opts.file);
       if (session.ref !== '__tree__') {
         const diffFiles = getDiffFiles(session.ref);
         if (!diffFiles.includes(opts.file)) {
@@ -245,6 +266,7 @@ Examples:
     .option('--json', 'Output as JSON')
     .action((opts) => {
       requireSession();
+      assertFileExists(opts.file);
       const endLine = opts.endLine ?? opts.line;
       const step = addTourStep(opts.tour, opts.file, opts.line, endLine, opts.body, opts.annotation);
       if (opts.json) {
