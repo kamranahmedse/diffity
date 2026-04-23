@@ -146,11 +146,13 @@ Your agent researches the codebase, then builds a tour with highlighted code reg
 /diffity-tour how are comments stored and retrieved?
 /diffity-tour closures
 /diffity-tour async/await patterns
+/diffity-tour walk me through this branch before I merge
+/diffity-tour https://github.com/owner/repo/pull/123
 ```
 
-Works for both features ("how does auth work?") and concepts ("closures", "generics"). For concepts, the agent finds real examples in your codebase and teaches the concept progressively from simple to complex.
+Works for features ("how does auth work?"), concepts ("closures", "generics"), and pre-merge reviews. For concepts, the agent finds real examples in your codebase and teaches the concept progressively from simple to complex. For reviews, it walks the user-facing flows end-to-end and ends with a "things to flag in the PR conversation" list — you can pass a branch, a ref range, or a GitHub PR URL.
 
-Each tour has an intro (step 0) with an architectural overview, followed by numbered steps that highlight specific code regions and explain them in detail. The agent follows the actual execution path, not file order.
+Each tour has an intro (step 0) with an architectural overview, followed by numbered steps that highlight specific code regions and explain them in detail. The agent follows the actual execution path, not file order — foundations (schemas, config, helpers) are introduced just-in-time when the flow first touches them.
 
 Tour steps can include **sub-highlights** — clickable focus links in the narrative that narrow the highlight to a specific sub-range within the step. Useful for walking through large functions section by section.
 
@@ -198,7 +200,10 @@ The skills work with PR URLs too:
 ```
 /diffity-diff https://github.com/owner/repo/pull/123
 /diffity-review https://github.com/owner/repo/pull/123
+/diffity-tour https://github.com/owner/repo/pull/123
 ```
+
+Passing a PR URL to `/diffity-tour` locks it to review mode — the agent reads the PR's description, commits, and diff to build a guided walkthrough that you can use before approving or merging.
 
 ## Multiple projects
 
