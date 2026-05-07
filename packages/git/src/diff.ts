@@ -1,7 +1,7 @@
 import { exec, execLarge, execLines, execWithStdin } from './exec.js';
 
 export function getDiff(args: string[] = []): string {
-  const cmd = ['git', 'diff', ...args].join(' ');
+  const cmd = ['git', 'diff', '--no-ext-diff', ...args].join(' ');
   return execLarge(cmd);
 }
 
@@ -14,7 +14,7 @@ export function getUntrackedDiff(files: string[]): string {
 
   for (const file of files) {
     try {
-      execLarge(`git diff --no-index -- /dev/null "${file}"`);
+      execLarge(`git diff --no-ext-diff --no-index -- /dev/null "${file}"`);
     } catch (err: unknown) {
       const error = err as { stdout?: string; status?: number };
       if (error.status === 1 && error.stdout) {
@@ -58,7 +58,7 @@ export function resolveRef(ref: string, extraArgs: string[] = []): string {
 export function getDiffFiles(ref: string): string[] {
   const resolved = resolveDiffArgs(ref);
 
-  const tracked = execLines(`git diff --name-only ${resolved.args.join(' ')}`.trim());
+  const tracked = execLines(`git diff --no-ext-diff --name-only ${resolved.args.join(' ')}`.trim());
   if (resolved.includeUntracked) {
     const untracked = getUntrackedFiles();
     return [...new Set([...tracked, ...untracked])];
@@ -67,7 +67,7 @@ export function getDiffFiles(ref: string): string[] {
 }
 
 export function getDiffStat(args: string[] = []): string {
-  const cmd = ['git', 'diff', '--stat', ...args].join(' ');
+  const cmd = ['git', 'diff', '--no-ext-diff', '--stat', ...args].join(' ');
   try {
     return execLarge(cmd);
   } catch {
