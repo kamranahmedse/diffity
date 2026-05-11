@@ -62,7 +62,7 @@ You can leave comments on any diff — working tree changes, branch comparisons,
 Install the skills for your coding agent (Claude Code, Cursor, Codex, etc.):
 
 ```bash
-npx skills add kamranahmedse/diffity
+npx skills add nilbuild/diffity
 ```
 
 Then use the slash commands:
